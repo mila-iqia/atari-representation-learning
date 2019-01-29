@@ -18,19 +18,19 @@ class MIEstimator():
         self.epochs = epochs
         self.mini_batch_size = 128
 
-    def data_generator(self, rollouts):
+    def data_generator(self, episodes):
         """
         Iteratively yield batches of data
         :return:
         """
         # Only consider episodes with len >= global_span
-        rollouts.episodes = [x for x in rollouts.episodes if len(x) >= self.global_span]
-        total_steps = rollouts.rewards.size()[0] * rollouts.rewards.size()[1]
-        sampler = BatchSampler(RandomSampler(range(len(rollouts.episodes)),
+        episodes = [x for x in episodes if len(x) >= self.global_span]
+        total_steps = sum([len(e) for e in episodes])
+        sampler = BatchSampler(RandomSampler(range(len(episodes)),
                                              replacement=True, num_samples=total_steps // self.global_span),
                                self.mini_batch_size, drop_last=False)
         for indices in sampler:
-            episodes_batch = [rollouts.episodes[x] for x in indices]
+            episodes_batch = [episodes[x] for x in indices]
             pos_obs_batch, neg_obs_batch = [], []
             for episode in episodes_batch:
                 start_idx, start_idx_neg = np.random.choice(len(episode)), np.random.choice(len(episode))
@@ -39,15 +39,13 @@ class MIEstimator():
 
             yield pos_obs_batch, neg_obs_batch
 
-    def maximize_mi(self, rollouts):
+    def maximize_mi(self, episodes):
         """
         JSD based maximization of MI for `self.epochs` number of epochs
         Equivalent to minimizing Binary Cross-Entropy
-        :param rollouts:
-        :return:
         """
         for e in range(self.epochs):
-            data_generator = self.data_generator(rollouts)
+            data_generator = self.data_generator(episodes)
             for batch in data_generator:
                 pos_obs_batch, neg_obs_batch = batch
 

@@ -25,6 +25,9 @@ from a2c_ppo_acktr.visualize import visdom_plot
 
 from tensorboardX import SummaryWriter
 
+from dim import MIEstimator
+from env__util import get_train_test_envs
+
 args = get_args()
 
 import wandb
@@ -67,13 +70,7 @@ except OSError:
 def main():
     torch.set_num_threads(1)
     device = torch.device("cuda:0" if args.cuda else "cpu")
-
-    args_coinrun = setup_utils.setup_and_load(num_levels=500)
-    envs = utils.make_general_env(args.num_processes)
-    envs = VecPyTorch(VecMonitor(envs, filename='monitor.csv'), device)
-
-    # envs = make_vec_envs(args.env_name, args.seed, args.num_processes,
-    #                     args.gamma, args.log_dir, args.add_timestep, device, False)
+    envs, eval_envs = get_train_test_envs(num_processes=128, device=device)
 
     actor_critic = Policy(envs.observation_space.shape, envs.action_space,
         base_kwargs={'recurrent': args.recurrent_policy})
@@ -88,21 +85,19 @@ def main():
                         envs.observation_space.shape, envs.action_space,
                         actor_critic.recurrent_hidden_state_size)
 
+    mi_estimator = MIEstimator(encoder=actor_critic.base.actor)
     obs = envs.reset()
     rollouts.obs[0].copy_(obs)
     rollouts.to(device)
 
     episode_rewards = deque(maxlen=10)
-
+    # Todo: Clear Episodes buffer after some time
+    episodes = [[] for i in range(args.num_processes)]
     start = time.time()
     for j in range(num_updates):
         if args.use_linear_lr_decay:
             # decrease learning rate linearly
-            if args.algo == "acktr":
-                # use optimizer's learning rate since it's hard-coded in kfac.py
-                update_linear_schedule(agent.optimizer, j, num_updates, agent.optimizer.lr)
-            else:
-                update_linear_schedule(agent.optimizer, j, num_updates, args.lr)
+            update_linear_schedule(agent.optimizer, j, num_updates, args.lr)
 
         if args.algo == 'ppo' and args.use_linear_clip_decay:
             agent.clip_param = args.clip_param  * (1 - j / float(num_updates))
@@ -120,11 +115,16 @@ def main():
             for i, info in enumerate(infos):
                 if 'episode' in info.keys():
                     episode_rewards.append(info['episode']['r'])
+                if done[i] != 1:
+                    episodes[i][-1].append(obs)
+                else:
+                    episodes[i].append([obs])
 
             # If done then clean the history of observations.
             masks = torch.FloatTensor([[0.0] if done_ else [1.0]
                                        for done_ in done])
             rollouts.insert(obs, recurrent_hidden_states, action, action_log_prob, value, reward, masks)
+
 
         with torch.no_grad():
             next_value = actor_critic.get_value(rollouts.obs[-1],
@@ -133,6 +133,7 @@ def main():
 
         rollouts.compute_returns(next_value, args.use_gae, args.gamma, args.tau)
 
+        mi_estimator.maximize_mi(episodes)
         value_loss, action_loss, dist_entropy = agent.update(rollouts)
         rollouts.after_update()
 
@@ -171,9 +172,6 @@ def main():
         if (args.eval_interval is not None
                 and len(episode_rewards) > 1
                 and j % args.eval_interval == 0):
-            args_coinrun = setup_utils.setup_and_load(test_eval=True, set_seed=42)
-            eval_envs = utils.make_general_env(args.num_processes)
-            eval_envs = VecPyTorch(VecMonitor(eval_envs, filename='monitor_eval.csv'), device)
 
             vec_norm = get_vec_normalize(eval_envs)
             if vec_norm is not None:
@@ -211,7 +209,6 @@ def main():
                        np.mean(eval_episode_rewards)))
             writer.add_scalar('data/mean_eval_episode_rewards', np.mean(eval_episode_rewards), total_num_steps)
             wandb.log({'mean_eval_episode_rewards': np.mean(eval_episode_rewards)}, step=total_num_steps)
-            args_coinrun = setup_utils.setup_and_load(num_levels=500)
 
     writer.close()
 
