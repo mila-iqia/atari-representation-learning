@@ -8,12 +8,8 @@ import gym
 import numpy as np
 import torch
 
-from mpi4py import MPI
 from baselines.common import set_global_seeds
 from baselines.common.vec_env.vec_monitor import VecMonitor
-import coinrun.main_utils as utils
-from coinrun import setup_utils, policies, wrappers, ppo2
-from coinrun.config import Config
 
 from a2c_ppo_acktr import algo
 from a2c_ppo_acktr.arguments import get_args
@@ -21,57 +17,56 @@ from a2c_ppo_acktr.envs import make_vec_envs, VecPyTorch
 from a2c_ppo_acktr.model import Policy
 from a2c_ppo_acktr.storage import RolloutStorage
 from a2c_ppo_acktr.utils import get_vec_normalize, update_linear_schedule
-from a2c_ppo_acktr.visualize import visdom_plot
 
 from tensorboardX import SummaryWriter
+import wandb
 
 from dim import MIEstimator
-from env__util import get_train_test_envs
-
-args = get_args()
-
-import wandb
-wandb.init(project="dim-rl", tags=['Baseline'])
-at_config = {}
-wandb.config.update(at_config)
-
-writer = SummaryWriter(comment='runs')
-
-assert args.algo in ['a2c', 'ppo', 'acktr']
-if args.recurrent_policy:
-    assert args.algo in ['a2c', 'ppo'], \
-        'Recurrent policy is not implemented for ACKTR'
-
-num_updates = int(args.num_env_steps) // args.num_steps // args.num_processes
-torch.manual_seed(args.seed)
-torch.cuda.manual_seed_all(args.seed)
+from env__util import CoinrunSubprocess
 
 
-if args.cuda and torch.cuda.is_available() and args.cuda_deterministic:
-    torch.backends.cudnn.benchmark = False
-    torch.backends.cudnn.deterministic = True
-try:
-    os.makedirs(args.log_dir)
-except OSError:
-    files = glob.glob(os.path.join(args.log_dir, '*.monitor.csv'))
-    for f in files:
-        os.remove(f)
+def preprocessing():
+    args = get_args()
+    wandb.init(project="dim-rl", tags=['Baseline'])
+    at_config = {}
+    # wandb.config.update(at_config)
+    writer = SummaryWriter(comment='runs')
 
-eval_log_dir = args.log_dir + "_eval"
+    assert args.algo in ['a2c', 'ppo', 'acktr']
+    if args.recurrent_policy:
+        assert args.algo in ['a2c', 'ppo'], \
+            'Recurrent policy is not implemented for ACKTR'
 
-try:
-    os.makedirs(eval_log_dir)
-except OSError:
-    files = glob.glob(os.path.join(eval_log_dir, '*.monitor.csv'))
-    for f in files:
-        os.remove(f)
+    num_updates = int(args.num_env_steps) // args.num_steps // args.num_processes
+    torch.manual_seed(args.seed)
+    torch.cuda.manual_seed_all(args.seed)
 
+    if args.cuda and torch.cuda.is_available() and args.cuda_deterministic:
+        torch.backends.cudnn.benchmark = False
+        torch.backends.cudnn.deterministic = True
+    try:
+        os.makedirs(args.log_dir)
+    except OSError:
+        files = glob.glob(os.path.join(args.log_dir, '*.monitor.csv'))
+        for f in files:
+            os.remove(f)
+
+    eval_log_dir = args.log_dir + "_eval"
+
+    try:
+        os.makedirs(eval_log_dir)
+    except OSError:
+        files = glob.glob(os.path.join(eval_log_dir, '*.monitor.csv'))
+        for f in files:
+            os.remove(f)
+    return args, writer, num_updates, eval_log_dir
 
 def main():
+    args, writer, num_updates, eval_log_dir = preprocessing()
     torch.set_num_threads(1)
     device = torch.device("cuda:0" if args.cuda else "cpu")
-    envs, eval_envs = get_train_test_envs(num_processes=128, device=device)
-
+    envs = VecPyTorch(VecMonitor(CoinrunSubprocess(num_processes=args.num_processes, test=False), filename='monitor.csv'),
+                                     device=device)
     actor_critic = Policy(envs.observation_space.shape, envs.action_space,
         base_kwargs={'recurrent': args.recurrent_policy})
     actor_critic.to(device)
@@ -85,16 +80,17 @@ def main():
                         envs.observation_space.shape, envs.action_space,
                         actor_critic.recurrent_hidden_state_size)
 
-    mi_estimator = MIEstimator(encoder=actor_critic.base.actor)
+    mi_estimator = MIEstimator(encoder=actor_critic.base.main)
     obs = envs.reset()
     rollouts.obs[0].copy_(obs)
     rollouts.to(device)
 
     episode_rewards = deque(maxlen=10)
-    # Todo: Clear Episodes buffer after some time
-    episodes = [[] for i in range(args.num_processes)]
+    episodes = [[[]] for _ in range(args.num_processes)]
     start = time.time()
     for j in range(num_updates):
+        if j % 5 == 0:
+            episodes = [[[]] for _ in range(args.num_processes)]
         if args.use_linear_lr_decay:
             # decrease learning rate linearly
             update_linear_schedule(agent.optimizer, j, num_updates, args.lr)
@@ -133,7 +129,7 @@ def main():
 
         rollouts.compute_returns(next_value, args.use_gae, args.gamma, args.tau)
 
-        mi_estimator.maximize_mi(episodes)
+        # mi_estimator.maximize_mi(episodes)
         value_loss, action_loss, dist_entropy = agent.update(rollouts)
         rollouts.after_update()
 
@@ -172,7 +168,8 @@ def main():
         if (args.eval_interval is not None
                 and len(episode_rewards) > 1
                 and j % args.eval_interval == 0):
-
+            eval_envs = VecPyTorch(VecMonitor(CoinrunSubprocess(num_processes=args.num_processes, test=True), filename='monitor.csv'),
+                       device=device)
             vec_norm = get_vec_normalize(eval_envs)
             if vec_norm is not None:
                 vec_norm.eval()

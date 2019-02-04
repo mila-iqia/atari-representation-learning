@@ -12,7 +12,7 @@ class MIEstimator():
         self.encoder = encoder
         self.feature_size = feature_size
         self.discriminator = Discriminator(self.feature_size*2)
-        self.optimizer = torch.optim.Adam([self.encoder.parameters(), self.discriminator.parameters()], lr=lr)
+        self.optimizer = torch.optim.Adam(list(self.encoder.parameters()) + list(self.discriminator.parameters()), lr=lr)
         self.loss_fn = nn.BCEWithLogitsLoss()
         self.global_span = global_span
         self.epochs = epochs
