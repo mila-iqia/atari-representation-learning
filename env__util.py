@@ -1,7 +1,4 @@
 from multiprocessing import Process, Pipe
-import torch
-
-from a2c_ppo_acktr.envs import VecPyTorch
 from baselines.common.vec_env import CloudpickleWrapper, VecEnvWrapper, VecEnv
 from coinrun import setup_utils
 import coinrun.main_utils as utils
