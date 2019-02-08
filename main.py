@@ -22,7 +22,7 @@ from tensorboardX import SummaryWriter
 import wandb
 
 from dim import MIEstimator
-from env__util import CoinrunSubprocess
+from env__util import CoinrunSubprocess, get_env_fun
 
 
 def preprocessing():
@@ -66,7 +66,7 @@ def main():
     torch.set_num_threads(1)
     device = torch.device("cuda:0" if args.cuda else "cpu")
     envs = VecPyTorch(VecMonitor(CoinrunSubprocess(num_processes=args.num_processes, test=False), filename='monitor.csv'),
-                                     device=device)
+                      device=device)
     actor_critic = Policy(envs.observation_space.shape, envs.action_space,
         base_kwargs={'recurrent': args.recurrent_policy})
     actor_critic.to(device)
@@ -80,17 +80,17 @@ def main():
                         envs.observation_space.shape, envs.action_space,
                         actor_critic.recurrent_hidden_state_size)
 
-    mi_estimator = MIEstimator(encoder=actor_critic.base.main)
+    mi_estimator = MIEstimator(encoder=actor_critic.base.main, device=device)
     obs = envs.reset()
     rollouts.obs[0].copy_(obs)
     rollouts.to(device)
 
     episode_rewards = deque(maxlen=10)
+    # episodes will be of the shape (num_processes * episodes_in_process * episode_length)
     episodes = [[[]] for _ in range(args.num_processes)]
     start = time.time()
     for j in range(num_updates):
-        if j % 5 == 0:
-            episodes = [[[]] for _ in range(args.num_processes)]
+        episodes = [[[]] for _ in range(args.num_processes)]
         if args.use_linear_lr_decay:
             # decrease learning rate linearly
             update_linear_schedule(agent.optimizer, j, num_updates, args.lr)
@@ -112,9 +112,9 @@ def main():
                 if 'episode' in info.keys():
                     episode_rewards.append(info['episode']['r'])
                 if done[i] != 1:
-                    episodes[i][-1].append(obs)
+                    episodes[i][-1].append(obs[i])
                 else:
-                    episodes[i].append([obs])
+                    episodes[i].append([obs[i]])
 
             # If done then clean the history of observations.
             masks = torch.FloatTensor([[0.0] if done_ else [1.0]
@@ -129,7 +129,7 @@ def main():
 
         rollouts.compute_returns(next_value, args.use_gae, args.gamma, args.tau)
 
-        # mi_estimator.maximize_mi(episodes)
+        mi_estimator.maximize_mi(episodes)
         value_loss, action_loss, dist_entropy = agent.update(rollouts)
         rollouts.after_update()
 
