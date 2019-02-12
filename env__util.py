@@ -14,6 +14,7 @@ def get_env_fun(num_processes=8, test=False):
         return envs
     return _thunk
 
+
 def worker(remote, parent_remote, env_fn_wrapper):
     parent_remote.close()
     env = env_fn_wrapper.x()
@@ -39,6 +40,7 @@ def worker(remote, parent_remote, env_fn_wrapper):
         print('SubprocVecEnv worker: got KeyboardInterrupt')
     finally:
         env.close()
+
 
 class CoinrunSubprocess(VecEnv):
     """

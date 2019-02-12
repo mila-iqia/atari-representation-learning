@@ -39,8 +39,8 @@ class MIEstimator():
             episodes_batch = [episodes[x] for x in indices]
             pos_obs_batch, neg_obs_batch = [], []
             for episode in episodes_batch:
-                start_idx, start_idx_neg = np.random.choice(len(episode)-self.global_span), \
-                                           np.random.choice(len(episode)-self.global_span)
+                start_idx, start_idx_neg = np.random.choice(len(episode)-self.global_span+1), \
+                                           np.random.choice(len(episode)-self.global_span+1)
                 pos_obs_batch.append(torch.stack(episode[start_idx:start_idx+self.global_span])) # Append
                 neg_obs_batch.append(torch.stack(episode[start_idx_neg:start_idx_neg+self.global_span]))
 
@@ -52,6 +52,7 @@ class MIEstimator():
         JSD based maximization of MI for `self.epochs` number of epochs
         Equivalent to minimizing Binary Cross-Entropy
         """
+        epoch_loss = 0.
         for e in range(self.epochs):
             data_generator = self.data_generator(episodes)
             for batch in data_generator:
@@ -84,7 +85,9 @@ class MIEstimator():
                 self.optimizer.zero_grad()
                 loss = self.loss_fn(self.discriminator(samples), target)
                 loss.backward()
+                epoch_loss += loss.item()
                 self.optimizer.step()
+        return epoch_loss / self.epochs
 
 
 class Discriminator(nn.Module):

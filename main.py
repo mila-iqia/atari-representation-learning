@@ -19,7 +19,7 @@ from a2c_ppo_acktr.storage import RolloutStorage
 from a2c_ppo_acktr.utils import get_vec_normalize, update_linear_schedule
 
 from tensorboardX import SummaryWriter
-import wandb
+#import wandb
 
 from dim import MIEstimator
 from env__util import CoinrunSubprocess, get_env_fun
@@ -27,7 +27,7 @@ from env__util import CoinrunSubprocess, get_env_fun
 
 def preprocessing():
     args = get_args()
-    wandb.init(project="dim-rl", tags=['Baseline'])
+    #wandb.init(project="dim-rl", tags=['Baseline'])
     at_config = {}
     # wandb.config.update(at_config)
     writer = SummaryWriter(comment='runs')
@@ -100,7 +100,7 @@ def main():
 
         for step in range(args.num_steps):
             # Sample actions
-            value, action, action_log_prob, recurrent_hidden_states, actor_features = actor_critic.act(
+            value, action, action_log_prob, recurrent_hidden_states = actor_critic.act(
                     rollouts.obs[step],
                     rollouts.recurrent_hidden_states[step],
                     rollouts.masks[step])
@@ -205,7 +205,7 @@ def main():
                 format(len(eval_episode_rewards),
                        np.mean(eval_episode_rewards)))
             writer.add_scalar('data/mean_eval_episode_rewards', np.mean(eval_episode_rewards), total_num_steps)
-            wandb.log({'mean_eval_episode_rewards': np.mean(eval_episode_rewards)}, step=total_num_steps)
+            # wandb.log({'mean_eval_episode_rewards': np.mean(eval_episode_rewards)}, step=total_num_steps)
 
     writer.close()
 
