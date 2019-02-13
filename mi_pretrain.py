@@ -93,7 +93,7 @@ def main():
         episodes = [[[]] for _ in range(args.num_processes)]
         for step in range(args.num_steps):
             # Sample actions
-            action = torch.IntTensor([envs.action_space.sample() for _ in range(args.num_processes)]).unsqueeze(dim=1)
+            action = torch.IntTensor([np.random.choice([1, 3, 4]) for _ in range(args.num_processes)]).unsqueeze(dim=1)
 
             # Observe reward and next obs
             obs, reward, done, infos = envs.step(action)

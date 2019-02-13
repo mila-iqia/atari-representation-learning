@@ -44,8 +44,8 @@ class MIEstimator():
                 pos_obs_batch.append(torch.stack(episode[start_idx:start_idx+self.global_span])) # Append
                 neg_obs_batch.append(torch.stack(episode[start_idx_neg:start_idx_neg+self.global_span]))
 
-            # shape: mini_batch_size * global_span * obs_shape
-            yield torch.stack(pos_obs_batch), torch.stack(neg_obs_batch)
+            # shape: mini_batch_size * global_span * obs_shape, normalize inputs
+            yield torch.stack(pos_obs_batch) / 255., torch.stack(neg_obs_batch) / 255.
 
     def maximize_mi(self, episodes):
         """

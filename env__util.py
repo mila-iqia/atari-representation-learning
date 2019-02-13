@@ -1,4 +1,6 @@
 from multiprocessing import Process, Pipe
+
+from baselines.common.tile_images import tile_images
 from baselines.common.vec_env import CloudpickleWrapper, VecEnvWrapper, VecEnv
 from coinrun import setup_utils
 import coinrun.main_utils as utils
@@ -29,6 +31,8 @@ def worker(remote, parent_remote, env_fn_wrapper):
                 remote.send(ob)
             elif cmd == 'render':
                 remote.send(env.render(mode='rgb_array'))
+            elif cmd == 'get_images':
+                remote.send(env.get_images())
             elif cmd == 'close':
                 remote.close()
                 break
@@ -88,9 +92,21 @@ class CoinrunSubprocess(VecEnv):
         self.remote.send(('close', None))
         self.p.join()
 
+    def render(self, mode='human'):
+        imgs = self.get_images()
+        bigimg = tile_images(imgs)
+        if mode == 'human':
+            self.get_viewer().imshow(bigimg)
+            return self.get_viewer().isopen
+        elif mode == 'rgb_array':
+            return bigimg
+        else:
+            raise NotImplementedError
+
+
     def get_images(self):
         self._assert_not_closed()
-        self.remote.send(('render', None))
+        self.remote.send(('get_images', None))
         imgs = self.remote.recv()
         return imgs
 
