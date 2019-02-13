@@ -106,11 +106,22 @@ def main():
                 else:
                     episodes[i].append([obs[i]])
 
-        mi_loss = mi_estimator.maximize_mi(episodes)
+        mi_loss, accuracy = mi_estimator.maximize_mi(episodes)
 
+        total_num_steps = (j + 1) * args.num_processes * args.num_steps
         if j % args.log_interval == 0 and len(episode_rewards) > 1:
             end = time.time()
-            print("Updates {}, Epoch Loss: {}\n".format(j, mi_loss))
+            print(
+                "Updates {}, num timesteps {}, FPS {} \n Last {} training episodes: mean/median reward {:.1f}/{:.1f}, min/max reward {:.1f}/{:.1f}\n".
+                format(j, total_num_steps,
+                       int(total_num_steps / (end - start)),
+                       len(episode_rewards),
+                       np.mean(episode_rewards),
+                       np.median(episode_rewards),
+                       np.min(episode_rewards),
+                       np.max(episode_rewards))
+            )
+            print("MI Loss:{}, Disc Accuracy: {}".format(mi_loss, accuracy))
             writer.add_scalar('data/mi_loss', mi_loss, j)
 
     writer.close()

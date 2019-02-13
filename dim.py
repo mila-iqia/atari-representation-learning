@@ -4,6 +4,14 @@ import numpy as np
 from a2c_ppo_acktr.utils import init
 from torch.utils.data import BatchSampler, RandomSampler
 import itertools
+import random
+
+
+def calculate_accuracy(preds, y):
+    preds = preds >= 0.5
+    labels = y >= 0.5
+    acc = preds.eq(labels).sum().float() / labels.numel()
+    return acc
 
 
 class MIEstimator():
@@ -42,7 +50,7 @@ class MIEstimator():
                 start_idx, start_idx_neg = np.random.choice(len(episode)-self.global_span+1), \
                                            np.random.choice(len(episode)-self.global_span+1)
                 pos_obs_batch.append(torch.stack(episode[start_idx:start_idx+self.global_span])) # Append
-                neg_obs_batch.append(torch.stack(episode[start_idx_neg:start_idx_neg+self.global_span]))
+                neg_obs_batch.append(torch.stack(random.sample(episode, self.global_span)))
 
             # shape: mini_batch_size * global_span * obs_shape, normalize inputs
             yield torch.stack(pos_obs_batch) / 255., torch.stack(neg_obs_batch) / 255.
@@ -52,7 +60,7 @@ class MIEstimator():
         JSD based maximization of MI for `self.epochs` number of epochs
         Equivalent to minimizing Binary Cross-Entropy
         """
-        epoch_loss = 0.
+        epoch_loss, accuracy, steps = 0., 0., 0
         for e in range(self.epochs):
             data_generator = self.data_generator(episodes)
             for batch in data_generator:
@@ -85,9 +93,12 @@ class MIEstimator():
                 self.optimizer.zero_grad()
                 loss = self.loss_fn(self.discriminator(samples), target)
                 loss.backward()
-                epoch_loss += loss.item()
+                epoch_loss += loss.detach().item()
                 self.optimizer.step()
-        return epoch_loss / self.epochs
+                preds = torch.sigmoid(self.discriminator(samples))
+                accuracy += calculate_accuracy(preds, target)
+                steps += 1
+        return epoch_loss / steps, accuracy / steps
 
 
 class Discriminator(nn.Module):
@@ -101,7 +112,7 @@ class Discriminator(nn.Module):
 
         self.network = nn.Sequential(
             init_(nn.Linear(num_inputs, hidden_size)),
-            nn.Tanh(),
+            nn.ReLU(),
             init_(nn.Linear(hidden_size, 1)),
         )
 
