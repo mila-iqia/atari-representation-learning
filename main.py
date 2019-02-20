@@ -202,8 +202,8 @@ def main():
             eval_envs.close()
 
             print(" Evaluation using {} episodes: mean reward {:.5f}\n".
-                format(len(eval_episode_rewards),
-                       np.mean(eval_episode_rewards)))
+                    format(len(eval_episode_rewards),
+                           np.mean(eval_episode_rewards)))
             writer.add_scalar('data/mean_eval_episode_rewards', np.mean(eval_episode_rewards), total_num_steps)
             # wandb.log({'mean_eval_episode_rewards': np.mean(eval_episode_rewards)}, step=total_num_steps)
 

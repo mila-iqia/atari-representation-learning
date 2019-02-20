@@ -6,12 +6,7 @@ from torch.utils.data import BatchSampler, RandomSampler
 import itertools
 import random
 
-
-def calculate_accuracy(preds, y):
-    preds = preds >= 0.5
-    labels = y >= 0.5
-    acc = preds.eq(labels).sum().float() / labels.numel()
-    return acc
+from utils import calculate_accuracy
 
 
 class MIEstimator():
@@ -21,8 +16,9 @@ class MIEstimator():
         self.device = device
         self.encoder = encoder
         self.feature_size = feature_size
-        self.discriminator = Discriminator(self.feature_size*2).to(device)
-        self.optimizer = torch.optim.Adam(list(self.encoder.parameters()) + list(self.discriminator.parameters()), lr=lr)
+        self.discriminator = Discriminator(self.feature_size * 2).to(device)
+        self.optimizer = torch.optim.Adam(list(self.encoder.parameters()) + list(self.discriminator.parameters()),
+                                          lr=lr)
         self.loss_fn = nn.BCEWithLogitsLoss()
         self.global_span = global_span
         self.epochs = epochs
@@ -47,9 +43,9 @@ class MIEstimator():
             episodes_batch = [episodes[x] for x in indices]
             pos_obs_batch, neg_obs_batch = [], []
             for episode in episodes_batch:
-                start_idx, start_idx_neg = np.random.choice(len(episode)-self.global_span+1), \
-                                           np.random.choice(len(episode)-self.global_span+1)
-                pos_obs_batch.append(torch.stack(episode[start_idx:start_idx+self.global_span])) # Append
+                start_idx, start_idx_neg = np.random.choice(len(episode) - self.global_span + 1), \
+                                           np.random.choice(len(episode) - self.global_span + 1)
+                pos_obs_batch.append(torch.stack(episode[start_idx:start_idx + self.global_span]))  # Append
                 neg_obs_batch.append(torch.stack(random.sample(episode, self.global_span)))
 
             # shape: mini_batch_size * global_span * obs_shape, normalize inputs
@@ -85,8 +81,8 @@ class MIEstimator():
                 assert neg_samples.shape == pos_samples.shape
 
                 # Create target tensor
-                target = torch.cat((torch.ones(self.mini_batch_size*self.global_span, 1),
-                                    torch.zeros(self.mini_batch_size*self.global_span, 1)), dim=0).to(self.device)
+                target = torch.cat((torch.ones(self.mini_batch_size * self.global_span, 1),
+                                    torch.zeros(self.mini_batch_size * self.global_span, 1)), dim=0).to(self.device)
                 # Concatenate positive and negative samples along 0th dimension to get data to feed to the disc
                 samples = torch.cat((pos_samples, neg_samples), dim=0)
 
@@ -118,4 +114,3 @@ class Discriminator(nn.Module):
 
     def forward(self, x):
         return self.network(x)
-
