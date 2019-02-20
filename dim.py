@@ -78,7 +78,6 @@ class MIEstimator():
                 neg_features_batch = neg_features_batch.view(self.mini_batch_size, self.global_span, -1)
                 neg_samples = torch.cat((neg_features_batch, global_features), dim=-1)
                 neg_samples = neg_samples.view(-1, neg_samples.shape[-1])
-                assert neg_samples.shape == pos_samples.shape
 
                 # Create target tensor
                 target = torch.cat((torch.ones(self.mini_batch_size * self.global_span, 1),
@@ -98,18 +97,13 @@ class MIEstimator():
 
 
 class Discriminator(nn.Module):
-    def __init__(self, num_inputs, hidden_size=512):
+    def __init__(self, num_inputs, hidden_size=256):
         super(Discriminator, self).__init__()
 
-        init_ = lambda m: init(m,
-                               nn.init.orthogonal_,
-                               lambda x: nn.init.constant_(x, 0),
-                               np.sqrt(2))
-
         self.network = nn.Sequential(
-            init_(nn.Linear(num_inputs, hidden_size)),
+            nn.Linear(num_inputs, hidden_size),
             nn.ReLU(),
-            init_(nn.Linear(hidden_size, 1)),
+            nn.Linear(hidden_size, 1)
         )
 
     def forward(self, x):
