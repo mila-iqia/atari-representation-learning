@@ -2,8 +2,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
-from a2c_ppo_acktr.utils import init
-
 
 class Flatten(nn.Module):
     def forward(self, x):
@@ -45,18 +43,12 @@ class ImpalaCNN(nn.Module):
     def __init__(self, input_channels, hidden_size=512):
         super(ImpalaCNN, self).__init__()
 
-        init_ = lambda m: init(m,
-                               nn.init.orthogonal_,
-                               lambda x: nn.init.constant_(x, 0),
-                               nn.init.calculate_gain('relu'))
-
         self.depths = [16, 32, 32]
         self.layer1 = self._make_layer(input_channels, self.depths[0])
         self.layer2 = self._make_layer(self.depths[0], self.depths[1])
         self.layer3 = self._make_layer(self.depths[1], self.depths[2])
         self.flatten = Flatten()
-        self.final_linear = init_(nn.Linear(self.depths[2] * 7 * 7, hidden_size))
-
+        self.final_linear = nn.Linear(self.depths[2] * 7 * 7, hidden_size)
         self.train()
 
     def _make_layer(self, in_channels, depth):
@@ -73,5 +65,4 @@ class ImpalaCNN(nn.Module):
         out = inputs
         out = self.layer3(self.layer2(self.layer1(out)))
         out = F.relu(self.final_linear(self.flatten(out)))
-
         return out
