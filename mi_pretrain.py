@@ -1,3 +1,5 @@
+import random
+from itertools import chain
 import time
 from collections import deque
 
@@ -14,7 +16,7 @@ from a2c_ppo_acktr.storage import RolloutStorage
 from dim import MIEstimator
 from encoders import ImpalaCNN
 from env__util import CoinrunSubprocess
-from utils import preprocess
+from utils import preprocess, visualize_activation_maps
 
 
 def main():
@@ -25,18 +27,12 @@ def main():
         VecMonitor(CoinrunSubprocess(num_processes=args.num_processes, test=False), filename='monitor.csv'),
         device=device)
 
-    rollouts = RolloutStorage(args.num_steps, args.num_processes,
-                              envs.observation_space.shape, envs.action_space,
-                              512)
-
-    mi_estimator = MIEstimator(encoder=ImpalaCNN(3), device=device)
+    encoder = ImpalaCNN(3).to(device)
+    mi_estimator = MIEstimator(encoder=encoder, device=device)
     obs = envs.reset()
-    rollouts.obs[0].copy_(obs)
-    rollouts.to(device)
 
     episode_rewards = deque(maxlen=10)
     # episodes will be of the shape (num_processes * episodes_in_process * episode_length)
-    episodes = [[[]] for _ in range(args.num_processes)]
     start = time.time()
     for j in range(num_updates):
         episodes = [[[]] for _ in range(args.num_processes)]
@@ -56,6 +52,9 @@ def main():
                     episodes[i].append([obs[i]])
 
         mi_loss, accuracy = mi_estimator.maximize_mi(episodes)
+        # Sample 20 random frames
+        frames = torch.stack(random.sample(list(chain.from_iterable(list(chain.from_iterable(episodes)))), 20))
+        visualize_activation_maps(encoder, frames)
 
         total_num_steps = (j + 1) * args.num_processes * args.num_steps
         if j % args.log_interval == 0 and len(episode_rewards) > 1:

@@ -4,7 +4,11 @@ import os
 import torch
 from a2c_ppo_acktr.arguments import get_args
 from tensorboardX import SummaryWriter
+from torchvision.utils import make_grid
 import torch.nn.functional as F
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
+import random
 
 
 def preprocess():
@@ -52,5 +56,15 @@ def save_model(model, save_dir, model_name):
     pass
 
 
-def visualize_activation_maps(model, input_obs):
-    fmap = F.relu(model[4](F.relu(model[2](F.relu(model[0](input_obs))))))
+def visualize_activation_maps(encoder, input_obs_batch):
+    scaled_images = input_obs_batch / 255.
+    fmap = F.relu(encoder.layer3(encoder.layer2(encoder.layer1(scaled_images)))).detach()
+    out_channels = fmap.shape[1]
+    # upsample and add a dummy channel dimension
+    fmap_upsampled = F.interpolate(fmap, size=input_obs_batch.shape[-2:], mode='bilinear').unsqueeze(dim=2)
+    for i in range(input_obs_batch.shape[0]):
+        fmap_grid = make_grid(fmap_upsampled[i], normalize=True)
+        img_grid = make_grid([scaled_images[i]] * out_channels)
+        plt.imshow(img_grid.cpu().numpy().transpose([1, 2, 0]))
+        plt.imshow(fmap_grid.cpu().numpy().transpose([1, 2, 0]), cmap='jet', alpha=0.7)
+        plt.savefig('act_map' + str(i) + '.png')
