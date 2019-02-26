@@ -28,7 +28,7 @@ def main():
         device=device)
 
     encoder = ImpalaCNN(3).to(device)
-    mi_estimator = MIEstimator(encoder=encoder, device=device)
+    mi_estimator = MIEstimator(encoder=ImpalaCNN(3), global_span=16, device=device)
     obs = envs.reset()
 
     episode_rewards = deque(maxlen=10)
