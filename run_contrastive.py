@@ -24,7 +24,7 @@ def main():
     args, writer, num_updates, eval_log_dir = preprocess()
     device = torch.device("cuda:0" if args.cuda else "cpu")
     envs = make_vec_envs(args.env_name, args.seed, args.num_processes,
-                         args.gamma, args.log_dir, args.add_timestep, device, False)
+                         args.gamma, args.log_dir, args.add_timestep, torch.device('cpu'), False)
     encoder = NatureCNN(envs.observation_space.shape[0])
     encoder.to(device)
     torch.set_num_threads(1)
@@ -53,8 +53,8 @@ def main():
     episodes = [[[]] for _ in range(args.num_processes)]
     for step in range(args.num_env_steps // args.num_processes):
         # Observe reward and next obs
-        action = torch.from_numpy(np.array([envs.action_space.sample() for _ in range(args.num_processes)]))\
-            .unsqueeze(dim=1).to(device)
+        action = torch.tensor(np.array([envs.action_space.sample() for _ in range(args.num_processes)])) \
+                              .unsqueeze(dim=1).to(device)
         obs, reward, done, infos = envs.step(action)
         for i, info in enumerate(infos):
             if 'episode' in info.keys():
@@ -63,6 +63,11 @@ def main():
                 episodes[i][-1].append(obs[i])
             else:
                 episodes[i].append([obs[i]])
+
+    for p in range(args.num_processes):
+        for e in range(len(episodes[p])):
+            episodes[p][e] = torch.stack(episodes[p][e]).to(device)
+
     end = time.time()
     print('Took {} seconds to collect samples'.format(end - start))
     print('-------Starting Contrastive Training----------')
