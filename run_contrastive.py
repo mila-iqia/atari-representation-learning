@@ -52,7 +52,7 @@ def main():
     episodes = [[[]] for _ in range(args.num_processes)]
     for step in range(args.num_env_steps // args.num_processes):
         # Observe reward and next obs
-        action = torch.tensor(np.array([envs.action_space.sample() for _ in range(args.num_processes)])) \
+        action = torch.tensor(np.array([np.random.randint(1, envs.action_space.n) for _ in range(args.num_processes)])) \
                               .unsqueeze(dim=1).to(device)
         obs, reward, done, infos = envs.step(action)
         for i, info in enumerate(infos):
