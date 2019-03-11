@@ -29,7 +29,7 @@ class ContrastiveTrainer():
         self.mini_batch_size = mini_batch_size
         self.device = device
         self.optimizer = torch.optim.Adam(list(self.classifier.parameters()) + list(self.encoder.parameters()),
-                                          lr=lr)
+                                          lr=lr, eps=1e-5)
         self.loss_fn = nn.BCEWithLogitsLoss()
 
     def generate_batch(self, episodes):
