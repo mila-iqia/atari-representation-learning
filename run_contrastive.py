@@ -21,15 +21,30 @@ import wandb
 
 
 def main():
-    wandb.init(project="rl-representation-learning", tags=['atari'])
     args, writer, num_updates, eval_log_dir = preprocess()
-    torch.set_num_threads(1)
     device = torch.device("cuda:0" if args.cuda else "cpu")
     envs = make_vec_envs(args.env_name, args.seed, args.num_processes,
                          args.gamma, args.log_dir, args.add_timestep, device, False)
-    encoder = NatureCNN(3)
+    encoder = NatureCNN(envs.observation_space.shape[0])
     encoder.to(device)
-    trainer = ContrastiveTrainer(encoder)
+    torch.set_num_threads(1)
+
+    wandb.init(project="rl-representation-learning", tags=['pretraining-only'])
+    config = {
+        'pretraining_steps': args.num_steps,
+        'env_name': args.env_name,
+        'mode': 'pcl',
+        'encoder': encoder.__class__.__name__,
+        'obs_space': str(envs.observation_space.shape),
+        'epochs': 100,
+        'lr': 5e-3,
+        'mini_batch_size': 256,
+        'optimizer': 'Adam'
+    }
+    wandb.config.update(config)
+
+    trainer = ContrastiveTrainer(encoder, mode=config['mode'], epochs=config['epochs'], lr=config['lr'],
+                                 mini_batch_size=config['mini_batch_size'], device=device)
 
     obs = envs.reset()
     episode_rewards = deque(maxlen=10)
@@ -37,7 +52,8 @@ def main():
     episodes = [[[]] for _ in range(args.num_processes)]
     for step in range(args.num_steps):
         # Observe reward and next obs
-        obs, reward, done, infos = envs.step(torch.tensor([envs.action_space.sample() for _ in range(args.num_processes)]).unsqueeze(dim=1))
+        obs, reward, done, infos = envs.step(torch.tensor([envs.action_space.sample() for _ in range(args.num_processes)])
+                                             .unsqueeze(dim=1))
         for i, info in enumerate(infos):
             if 'episode' in info.keys():
                 episode_rewards.append(info['episode']['r'])
@@ -46,7 +62,7 @@ def main():
             else:
                 episodes[i].append([obs[i]])
 
-    trainer.train(episodes)
+    trainer.train(episodes, wandb)
     # Sample 20 random frames
     frames = torch.stack(random.sample(list(chain.from_iterable(list(chain.from_iterable(episodes)))), 20))
     visualize_activation_maps(encoder, frames, wandb)

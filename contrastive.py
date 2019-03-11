@@ -34,12 +34,10 @@ class ContrastiveTrainer():
 
     def generate_batch(self, episodes):
         total_steps = sum([len(e) for e in episodes])
-        n_batches = total_steps // self.mini_batch_size
-        print(total_steps, n_batches)
         # Episode sampler
         # Sample `num_samples` episodes then batchify them with `self.mini_batch_size` episodes per batch
         sampler = BatchSampler(RandomSampler(range(len(episodes)),
-                                             replacement=True, num_samples=1024),
+                                             replacement=True, num_samples=512),
                                self.mini_batch_size, drop_last=True)
         for indices in sampler:
             episodes_batch = [episodes[x] for x in indices]
@@ -60,12 +58,12 @@ class ContrastiveTrainer():
             yield torch.stack(x_t) / 255., torch.stack(x_tprev) / 255., torch.stack(x_that) / 255., \
                   torch.Tensor(ts), torch.Tensor(thats)
 
-    def train(self, episodes):
+    def train(self, episodes, wandb):
         # Convert to 2d list from 3d list
         episodes = list(itertools.chain.from_iterable(episodes))
         for e in range(self.epochs):
             epoch_loss, accuracy, steps = 0., 0., 0
-            data_generator = self.data_generator(episodes)
+            data_generator = self.generate_batch(episodes)
             for x_t, x_tprev, x_that, ts, thats in data_generator:
                 f_t, f_t_prev = self.encoder(x_t), self.encoder(x_tprev)
                 f_t_2, f_t_hat = self.encoder(x_t), self.encoder(x_that)
@@ -90,6 +88,7 @@ class ContrastiveTrainer():
                 accuracy += calculate_accuracy(preds, target)
                 steps += 1
             print('Epoch: {}, Loss: {}, Accuracy: {}'.format(e, epoch_loss / steps, accuracy / steps))
+            wandb.log({'Accuracy': accuracy / steps, 'Epoch': e})
 
 
 class Discriminator(nn.Module):
