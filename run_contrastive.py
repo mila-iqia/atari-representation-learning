@@ -37,7 +37,7 @@ def main():
         'encoder': encoder.__class__.__name__,
         'obs_space': str(envs.observation_space.shape),
         'epochs': 50,
-        'lr': 1e-3,
+        'lr': 3e-4,
         'mini_batch_size': 64,
         'optimizer': 'Adam'
     }
@@ -63,12 +63,12 @@ def main():
             else:
                 episodes[i].append([obs[i]])
     end = time.time()
-    print('Took {} seconds to collect samples', end - start)
+    print('Took {} seconds to collect samples'.format(end - start))
     print('-------Starting Contrastive Training----------')
     trainer.train(episodes, wandb)
     print('-------Contrastive Training Finished----------')
     end_training = time.time()
-    print('Took {} seconds to train', end_training - end)
+    print('Took {} seconds to train'.format(end_training - end))
     # Sample 20 random frames
     frames = torch.stack(random.sample(list(chain.from_iterable(list(chain.from_iterable(episodes)))), 20))
     visualize_activation_maps(encoder, frames, wandb)
