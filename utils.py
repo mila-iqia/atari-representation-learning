@@ -1,3 +1,4 @@
+import argparse
 import copy
 import glob
 import os
@@ -16,7 +17,16 @@ from a2c_ppo_acktr.utils import get_vec_normalize
 
 
 def preprocess():
-    args = get_args()
+    parser = get_args()
+    config_parser = argparse.ArgumentParser(parents=[parser])
+    config_parser.add_argument('--contrastive-lr', type=float, default=5e-4,
+                        help='learning rate (default: 5e-4)')
+    config_parser.add_argument('--contrastive-bs', type=int, default=64,
+                        help='number of batches for CL (default: 64)')
+    config_parser.add_argument('--contrastive-epochs', type=int, default=200,
+                        help='number of epochs for CL (default: 200)')
+    args = config_parser.parse_args()
+    args.cuda = not args.no_cuda and torch.cuda.is_available()
     writer = SummaryWriter(comment='runs')
 
     assert args.algo in ['a2c', 'ppo', 'acktr']

@@ -36,9 +36,9 @@ def main():
         'mode': 'pcl',
         'encoder': encoder.__class__.__name__,
         'obs_space': str(envs.observation_space.shape),
-        'epochs': 50,
-        'lr': 3e-4,
-        'mini_batch_size': 64,
+        'epochs': args.contrastive_epochs,
+        'lr': args.contrastive_lr,
+        'mini_batch_size': args.contrastive_bs,
         'optimizer': 'Adam'
     }
     wandb.config.update(config)
