@@ -34,10 +34,11 @@ class ContrastiveTrainer():
 
     def generate_batch(self, episodes):
         total_steps = sum([len(e) for e in episodes])
+        print('Total Steps: {}', total_steps)
         # Episode sampler
         # Sample `num_samples` episodes then batchify them with `self.mini_batch_size` episodes per batch
         sampler = BatchSampler(RandomSampler(range(len(episodes)),
-                                             replacement=True, num_samples=512),
+                                             replacement=True, num_samples=total_steps),
                                self.mini_batch_size, drop_last=True)
         for indices in sampler:
             episodes_batch = [episodes[x] for x in indices]

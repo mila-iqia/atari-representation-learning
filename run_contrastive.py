@@ -36,7 +36,7 @@ def main():
         'mode': 'pcl',
         'encoder': encoder.__class__.__name__,
         'obs_space': str(envs.observation_space.shape),
-        'epochs': 200,
+        'epochs': 50,
         'lr': 1e-3,
         'mini_batch_size': 64,
         'optimizer': 'Adam'
@@ -49,8 +49,9 @@ def main():
     obs = envs.reset()
     episode_rewards = deque(maxlen=10)
     start = time.time()
+    print('-------Collecting samples----------')
     episodes = [[[]] for _ in range(args.num_processes)]
-    for step in range(args.num_env_steps):
+    for step in range(args.num_env_steps // args.num_processes):
         # Observe reward and next obs
         obs, reward, done, infos = envs.step(torch.tensor([envs.action_space.sample() for _ in range(args.num_processes)])
                                              .unsqueeze(dim=1))
@@ -61,8 +62,13 @@ def main():
                 episodes[i][-1].append(obs[i])
             else:
                 episodes[i].append([obs[i]])
-
+    end = time.time()
+    print('Took {} seconds to collect samples', end - start)
+    print('-------Starting Contrastive Training----------')
     trainer.train(episodes, wandb)
+    print('-------Contrastive Training Finished----------')
+    end_training = time.time()
+    print('Took {} seconds to train', end_training - end)
     # Sample 20 random frames
     frames = torch.stack(random.sample(list(chain.from_iterable(list(chain.from_iterable(episodes)))), 20))
     visualize_activation_maps(encoder, frames, wandb)
