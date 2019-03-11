@@ -16,7 +16,6 @@ from utils import preprocess, save_model, evaluate_policy, visualize_activation_
 from encoders import NatureCNN, ImpalaCNN
 from contrastive import ContrastiveTrainer
 
-from tensorboardX import SummaryWriter
 import wandb
 
 
@@ -78,7 +77,7 @@ def main():
     # Sample 20 random frames
     frames = torch.stack(random.sample(list(chain.from_iterable(list(chain.from_iterable(episodes)))), 20))
     visualize_activation_maps(encoder, frames, wandb)
-    writer.close()
+    # writer.close()
 
 
 if __name__ == "__main__":

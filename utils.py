@@ -29,7 +29,7 @@ def preprocess():
                                help='Default CUDA device index')
     args = config_parser.parse_args()
     args.cuda = not args.no_cuda and torch.cuda.is_available()
-    writer = SummaryWriter(comment='runs')
+    writer = None
 
     assert args.algo in ['a2c', 'ppo', 'acktr']
     if args.recurrent_policy:
