@@ -43,22 +43,23 @@ def preprocess():
     if args.cuda and torch.cuda.is_available() and args.cuda_deterministic:
         torch.backends.cudnn.benchmark = False
         torch.backends.cudnn.deterministic = True
-    try:
-        os.makedirs(args.log_dir)
-    except OSError:
-        files = glob.glob(os.path.join(args.log_dir, '*.monitor.csv'))
-        for f in files:
-            os.remove(f)
+    # try:
+    #     os.makedirs(args.log_dir)
+    # except OSError:
+    #     files = glob.glob(os.path.join(args.log_dir, '*.monitor.csv'))
+    #     for f in files:
+    #         os.remove(f)
+    #
+    # eval_log_dir = args.log_dir + "_eval"
+    #
+    # try:
+    #     os.makedirs(eval_log_dir)
+    # except OSError:
+    #     files = glob.glob(os.path.join(eval_log_dir, '*.monitor.csv'))
+    #     for f in files:
+    #         os.remove(f)
 
-    eval_log_dir = args.log_dir + "_eval"
-
-    try:
-        os.makedirs(eval_log_dir)
-    except OSError:
-        files = glob.glob(os.path.join(eval_log_dir, '*.monitor.csv'))
-        for f in files:
-            os.remove(f)
-    return args, writer, num_updates, eval_log_dir
+    return args, writer, num_updates, ''
 
 
 def calculate_accuracy(preds, y):
