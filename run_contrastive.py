@@ -53,8 +53,10 @@ def main():
     episodes = [[[]] for _ in range(args.num_processes)]
     for step in range(args.num_env_steps // args.num_processes):
         # Observe reward and next obs
-        obs, reward, done, infos = envs.step(torch.tensor([envs.action_space.sample() for _ in range(args.num_processes)])
-                                             .unsqueeze(dim=1))
+        obs, reward, done, infos = envs.step(
+            torch.tensor([envs.action_space.sample() for _ in range(args.num_processes)],
+                         device=device)
+            .unsqueeze(dim=1))
         for i, info in enumerate(infos):
             if 'episode' in info.keys():
                 episode_rewards.append(info['episode']['r'])
