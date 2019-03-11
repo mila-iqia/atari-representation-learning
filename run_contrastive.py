@@ -22,7 +22,7 @@ import wandb
 
 def main():
     args, writer, num_updates, eval_log_dir = preprocess()
-    device = torch.device("cuda:"+str(args.cuda_device) if args.cuda else "cpu")
+    device = torch.device("cuda:"+str(args.cuda_id) if args.cuda else "cpu")
     envs = make_vec_envs(args.env_name, args.seed, args.num_processes,
                          args.gamma, args.log_dir, args.add_timestep, torch.device('cpu'), False)
     encoder = NatureCNN(envs.observation_space.shape[0])
