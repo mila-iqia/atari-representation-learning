@@ -25,7 +25,7 @@ def preprocess():
                         help='number of batches for CL (default: 64)')
     config_parser.add_argument('--contrastive-epochs', type=int, default=200,
                         help='number of epochs for CL (default: 200)')
-    config_parser.add_argument('--cuda-device-index', type=int, default=0,
+    config_parser.add_argument('--cuda-id', type=int, default=0,
                                help='Default CUDA device index')
     args = config_parser.parse_args()
     args.cuda = not args.no_cuda and torch.cuda.is_available()
