@@ -88,7 +88,7 @@ class ContrastiveTrainer():
                 accuracy += calculate_accuracy(preds, target)
                 steps += 1
             print('Epoch: {}, Loss: {}, Accuracy: {}'.format(e, epoch_loss / steps, accuracy / steps))
-            wandb.log({'Accuracy': accuracy / steps, 'Epoch': e})
+            wandb.log({'Accuracy': accuracy / steps}, step=e)
 
 
 class Discriminator(nn.Module):
