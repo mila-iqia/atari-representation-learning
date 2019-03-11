@@ -36,9 +36,9 @@ def main():
         'mode': 'pcl',
         'encoder': encoder.__class__.__name__,
         'obs_space': str(envs.observation_space.shape),
-        'epochs': 100,
-        'lr': 5e-3,
-        'mini_batch_size': 256,
+        'epochs': 200,
+        'lr': 1e-3,
+        'mini_batch_size': 64,
         'optimizer': 'Adam'
     }
     wandb.config.update(config)
@@ -50,7 +50,7 @@ def main():
     episode_rewards = deque(maxlen=10)
     start = time.time()
     episodes = [[[]] for _ in range(args.num_processes)]
-    for step in range(args.num_steps):
+    for step in range(args.num_env_steps):
         # Observe reward and next obs
         obs, reward, done, infos = envs.step(torch.tensor([envs.action_space.sample() for _ in range(args.num_processes)])
                                              .unsqueeze(dim=1))
