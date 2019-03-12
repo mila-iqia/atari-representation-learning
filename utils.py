@@ -2,6 +2,8 @@ import argparse
 import copy
 import glob
 import os
+import subprocess
+
 import torch
 from a2c_ppo_acktr.arguments import get_args
 from tensorboardX import SummaryWriter
@@ -138,4 +140,14 @@ def visualize_activation_maps(encoder, input_obs_batch, wandb):
         img_grid = make_grid([scaled_images[i]] * out_channels)
         plt.imshow(img_grid.cpu().numpy().transpose([1, 2, 0]))
         plt.imshow(fmap_grid.cpu().numpy().transpose([1, 2, 0]), cmap='jet', alpha=0.5)
+        plt.savefig('act_maps/' + 'file%02d.png' % i)
         wandb.log({'actmap': wandb.Image(plt, caption='Activation Map')})
+    generate_video()
+
+
+def generate_video():
+    os.chdir("act_maps")
+    subprocess.call([
+        'ffmpeg', '-framerate', '8', '-i', 'file%02d.png', '-r', '30', '-pix_fmt', 'yuv420p',
+        'video_name.mp4'
+    ])

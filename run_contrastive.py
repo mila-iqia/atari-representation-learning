@@ -30,7 +30,7 @@ def main():
 
     wandb.init(project="rl-representation-learning", tags=['pretraining-only'])
     config = {
-        'pretraining_steps': args.num_steps,
+        'total_steps': args.num_env_steps,
         'env_name': args.env_name,
         'mode': 'pcl',
         'encoder': encoder.__class__.__name__,
@@ -74,8 +74,8 @@ def main():
     print('-------Contrastive Training Finished----------')
     end_training = time.time()
     print('Took {} seconds to train'.format(end_training - end))
-    # Sample 20 random frames
-    frames = torch.stack(random.sample(list(chain.from_iterable(list(chain.from_iterable(episodes)))), 20))
+    episodes = list(chain.from_iterable(episodes))
+    frames = episodes[200][:60, :, :, :]
     visualize_activation_maps(encoder, frames, wandb)
     # writer.close()
 
