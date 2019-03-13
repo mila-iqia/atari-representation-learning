@@ -21,14 +21,14 @@ from a2c_ppo_acktr.utils import get_vec_normalize, update_linear_schedule
 from tensorboardX import SummaryWriter
 #import wandb
 
-from dim import MIEstimator
-from env__util import CoinrunSubprocess, get_env_fun
+from dimrl.dim import MIEstimator
+from dimrl.env__util import CoinrunSubprocess, get_env_fun
 
 
 def preprocessing():
     args = get_args()
-    #wandb.init(project="dim-rl", tags=['Baseline'])
-    at_config = {}
+    # wandb.init(project="dim-rl", tags=['Baseline'])
+    # at_config = {}
     # wandb.config.update(at_config)
     writer = SummaryWriter(comment='runs')
 

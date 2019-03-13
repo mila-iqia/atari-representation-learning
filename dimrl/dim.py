@@ -6,7 +6,7 @@ from torch.utils.data import BatchSampler, RandomSampler
 import itertools
 import random
 
-from utils import calculate_accuracy
+from .utils import calculate_accuracy
 
 
 class MIEstimator():

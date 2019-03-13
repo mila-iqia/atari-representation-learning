@@ -4,7 +4,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 from torch.utils.data import RandomSampler, BatchSampler
-from utils import calculate_accuracy
+from .utils import calculate_accuracy
 
 
 class Classifier(nn.Module):

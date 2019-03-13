@@ -13,10 +13,10 @@ from a2c_ppo_acktr.envs import VecPyTorch
 from a2c_ppo_acktr.model import Policy
 from a2c_ppo_acktr.storage import RolloutStorage
 
-from dim import MIEstimator
-from encoders import ImpalaCNN
-from env__util import CoinrunSubprocess
-from utils import preprocess, visualize_activation_maps
+from dimrl.dim import MIEstimator
+from dimrl.encoders import ImpalaCNN
+from dimrl.env__util import CoinrunSubprocess
+from dimrl.utils import preprocess, visualize_activation_maps
 
 
 def main():

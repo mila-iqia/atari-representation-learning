@@ -12,9 +12,9 @@ from a2c_ppo_acktr.envs import make_vec_envs, VecPyTorch
 from a2c_ppo_acktr.model import Policy
 from a2c_ppo_acktr.storage import RolloutStorage
 from a2c_ppo_acktr.utils import get_vec_normalize, update_linear_schedule
-from utils import preprocess, save_model, evaluate_policy, visualize_activation_maps
-from encoders import NatureCNN, ImpalaCNN
-from contrastive import ContrastiveTrainer
+from dimrl.utils import preprocess, save_model, evaluate_policy, visualize_activation_maps
+from dimrl.encoders import NatureCNN, ImpalaCNN
+from dimrl.contrastive import ContrastiveTrainer
 
 import wandb
 
