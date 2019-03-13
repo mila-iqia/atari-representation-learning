@@ -1,8 +1,10 @@
 import torch.nn as nn
 import torch
+import numpy as np
 
 from a2c_ppo_acktr.distributions import Categorical, DiagGaussian, Bernoulli
 from a2c_ppo_acktr.model import Policy, NNBase
+from a2c_ppo_acktr.utils import init
 
 
 class LatentPolicy(Policy):
@@ -27,22 +29,29 @@ class LatentPolicy(Policy):
 
 
 class CNNBase(NNBase):
-    def __init__(self, encoder, hidden_size=512):
+    def __init__(self, encoder, hidden_size=256):
         super().__init__(False, encoder.hidden_size, encoder.hidden_size)
         self.encoder = encoder
+        init_ = lambda m: init(m,
+                               nn.init.orthogonal_,
+                               lambda x: nn.init.constant_(x, 0),
+                               np.sqrt(2))
+
         self.actor = nn.Sequential(
-            nn.Linear(self.encoder.hidden_size, hidden_size),
-            nn.ReLU(),
-            nn.Linear(hidden_size, hidden_size),
-            nn.ReLU()
+            init_(nn.Linear(self.encoder.hidden_size, hidden_size)),
+            nn.Tanh(),
+            init_(nn.Linear(hidden_size, hidden_size)),
+            nn.Tanh()
         )
 
         self.critic = nn.Sequential(
-            nn.Linear(self.encoder.hidden_size, hidden_size),
-            nn.ReLU(),
-            nn.Linear(hidden_size, hidden_size),
-            nn.ReLU()
+            init_(nn.Linear(self.encoder.hidden_size, hidden_size)),
+            nn.Tanh(),
+            init_(nn.Linear(hidden_size, hidden_size)),
+            nn.Tanh()
         )
+
+        self.critic_linear = init_(nn.Linear(hidden_size, 1))
         self.critic_linear = nn.Linear(hidden_size, 1)
 
     def forward(self, inputs, rnn_hxs, masks):
