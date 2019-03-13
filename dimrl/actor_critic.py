@@ -52,7 +52,7 @@ class CNNBase(NNBase):
         )
 
         self.critic_linear = init_(nn.Linear(hidden_size, 1))
-        self.critic_linear = nn.Linear(hidden_size, 1)
+        self.train()
 
     def forward(self, inputs, rnn_hxs, masks):
         with torch.no_grad():
