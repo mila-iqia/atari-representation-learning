@@ -21,6 +21,8 @@ from a2c_ppo_acktr.utils import get_vec_normalize
 def preprocess():
     parser = get_args()
     config_parser = argparse.ArgumentParser(parents=[parser])
+    config_parser.add_argument('--pretraining-steps', type=int, default=100000,
+                               help='Number of steps to pretrain representations (default: 100000)')
     config_parser.add_argument('--contrastive-lr', type=float, default=5e-4,
                         help='learning rate (default: 5e-4)')
     config_parser.add_argument('--contrastive-bs', type=int, default=64,
