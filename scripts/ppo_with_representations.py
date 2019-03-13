@@ -101,6 +101,8 @@ def main():
     start = time.time()
     episode_rewards = deque(maxlen=10)
     obs = envs.reset()
+    rollouts.obs[0].copy_(obs)
+    rollouts.to(device)
     # Collect samples for training policy
     print('-------Starting RL Training----------')
     for j in range(num_updates):
