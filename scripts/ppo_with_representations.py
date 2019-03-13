@@ -102,6 +102,7 @@ def main():
     episode_rewards = deque(maxlen=10)
     obs = envs.reset()
     # Collect samples for training policy
+    print('-------Starting RL Training----------')
     for j in range(num_updates):
         if args.use_linear_lr_decay:
             # decrease learning rate linearly

@@ -136,7 +136,7 @@ def visualize_activation_maps(encoder, input_obs_batch, wandb):
         fmap = F.relu(encoder.main[4](F.relu(encoder.main[2](F.relu(encoder.main[0](input_obs_batch)))))).detach()
     out_channels = fmap.shape[1]
     # upsample and add a dummy channel dimension
-    fmap_upsampled = F.interpolate(fmap, size=input_obs_batch.shape[-2:], mode='bilinear').unsqueeze(dim=2)
+    fmap_upsampled = F.interpolate(fmap, size=input_obs_batch.shape[-2:], mode='nearest').unsqueeze(dim=2)
     for i in range(input_obs_batch.shape[0]):
         fmap_grid = make_grid(fmap_upsampled[i], normalize=True)
         img_grid = make_grid([scaled_images[i]] * out_channels)
@@ -144,7 +144,7 @@ def visualize_activation_maps(encoder, input_obs_batch, wandb):
         plt.imshow(fmap_grid.cpu().numpy().transpose([1, 2, 0]), cmap='jet', alpha=0.5)
         plt.savefig('act_maps/' + 'file%02d.png' % i)
         wandb.log({'actmap': wandb.Image(plt, caption='Activation Map')})
-    generate_video()
+    # generate_video()
 
 
 def generate_video():
