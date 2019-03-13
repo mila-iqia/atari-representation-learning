@@ -24,7 +24,12 @@ class ContrastiveTrainer():
     def __init__(self, encoder, mode='pcl', epochs=100, mini_batch_size=64, lr=3e-4, device=torch.device('cpu')):
         self.encoder = encoder
         self.mode = mode
-        self.classifier = Classifier(self.encoder.hidden_size * 2).to(device)
+        self.feature_sizes = {
+            'pcl': self.encoder.hidden_size * 2,
+            'tcl': self.encoder.hidden_size + 1,
+            'both': self.encoder.hidden_size * 2 + 1
+        }
+        self.classifier = Classifier(self.feature_sizes[mode]).to(device)
         self.epochs = epochs
         self.mini_batch_size = mini_batch_size
         self.device = device
