@@ -30,7 +30,7 @@ def main():
 
     wandb.init(project="rl-representation-learning", tags=['pretraining-only'])
     config = {
-        'total_steps': args.num_env_steps,
+        'pretraining_steps': args.pretraining_steps,
         'env_name': args.env_name,
         'mode': 'pcl',
         'encoder': encoder.__class__.__name__,
@@ -50,7 +50,7 @@ def main():
     start = time.time()
     print('-------Collecting samples----------')
     episodes = [[[]] for _ in range(args.num_processes)]
-    for step in range(args.num_env_steps // args.num_processes):
+    for step in range(args.pretraining_steps // args.num_processes):
         # Observe reward and next obs
         action = torch.tensor(np.array([np.random.randint(1, envs.action_space.n) for _ in range(args.num_processes)])) \
                               .unsqueeze(dim=1).to(device)
