@@ -40,7 +40,7 @@ def main():
                               envs.observation_space.shape, envs.action_space,
                               actor_critic.recurrent_hidden_state_size)
 
-    wandb.init(project="rl-representation-learning", tags=['ppo-after-pretraining'])
+    wandb.init(project="rl-representation-learning", tags=['ppo-after-pretraining', 'linear-policy'])
     config = {
         'pretraining_steps': args.pretraining_steps,
         'env_name': args.env_name,
@@ -92,7 +92,7 @@ def main():
 
     # Visualize activation maps
     episodes = list(chain.from_iterable(episodes))
-    frames = episodes[200][:60, :, :, :]
+    frames = episodes[50][:60, :, :, :]
     visualize_activation_maps(encoder, frames, wandb)
 
     # Use GPUs if available for envs now
