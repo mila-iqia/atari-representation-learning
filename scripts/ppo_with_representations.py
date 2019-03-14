@@ -40,7 +40,7 @@ def main():
                               envs.observation_space.shape, envs.action_space,
                               actor_critic.recurrent_hidden_state_size)
 
-    wandb.init(project="rl-representation-learning", tags=['ppo-after-pretraining'])
+    wandb.init(project="rl-representation-learning", tags=['ppo-after-pretraining', 'finetuning'])
     config = {
         'pretraining_steps': args.pretraining_steps,
         'env_name': args.env_name,

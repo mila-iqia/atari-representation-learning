@@ -55,8 +55,7 @@ class CNNBase(NNBase):
         self.train()
 
     def forward(self, inputs, rnn_hxs, masks):
-        with torch.no_grad():
-            features = self.encoder(inputs)
+        features = self.encoder(inputs)
         hidden_actor = self.actor(features)
         hidden_critic = self.critic(features)
         return self.critic_linear(hidden_critic), hidden_actor, rnn_hxs
