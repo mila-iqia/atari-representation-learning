@@ -92,7 +92,7 @@ def main():
 
     # Visualize activation maps
     episodes = list(chain.from_iterable(episodes))
-    frames = episodes[50][:60, :, :, :]
+    frames = episodes[5][:60, :, :, :]
     visualize_activation_maps(encoder, frames, wandb)
 
     # Use GPUs if available for envs now

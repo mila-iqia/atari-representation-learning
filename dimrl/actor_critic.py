@@ -30,7 +30,7 @@ class LatentPolicy(Policy):
 
 class CNNBase(NNBase):
     def __init__(self, encoder, hidden_size=256):
-        super().__init__(False, hidden_size, hidden_size)
+        super().__init__(False, encoder.hidden_size, encoder.hidden_size)
         self.encoder = encoder
         init_ = lambda m: init(m,
                                nn.init.orthogonal_,
