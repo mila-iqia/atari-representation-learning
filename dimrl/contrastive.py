@@ -67,6 +67,7 @@ class ContrastiveTrainer():
     def train(self, episodes, wandb):
         # Convert to 2d list from 3d list
         episodes = list(itertools.chain.from_iterable(episodes))
+        episodes = [x for x in episodes if len(x) > 10]
         for e in range(self.epochs):
             epoch_loss, accuracy, steps = 0., 0., 0
             data_generator = self.generate_batch(episodes)
