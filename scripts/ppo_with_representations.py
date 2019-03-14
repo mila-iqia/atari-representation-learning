@@ -44,7 +44,7 @@ def main():
     config = {
         'pretraining_steps': args.pretraining_steps,
         'env_name': args.env_name,
-        'mode': 'pcl',
+        'mode': args.contrastive_mode,
         'encoder': encoder.__class__.__name__,
         'obs_space': str(envs.observation_space.shape),
         'epochs': args.contrastive_epochs,

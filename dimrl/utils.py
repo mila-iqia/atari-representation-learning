@@ -27,10 +27,12 @@ def preprocess():
                         help='learning rate (default: 5e-4)')
     config_parser.add_argument('--contrastive-bs', type=int, default=64,
                         help='number of batches for CL (default: 64)')
-    config_parser.add_argument('--contrastive-epochs', type=int, default=200,
+    config_parser.add_argument('--contrastive-epochs', type=int, default=10,
                         help='number of epochs for CL (default: 200)')
     config_parser.add_argument('--cuda-id', type=int, default=0,
                                help='Default CUDA device index')
+    config_parser.add_argument('--contrastive-mode', default='pcl',
+                        help='pcl | tcl | both')
     args = config_parser.parse_args()
     args.cuda = not args.no_cuda and torch.cuda.is_available()
     writer = None

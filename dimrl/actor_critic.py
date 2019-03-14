@@ -37,26 +37,26 @@ class CNNBase(NNBase):
                                lambda x: nn.init.constant_(x, 0),
                                np.sqrt(2))
 
-        self.actor = nn.Sequential(
-            init_(nn.Linear(self.encoder.hidden_size, hidden_size)),
-            nn.Tanh(),
-            init_(nn.Linear(hidden_size, hidden_size)),
-            nn.Tanh()
-        )
+        # self.actor = nn.Sequential(
+        #     init_(nn.Linear(self.encoder.hidden_size, hidden_size)),
+        #     nn.Tanh(),
+        #     init_(nn.Linear(hidden_size, hidden_size)),
+        #     nn.Tanh()
+        # )
+        #
+        # self.critic = nn.Sequential(
+        #     init_(nn.Linear(self.encoder.hidden_size, hidden_size)),
+        #     nn.Tanh(),
+        #     init_(nn.Linear(hidden_size, hidden_size)),
+        #     nn.Tanh()
+        # )
 
-        self.critic = nn.Sequential(
-            init_(nn.Linear(self.encoder.hidden_size, hidden_size)),
-            nn.Tanh(),
-            init_(nn.Linear(hidden_size, hidden_size)),
-            nn.Tanh()
-        )
-
-        self.critic_linear = init_(nn.Linear(hidden_size, 1))
+        self.critic_linear = init_(nn.Linear(self.encoder.hidden_size, 1))
         self.train()
 
     def forward(self, inputs, rnn_hxs, masks):
         with torch.no_grad():
             features = self.encoder(inputs)
-        hidden_actor = self.actor(features)
-        hidden_critic = self.critic(features)
-        return self.critic_linear(hidden_critic), hidden_actor, rnn_hxs
+        # hidden_actor = self.actor(features)
+        # hidden_critic = self.critic(features)
+        return self.critic_linear(features), features, rnn_hxs
