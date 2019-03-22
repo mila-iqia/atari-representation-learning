@@ -1,5 +1,5 @@
-# dim-rl
-Representation Learning for RL using DeepInfomax
+# rl-reprsentation-learning
+Representation Learning for RL
 
 Dependencies: 
 * PyTorch 
@@ -11,7 +11,7 @@ Dependencies:
 To install the requirements, follow these steps:
 ```bash
 # PyTorch
-conda install pytorch torchvision -c soumith
+conda install pytorch torchvision -c pytorch
 
 # Baselines for Atari preprocessing
 git clone https://github.com/openai/baselines.git
@@ -27,7 +27,45 @@ pip install -e .
 pip install -r requirements.txt
 ```
 
-Usage: 
+### Usage: 
 ```bash
 python -m scripts.run_contrastive --method appo
 ```
+
+### Notes
+
+Every estimator inherits from `Trainer`:
+```
+class Trainer():
+    def __init__(self, encoder, wandb, device=torch.device('cpu')):
+        self.encoder = encoder
+        self.wandb = wandb
+        self.device = device
+
+    def generate_batch(self, episodes):
+        raise NotImplementedError
+
+    def train(self, episodes):
+        raise NotImplementedError
+
+    def log_results(self, epoch_idx, epoch_loss, accuracy):
+        raise NotImplementedError
+```
+Look into `appo.py` for an example implementation.
+
+### Directory structure
+
+    .
+    ├── scripts                 #  "main" files to run experiments
+    │   ├── run_contrastive.py  # Pretrain representations 
+    │   └── ppo_with_reps.py    # Run PPO after pre-training representations (Unstable)        
+    │
+    ├── src                     # Source files
+    │   ├── actor_critic.py     # Util file that allows to easily swith encoders for a policy 
+    │   ├── appo.py             # Implements contrastive estimators described in Appo's paper
+    │   ├── encoders.py         # NatureCNN and ImpalaCNN encoders (maps image to a flat feature space) 
+    │   ├── trainer.py          # Abstract class that describes how an estimator should be implemented
+    │   └── utils.py            # Utility functions
+    │
+    ├── exp.sh                  # Sample bash script for running jobs
+    └── README.md
