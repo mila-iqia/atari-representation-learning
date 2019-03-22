@@ -1,71 +1,48 @@
 import argparse
 import copy
-import glob
 import os
 import subprocess
 
 import torch
-from a2c_ppo_acktr.arguments import get_args
-from tensorboardX import SummaryWriter
 from torchvision.utils import make_grid
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
-import matplotlib.animation as animation
-import random
 import numpy as np
 
 from a2c_ppo_acktr.envs import make_vec_envs
 from a2c_ppo_acktr.utils import get_vec_normalize
 
 
-def preprocess():
-    parser = get_args()
-    config_parser = argparse.ArgumentParser(parents=[parser])
-    config_parser.add_argument('--pretraining-steps', type=int, default=100000,
+def get_argparser():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--env-name', default='PongNoFrameskip-v4',
+        help='environment to train on (default: PongNoFrameskip-v4)')
+    parser.add_argument('--pretraining-steps', type=int, default=100000,
                                help='Number of steps to pretrain representations (default: 100000)')
-    config_parser.add_argument('--contrastive-lr', type=float, default=5e-4,
-                        help='learning rate (default: 5e-4)')
-    config_parser.add_argument('--contrastive-bs', type=int, default=64,
-                        help='number of batches for CL (default: 64)')
-    config_parser.add_argument('--contrastive-epochs', type=int, default=10,
-                        help='number of epochs for CL (default: 200)')
-    config_parser.add_argument('--cuda-id', type=int, default=0,
-                               help='Default CUDA device index')
-    config_parser.add_argument('--contrastive-mode', default='pcl',
-                        help='pcl | tcl | both')
-    args = config_parser.parse_args()
-    args.cuda = not args.no_cuda and torch.cuda.is_available()
-    writer = None
+    parser.add_argument('--num-processes', type=int, default=8,
+                               help='Number of parallel environments to collect samples from (default: 8)')
+    parser.add_argument('--method', type=str, default='appo',
+                               help='Method to use for training representations (default: appo)')
+    parser.add_argument('--lr', type=float, default=5e-4,
+                        help='Learning Rate foe learning representations (default: 5e-4)')
+    parser.add_argument('--batch-size', type=int, default=64,
+                        help='Mini-Batch Size (default: 64)')
+    parser.add_argument('--epochs', type=int, default=100,
+                        help='Number of epochs for  (default: 100)')
+    parser.add_argument('--cuda-id', type=int, default=0,
+                               help='CUDA device index')
+    parser.add_argument('--seed', type=int, default=42,
+                               help='Random seed to use')
 
-    assert args.algo in ['a2c', 'ppo', 'acktr']
-    if args.recurrent_policy:
-        assert args.algo in ['a2c', 'ppo'], \
-            'Recurrent policy is not implemented for ACKTR'
+    return parser
 
-    num_updates = int(args.num_env_steps) // args.num_steps // args.num_processes
-    torch.manual_seed(args.seed)
-    torch.cuda.manual_seed_all(args.seed)
+def set_seeds(seed):
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed_all(seed)
 
-    if args.cuda and torch.cuda.is_available() and args.cuda_deterministic:
+    if torch.cuda.is_available():
         torch.backends.cudnn.benchmark = False
         torch.backends.cudnn.deterministic = True
-    # try:
-    #     os.makedirs(args.log_dir)
-    # except OSError:
-    #     files = glob.glob(os.path.join(args.log_dir, '*.monitor.csv'))
-    #     for f in files:
-    #         os.remove(f)
-    #
-    # eval_log_dir = args.log_dir + "_eval"
-    #
-    # try:
-    #     os.makedirs(eval_log_dir)
-    # except OSError:
-    #     files = glob.glob(os.path.join(eval_log_dir, '*.monitor.csv'))
-    #     for f in files:
-    #         os.remove(f)
-
-    return args, writer, num_updates, ''
 
 
 def calculate_accuracy(preds, y):

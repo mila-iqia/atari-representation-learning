@@ -9,13 +9,12 @@ import torch
 
 from a2c_ppo_acktr import algo
 from a2c_ppo_acktr.envs import make_vec_envs, VecPyTorch
-from a2c_ppo_acktr.model import Policy
 from a2c_ppo_acktr.storage import RolloutStorage
 from a2c_ppo_acktr.utils import get_vec_normalize, update_linear_schedule
-from dimrl.actor_critic import CNNBase, LatentPolicy
-from dimrl.utils import preprocess, save_model, evaluate_policy, visualize_activation_maps
-from dimrl.encoders import NatureCNN, ImpalaCNN
-from dimrl.contrastive import ContrastiveTrainer
+from src.actor_critic import CNNBase, LatentPolicy
+from src.utils import preprocess, save_model, evaluate_policy, visualize_activation_maps
+from src.encoders import NatureCNN, ImpalaCNN
+from src.appo import AppoTrainer
 
 import wandb
 
@@ -40,7 +39,7 @@ def main():
                               envs.observation_space.shape, envs.action_space,
                               actor_critic.recurrent_hidden_state_size)
 
-    wandb.init(project="rl-representation-learning", tags=['ppo-after-pretraining', 'finetuning'])
+    wandb.init(project="curl-atari", entity="curl-atari", tags=['pretraining-only'])
     config = {
         'pretraining_steps': args.pretraining_steps,
         'env_name': args.env_name,
@@ -51,12 +50,11 @@ def main():
         'lr': args.contrastive_lr,
         'mini_batch_size': args.contrastive_bs,
         'optimizer': 'Adam',
-        'policy_training_steps': args.num_env_steps
     }
     wandb.config.update(config)
 
-    trainer = ContrastiveTrainer(encoder, mode=config['mode'], epochs=config['epochs'], lr=config['lr'],
-                                 mini_batch_size=config['mini_batch_size'], device=device)
+    trainer = AppoTrainer(encoder, mode=config['mode'], epochs=config['epochs'], lr=config['lr'],
+                                 mini_batch_size=config['mini_batch_size'], device=device, wandb=wandb)
 
     obs = envs.reset()
     episode_rewards = deque(maxlen=10)
@@ -85,7 +83,7 @@ def main():
     print('Took {} seconds to collect samples'.format(end - start))
 
     print('-------Starting Contrastive Training----------')
-    trainer.train(episodes, wandb)
+    trainer.train(episodes)
     print('-------Contrastive Training Finished----------')
     end_training = time.time()
     print('Took {} seconds to train'.format(end_training - end))

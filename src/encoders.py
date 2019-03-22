@@ -79,8 +79,6 @@ class NatureCNN(nn.Module):
         self.hidden_size = hidden_size
         if mode == 'atari':
             self.final_conv_size = 32 * 7 * 7
-        elif self.mode == 'coinrun':
-            self.final_conv_size = 32 * 7 * 7
         init_ = lambda m: init(m,
                                nn.init.orthogonal_,
                                lambda x: nn.init.constant_(x, 0),

@@ -1,35 +1,38 @@
-import itertools
-
 import torch
 import torch.nn as nn
 import numpy as np
 from torch.utils.data import RandomSampler, BatchSampler
 from .utils import calculate_accuracy
+from .trainer import Trainer
 
 
 class Classifier(nn.Module):
-    def __init__(self, num_inputs, hidden_size=256):
+    def __init__(self, num_inputs, hidden_size=256, linear=False):
         super().__init__()
-        self.network = nn.Sequential(
-            nn.Linear(num_inputs, hidden_size),
-            nn.ReLU(),
-            nn.Linear(hidden_size, 1)
-        )
+        if not linear:
+            self.network = nn.Sequential(
+                nn.Linear(num_inputs, hidden_size),
+                nn.ReLU(),
+                nn.Linear(hidden_size, 1)
+            )
+        else:
+            self.network = nn.Linear(num_inputs, 1)
 
     def forward(self, x):
         return self.network(x)
 
 
-class ContrastiveTrainer():
-    def __init__(self, encoder, mode='pcl', epochs=100, mini_batch_size=64, lr=3e-4, device=torch.device('cpu')):
-        self.encoder = encoder
+class AppoTrainer(Trainer):
+    def __init__(self, encoder, mode='pcl', epochs=100, mini_batch_size=64, lr=3e-4, device=torch.device('cpu'),
+                 linear=False, wandb=None):
+        super().__init__(encoder, wandb, device)
         self.mode = mode
         self.feature_sizes = {
             'pcl': self.encoder.hidden_size * 2,
             'tcl': self.encoder.hidden_size + 1,
             'both': self.encoder.hidden_size * 2 + 1
         }
-        self.classifier = Classifier(self.feature_sizes[mode]).to(device)
+        self.classifier = Classifier(self.feature_sizes[mode], linear=linear).to(device)
         self.epochs = epochs
         self.mini_batch_size = mini_batch_size
         self.device = device
@@ -56,7 +59,7 @@ class ContrastiveTrainer():
                 x_t.append(episode[t])
                 x_tprev.append(episode[t - 1])
                 if self.mode == 'both':
-                    x_that.append(episode[t_hat-1])
+                    x_that.append(episode[t_hat - 1])
                 else:
                     x_that.append(episode[t_hat])
                 ts.append([t])
@@ -64,10 +67,7 @@ class ContrastiveTrainer():
             yield torch.stack(x_t) / 255., torch.stack(x_tprev) / 255., torch.stack(x_that) / 255., \
                   torch.Tensor(ts), torch.Tensor(thats)
 
-    def train(self, episodes, wandb):
-        # Convert to 2d list from 3d list
-        episodes = list(itertools.chain.from_iterable(episodes))
-        episodes = [x for x in episodes if len(x) > 10]
+    def train(self, episodes):
         for e in range(self.epochs):
             epoch_loss, accuracy, steps = 0., 0., 0
             data_generator = self.generate_batch(episodes)
@@ -90,25 +90,13 @@ class ContrastiveTrainer():
                 loss = self.loss_fn(self.classifier(samples), target)
                 loss.backward()
                 self.optimizer.step()
+
                 epoch_loss += loss.detach().item()
                 preds = torch.sigmoid(self.classifier(samples))
                 accuracy += calculate_accuracy(preds, target)
                 steps += 1
-            print('Epoch: {}, Loss: {}, Accuracy: {}'.format(e, epoch_loss / steps, accuracy / steps))
-            wandb.log({'Accuracy': accuracy / steps}, step=e)
+            self.log_results(e, epoch_loss / steps, accuracy / steps)
 
-
-class Discriminator(nn.Module):
-    def __init__(self, num_inputs, hidden_size=1024):
-        super(Discriminator, self).__init__()
-
-        self.network = nn.Sequential(
-            nn.Linear(num_inputs, hidden_size),
-            nn.ReLU(),
-            nn.Linear(hidden_size, 512),
-            nn.ReLU(),
-            nn.Linear(512, 1)
-        )
-
-    def forward(self, x):
-        return self.network(x)
+    def log_results(self, epoch_idx, epoch_loss, accuracy):
+        print("Epoch: {}, Epoch Loss: {}, Accuracy: {}".format(epoch_idx, epoch_loss, accuracy))
+        self.wandb.log({'Loss': epoch_loss, 'Accuracy': accuracy})
