@@ -28,4 +28,6 @@ pip install -r requirements.txt
 ```
 
 Usage: 
-* python -m scripts.run_contrastive --method appo
+```bash
+python -m scripts.run_contrastive --method appo
+```
