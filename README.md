@@ -35,7 +35,7 @@ python -m scripts.run_contrastive --method appo
 ### Notes
 
 Every estimator inherits from `Trainer`:
-```
+```python
 class Trainer():
     def __init__(self, encoder, wandb, device=torch.device('cpu')):
         self.encoder = encoder
@@ -65,7 +65,7 @@ Look into `appo.py` for an example implementation.
     │   ├── appo.py             # Implements contrastive estimators described in Appo's paper
     │   ├── encoders.py         # NatureCNN and ImpalaCNN encoders (maps image to a flat feature space) 
     │   ├── trainer.py          # Abstract class that describes how an estimator should be implemented
-    │   └── utils.py            # Utility functions
+    │   └── utils.py            # Functions for parsing arguments, visualizing act_maps etc.
     │
     ├── exp.sh                  # Sample bash script for running jobs
     └── README.md
