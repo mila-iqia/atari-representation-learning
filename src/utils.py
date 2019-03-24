@@ -121,7 +121,7 @@ def visualize_activation_maps(encoder, input_obs_batch, wandb):
         img_grid = make_grid([scaled_images[i]] * out_channels)
         plt.imshow(img_grid.cpu().numpy().transpose([1, 2, 0]))
         plt.imshow(fmap_grid.cpu().numpy().transpose([1, 2, 0]), cmap='jet', alpha=0.5)
-        plt.savefig('act_maps/' + 'file%02d.png' % i)
+        # plt.savefig('act_maps/' + 'file%02d.png' % i)
         wandb.log({'actmap': wandb.Image(plt, caption='Activation Map')})
     # generate_video()
 
