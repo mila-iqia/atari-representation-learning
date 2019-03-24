@@ -15,8 +15,8 @@ from a2c_ppo_acktr.utils import get_vec_normalize
 
 def get_argparser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--env-name', default='PongNoFrameskip-v4',
-        help='environment to train on (default: PongNoFrameskip-v4)')
+    parser.add_argument('--env-name', default='MontezumaRevengeNoFrameskip-v4',
+        help='environment to train on (default: MontezumaRevengeNoFrameskip-v4)')
     parser.add_argument('--pretraining-steps', type=int, default=100000,
                                help='Number of steps to pretrain representations (default: 100000)')
     parser.add_argument('--num-processes', type=int, default=8,
