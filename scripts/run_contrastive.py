@@ -27,6 +27,7 @@ def main():
         'pretraining_steps': args.pretraining_steps,
         'env_name': args.env_name,
         'method': args.method,
+        'mode': args.mode,
         'encoder': encoder.__class__.__name__,
         'obs_space': str(envs.observation_space.shape),
         'epochs': args.epochs,

@@ -23,6 +23,8 @@ def get_argparser():
                                help='Number of parallel environments to collect samples from (default: 8)')
     parser.add_argument('--method', type=str, default='appo',
                                help='Method to use for training representations (default: appo)')
+    parser.add_argument('--mode', type=str, default='pcl',
+                        help='Mode to use when using the Appo estimator [pcl | tcl | both] (default: pcl)')
     parser.add_argument('--lr', type=float, default=5e-4,
                         help='Learning Rate foe learning representations (default: 5e-4)')
     parser.add_argument('--batch-size', type=int, default=64,
