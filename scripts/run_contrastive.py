@@ -69,7 +69,6 @@ def main():
     episodes = [x for x in episodes if len(x) > 10]
 
     trainer.train(episodes)
-    episodes = list(chain.from_iterable(episodes))
     frames = episodes[200][:60, :, :, :]
     visualize_activation_maps(encoder, frames, wandb)
 
