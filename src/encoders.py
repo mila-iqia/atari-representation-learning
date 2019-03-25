@@ -94,7 +94,7 @@ class NatureCNN(nn.Module):
             Flatten(),
             init_(nn.Linear(32 * 7 * 7, 512)),
             nn.ReLU(),
-            init_(nn.Linear(hidden_size, 256)),
+            init_(nn.Linear(512, hidden_size)),
             nn.ReLU()
         )
         self.train()
