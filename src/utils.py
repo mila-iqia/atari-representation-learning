@@ -25,6 +25,8 @@ def get_argparser():
                                help='Method to use for training representations (default: appo)')
     parser.add_argument('--mode', type=str, default='pcl',
                         help='Mode to use when using the Appo estimator [pcl | tcl | both] (default: pcl)')
+    parser.add_argument('--linear', action='store_true', default=False,
+                        help='Whether to use a linear classifier')
     parser.add_argument('--lr', type=float, default=5e-4,
                         help='Learning Rate foe learning representations (default: 5e-4)')
     parser.add_argument('--batch-size', type=int, default=64,

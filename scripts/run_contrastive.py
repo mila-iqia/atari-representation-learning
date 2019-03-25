@@ -33,13 +33,14 @@ def main():
         'epochs': args.epochs,
         'lr': args.lr,
         'mini_batch_size': args.batch_size,
+        'linear': args.linear,
         'optimizer': 'Adam',
     }
     wandb.config.update(config)
 
     if args.method == 'appo':
         trainer = AppoTrainer(encoder, mode='pcl', epochs=config['epochs'], lr=config['lr'],
-                              mini_batch_size=config['mini_batch_size'], device=device,
+                              mini_batch_size=config['mini_batch_size'], linear=config['linear'], device=device,
                               wandb=wandb)
 
     obs = envs.reset()
