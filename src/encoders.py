@@ -74,7 +74,7 @@ class ImpalaCNN(nn.Module):
 
 
 class NatureCNN(nn.Module):
-    def __init__(self, input_channels, mode='atari', hidden_size=256):
+    def __init__(self, input_channels, mode='atari', hidden_size=512):
         super().__init__()
         self.hidden_size = hidden_size
         if mode == 'atari':
@@ -92,9 +92,9 @@ class NatureCNN(nn.Module):
             init_(nn.Conv2d(64, 32, 3, stride=1)),
             nn.ReLU(),
             Flatten(),
-            init_(nn.Linear(32 * 7 * 7, 512)),
+            init_(nn.Linear(32 * 7 * 7, 1024)),
             nn.ReLU(),
-            init_(nn.Linear(512, hidden_size)),
+            init_(nn.Linear(1024, 512)),
             nn.ReLU()
         )
         self.train()
