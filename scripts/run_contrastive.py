@@ -43,6 +43,7 @@ def main():
                               mini_batch_size=config['mini_batch_size'], linear=config['linear'], device=device,
                               wandb=wandb)
 
+    wandb.watch(encoder)
     obs = envs.reset()
     episode_rewards = deque(maxlen=10)
     start = time.time()
