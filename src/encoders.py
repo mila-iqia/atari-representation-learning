@@ -53,7 +53,8 @@ class ImpalaCNN(nn.Module):
         self.layer2 = self._make_layer(self.depths[0], self.depths[1])
         self.layer3 = self._make_layer(self.depths[1], self.depths[2])
         self.flatten = Flatten()
-        self.final_linear = nn.Linear(self.final_conv_size, hidden_size)
+        self.final_linear1 = nn.Linear(self.final_conv_size, hidden_size)
+        self.final_linear2 = nn.Linear(self.hidden_size, hidden_size)
         self.train()
 
     def _make_layer(self, in_channels, depth):
@@ -69,7 +70,7 @@ class ImpalaCNN(nn.Module):
     def forward(self, inputs):
         out = inputs
         out = self.layer3(self.layer2(self.layer1(out)))
-        out = F.relu(self.final_linear(self.flatten(out)))
+        out = F.relu(self.final_linear2(F.relu(self.final_linear(self.flatten(out)))))
         return out
 
 
@@ -92,11 +93,11 @@ class NatureCNN(nn.Module):
             init_(nn.Conv2d(64, 32, 3, stride=1)),
             nn.ReLU(),
             Flatten(),
-            init_(nn.Linear(32 * 7 * 7, 1024)),
+            init_(nn.Linear(32 * 7 * 7, 512)),
             nn.ReLU(),
-            init_(nn.Linear(1024, 512)),
+            init_(nn.Linear(512, 256)),
             nn.ReLU(),
-            init_(nn.Linear(512, 512)),
+            init_(nn.Linear(256, 256)),
             nn.ReLU()
         )
         self.train()
