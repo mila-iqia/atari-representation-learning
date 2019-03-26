@@ -1,10 +1,12 @@
 import torch
 from baselines.common.vec_env import SubprocVecEnv, DummyVecEnv
 from a2c_ppo_acktr.envs import make_env, VecNormalize, VecPyTorch
-
+from pathlib import Path
 
 def make_vec_envs(env_name, seed, num_processes, gamma=0.99, log_dir='~/tmp/',
                   device=torch.device('cpu'), allow_early_resets=False):
+    
+    Path(log_dir).mkdir(parents=True,exist_ok=True)
     envs = [make_env(env_name, seed, i, log_dir, allow_early_resets)
             for i in range(num_processes)]
 
