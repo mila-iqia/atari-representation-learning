@@ -3,7 +3,7 @@ from baselines.common.vec_env import SubprocVecEnv, DummyVecEnv
 from a2c_ppo_acktr.envs import make_env, VecNormalize, VecPyTorch
 
 
-def make_vec_envs(env_name, seed, num_processes, gamma=0.99, log_dir='/tmp/',
+def make_vec_envs(env_name, seed, num_processes, gamma=0.99, log_dir='~/tmp/',
                   device=torch.device('cpu'), allow_early_resets=False):
     envs = [make_env(env_name, seed, i, log_dir, allow_early_resets)
             for i in range(num_processes)]
