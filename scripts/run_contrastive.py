@@ -18,7 +18,7 @@ def main():
     args = parser.parse_args()
     device = torch.device("cuda:" + str(args.cuda_id) if torch.cuda.is_available() else "cpu")
     envs = make_vec_envs(args.env_name, args.seed, args.num_processes)
-    encoder = ImpalaCNN(envs.observation_space.shape[0])
+    encoder = NatureCNN(envs.observation_space.shape[0])
     encoder.to(device)
     torch.set_num_threads(1)
 
