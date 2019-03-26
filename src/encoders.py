@@ -86,16 +86,18 @@ class NatureCNN(nn.Module):
 
         self.main = nn.Sequential(
             init_(nn.Conv2d(input_channels, 32, 8, stride=4)),
-            nn.SELU(),
+            nn.ReLU(),
             init_(nn.Conv2d(32, 64, 4, stride=2)),
-            nn.SELU(),
+            nn.ReLU(),
             init_(nn.Conv2d(64, 32, 3, stride=1)),
-            nn.SELU(),
+            nn.ReLU(),
             Flatten(),
             init_(nn.Linear(32 * 7 * 7, 1024)),
-            nn.SELU(),
+            nn.ReLU(),
             init_(nn.Linear(1024, 512)),
-            nn.SELU()
+            nn.ReLU(),
+            init_(nn.Linear(512, 512)),
+            nn.ReLU()
         )
         self.train()
 
