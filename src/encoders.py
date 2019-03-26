@@ -70,7 +70,7 @@ class ImpalaCNN(nn.Module):
     def forward(self, inputs):
         out = inputs
         out = self.layer3(self.layer2(self.layer1(out)))
-        out = F.relu(self.final_linear2(F.relu(self.final_linear(self.flatten(out)))))
+        out = F.relu(self.final_linear2(F.relu(self.final_linear1(self.flatten(out)))))
         return out
 
 
