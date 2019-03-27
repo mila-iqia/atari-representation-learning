@@ -34,7 +34,7 @@ def main():
         'lr': args.lr,
         'mini_batch_size': args.batch_size,
         'linear': args.linear,
-        'optimizer': 'RMSProp',
+        'optimizer': 'RMSPprop',
     }
     wandb.config.update(config)
 

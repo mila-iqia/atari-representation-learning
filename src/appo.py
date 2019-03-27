@@ -36,7 +36,7 @@ class AppoTrainer(Trainer):
         self.epochs = epochs
         self.mini_batch_size = mini_batch_size
         self.device = device
-        self.optimizer = torch.optim.RMSProp(list(self.classifier.parameters()) + list(self.encoder.parameters()),
+        self.optimizer = torch.optim.RMSprop(list(self.classifier.parameters()) + list(self.encoder.parameters()),
                                           lr=lr)
         self.loss_fn = nn.BCEWithLogitsLoss()
 
