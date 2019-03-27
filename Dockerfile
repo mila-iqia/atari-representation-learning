@@ -63,7 +63,7 @@ RUN git clone https://github.com/openai/baselines.git \
  && pip install -e .
 
 # pytorch-a2c-ppo-acktr for RL utils
-RUN git clone https://github.com/ikostrikov/pytorch-a2c-ppo-acktr-gail.git
+RUN git clone https://github.com/ikostrikov/pytorch-a2c-ppo-acktr-gail.git \
  && cd pytorch-a2c-ppo-acktr-gail \
  && pip install -e .
 
