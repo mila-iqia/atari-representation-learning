@@ -36,8 +36,8 @@ class AppoTrainer(Trainer):
         self.epochs = epochs
         self.mini_batch_size = mini_batch_size
         self.device = device
-        self.optimizer = torch.optim.Adam(list(self.classifier.parameters()) + list(self.encoder.parameters()),
-                                          lr=lr, eps=1e-5)
+        self.optimizer = torch.optim.SGD(list(self.classifier.parameters()) + list(self.encoder.parameters()),
+                                          lr=lr, momentum=0.9)
         self.loss_fn = nn.BCEWithLogitsLoss()
 
     def generate_batch(self, episodes):

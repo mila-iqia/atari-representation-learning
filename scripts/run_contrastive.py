@@ -34,7 +34,7 @@ def main():
         'lr': args.lr,
         'mini_batch_size': args.batch_size,
         'linear': args.linear,
-        'optimizer': 'Adam',
+        'optimizer': 'SGD',
     }
     wandb.config.update(config)
 
