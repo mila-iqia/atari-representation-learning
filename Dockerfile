@@ -42,7 +42,7 @@ ENV CONDA_PREFIX=/home/user/miniconda/envs/$CONDA_DEFAULT_ENV
 ENV PATH=$CONDA_PREFIX/bin:$PATH
 
 # Install Pytorch
-RUN conda install -y pytorch torchvision cudatoolkit=9.0 -c pytorch
+RUN conda install -y pytorch torchvision cudatoolkit=9.0 -c pytorch \
  && conda clean -ya
 
 # Install OpenCV3 Python bindings
@@ -54,17 +54,17 @@ RUN conda install -y -c menpo opencv3=3.1.0 \
  && conda clean -ya
 
 # Install Tensorflow for baselines
-RUN conda install -y tensorflow
+RUN conda install -y tensorflow \
  && conda clean -ya
 
 # Baselines for Atari preprocessing
-RUN git clone https://github.com/openai/baselines.git
- && cd baselines
+RUN git clone https://github.com/openai/baselines.git \
+ && cd baselines \
  && pip install -e .
 
 # pytorch-a2c-ppo-acktr for RL utils
 RUN git clone https://github.com/ikostrikov/pytorch-a2c-ppo-acktr-gail.git
- && cd pytorch-a2c-ppo-acktr-gail
+ && cd pytorch-a2c-ppo-acktr-gail \
  && pip install -e .
 
 # Install additional requirements
