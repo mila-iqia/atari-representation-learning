@@ -10,6 +10,8 @@ RUN apt-get update && apt-get install -y \
     libx11-6 \
     ffmpeg \
     gcc \
+    build-essential \
+    rsync \
  && rm -rf /var/lib/apt/lists/*
 
 # Create a working directory
@@ -73,7 +75,9 @@ RUN pip install 'gym[atari]' matplotlib wandb
 
 # Login to wandb
 ARG wandb_key
-RUN wandb login $wand_key
+ENV LC_ALL=C.UTF-8
+ENV export LANG=C.UTF-8
+RUN wandb login $wandb_key
 
 # Set the default command to python3
 CMD ["python3"]
