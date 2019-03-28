@@ -13,13 +13,21 @@ from src.appo import AppoTrainer
 
 import wandb
 import sys
+
 def main():
     parser = get_argparser()
     parser.set_defaults(env_name="PitfallNoFrameskip-v4")
+    parser.add_argument("--weights_path",type=str,default="None")
     args = parser.parse_args()
     device = torch.device("cuda:" + str(args.cuda_id) if torch.cuda.is_available() else "cpu")
     envs = make_vec_envs(args.env_name, args.seed, args.num_processes)
     encoder = NatureCNN(envs.observation_space.shape[0])
+
+    if args.weights_path == "None":
+        print("Probing without loading in encoder weights!")
+    else:
+        encoder.load_state_dict(torch.load(args.weights_path))
+
     encoder.to(device)
     torch.set_num_threads(1)
 
