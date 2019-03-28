@@ -57,7 +57,7 @@ def make_env(env_id, seed, rank, log_dir, allow_early_resets):
         return env
 
     return _thunk
-def make_vec_envs(env_name, seed, num_processes, gamma=0.99, log_dir='~/tmp/',
+def make_vec_envs(env_name, seed, num_processes, gamma=0.99, log_dir='./tmp/',
                   device=torch.device('cpu'), allow_early_resets=False):
     
     Path(log_dir).mkdir(parents=True,exist_ok=True)
