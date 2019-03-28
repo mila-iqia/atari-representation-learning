@@ -11,6 +11,7 @@ import numpy as np
 
 from a2c_ppo_acktr.envs import make_vec_envs
 from a2c_ppo_acktr.utils import get_vec_normalize
+from collections import defaultdict
 
 
 def get_argparser():
@@ -51,6 +52,10 @@ def calculate_accuracy(preds, y):
     acc = preds.eq(labels).sum().float() / labels.numel()
     return acc
 
+def calculate_multiclass_accuracy(preds, labels):
+    preds = torch.argmax(preds,dim=1)
+    acc = preds.eq(labels).sum().float() / labels.numel()
+    return acc
 
 def save_model(model, envs, save_dir, model_name, use_cuda):
     save_path = os.path.join(save_dir)
@@ -132,3 +137,51 @@ def generate_video():
         'ffmpeg', '-framerate', '8', '-i', 'file%02d.png', '-r', '30', '-pix_fmt', 'yuv420p',
         'video_name.mp4'
     ])
+    
+class appendabledict(defaultdict):
+    def __init__(self,type_=list,*args,**kwargs):
+        self.type_ =  type_
+        super().__init__(type_,*args,**kwargs)
+    
+#     def map_(self, func):
+#         for k, v in self.items():
+#             self.__setitem__(k, func(v))
+    
+    def subslice(self,slice_):
+        """indexes every value in the dict according to a specified slice
+
+        Parameters
+        ----------
+        slice : int or slice type
+            An indexing slice , e.g., ``slice(2, 20, 2)`` or ``2``.
+
+
+        Returns
+        -------
+        sliced_dict : dict (not appendabledict type!)
+            A dictionary with each value from this object's dictionary, but the value is sliced according to slice_
+            e.g. if this dictionary has {a:[1,2,3,4], b:[5,6,7,8]}, then self.subslice(2) returns {a:3,b:7}
+                 self.subslice(slice(1,3)) returns {a:[2,3], b:[6,7]}
+
+         """
+        sliced_dict = {}
+        for k,v in self.items():
+            sliced_dict[k] = v[slice_]
+        return sliced_dict
+    
+    def append_update(self,other_dict):
+        """appends current dict's values with values from other_dict
+
+        Parameters
+        ----------
+        other_dict : dict
+            A dictionary that you want to append to this dictionary
+
+
+        Returns
+        -------
+        Nothing. The side effect is this dict's values change
+
+         """
+        for k,v in other_dict.items():
+            self.__getitem__(k).append(v)
