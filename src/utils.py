@@ -16,14 +16,18 @@ from collections import defaultdict
 
 def get_argparser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--env-name', default='PongNoFrameskip-v4',
-        help='environment to train on (default: PongNoFrameskip-v4)')
+    parser.add_argument('--env-name', default='MontezumaRevengeNoFrameskip-v4',
+        help='environment to train on (default: MontezumaRevengeNoFrameskip-v4)')
     parser.add_argument('--pretraining-steps', type=int, default=100000,
                                help='Number of steps to pretrain representations (default: 100000)')
     parser.add_argument('--num-processes', type=int, default=8,
                                help='Number of parallel environments to collect samples from (default: 8)')
     parser.add_argument('--method', type=str, default='appo',
                                help='Method to use for training representations (default: appo)')
+    parser.add_argument('--mode', type=str, default='pcl',
+                        help='Mode to use when using the Appo estimator [pcl | tcl | both] (default: pcl)')
+    parser.add_argument('--linear', action='store_true', default=False,
+                        help='Whether to use a linear classifier')
     parser.add_argument('--lr', type=float, default=5e-4,
                         help='Learning Rate foe learning representations (default: 5e-4)')
     parser.add_argument('--batch-size', type=int, default=64,
@@ -126,7 +130,7 @@ def visualize_activation_maps(encoder, input_obs_batch, wandb):
         img_grid = make_grid([scaled_images[i]] * out_channels)
         plt.imshow(img_grid.cpu().numpy().transpose([1, 2, 0]))
         plt.imshow(fmap_grid.cpu().numpy().transpose([1, 2, 0]), cmap='jet', alpha=0.5)
-        plt.savefig('act_maps/' + 'file%02d.png' % i)
+        # plt.savefig('act_maps/' + 'file%02d.png' % i)
         wandb.log({'actmap': wandb.Image(plt, caption='Activation Map')})
     # generate_video()
 

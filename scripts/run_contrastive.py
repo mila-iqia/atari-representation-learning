@@ -27,18 +27,20 @@ def main():
         'pretraining_steps': args.pretraining_steps,
         'env_name': args.env_name,
         'method': args.method,
+        'mode': args.mode,
         'encoder': encoder.__class__.__name__,
         'obs_space': str(envs.observation_space.shape),
         'epochs': args.epochs,
         'lr': args.lr,
         'mini_batch_size': args.batch_size,
+        'linear': args.linear,
         'optimizer': 'Adam',
     }
     wandb.config.update(config)
 
     if args.method == 'appo':
         trainer = AppoTrainer(encoder, mode='pcl', epochs=config['epochs'], lr=config['lr'],
-                              mini_batch_size=config['mini_batch_size'], device=device,
+                              mini_batch_size=config['mini_batch_size'], linear=config['linear'], device=device,
                               wandb=wandb)
 
     obs = envs.reset()
@@ -69,7 +71,6 @@ def main():
     episodes = [x for x in episodes if len(x) > 10]
 
     trainer.train(episodes)
-    episodes = list(chain.from_iterable(episodes))
     frames = episodes[200][:60, :, :, :]
     visualize_activation_maps(encoder, frames, wandb)
 
