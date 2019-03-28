@@ -3,7 +3,7 @@ from baselines.common.vec_env import SubprocVecEnv, DummyVecEnv
 from a2c_ppo_acktr.envs import make_env, VecNormalize, VecPyTorch
 from pathlib import Path
 
-def make_vec_envs(env_name, seed, num_processes, gamma=0.99, log_dir='~/tmp/',
+def make_vec_envs(env_name, seed, num_processes, gamma=0.99, log_dir='./tmp/',
                   device=torch.device('cpu'), allow_early_resets=False):
     
     Path(log_dir).mkdir(parents=True,exist_ok=True)
