@@ -52,37 +52,49 @@ class ProbeTrainer(Trainer):
             yield torch.stack(xs) / 255., labels
 
     
-    def train(self, episodes, label_dicts):
-        for e in range(self.epochs):
-            
-            epoch_loss, accuracy = {k + "_loss":0 for k in self.info_dict.keys()},\
-                                  {k + "_acc" :0 for k in self.info_dict.keys()}
-            data_generator = self.generate_batch(episodes, label_dicts)
-            for step, (x, labels_batch) in enumerate(data_generator):
-                f = self.encoder(x).detach()
-                for k, label in labels_batch.items():
-                    probe = self.probes[k]
-                    optim = self.optimizers[k]
-                    optim.zero_grad()
-                    label = torch.tensor(label).long().to(self.device)
-                    try:
-                        loss = self.loss_fn(probe(f), label)
-                    except:
-                        print(label)
+    
+    def do_one_epoch(self, episodes, label_dicts, ):
+        epoch_loss, accuracy = {k + "_loss":0 for k in self.info_dict.keys()},\
+                              {k + "_acc" :0 for k in self.info_dict.keys()}
+        data_generator = self.generate_batch(episodes, label_dicts)
+        for step, (x, labels_batch) in enumerate(data_generator):
+            f = self.encoder(x).detach()
+            for k, label in labels_batch.items():
+                probe = self.probes[k]
+                optim = self.optimizers[k]
+                optim.zero_grad()
+                
+                label = torch.tensor(label).long().to(self.device)
+                preds = probe(f)
+                try:
+                    loss = self.loss_fn(preds, label)
+                except:
+                    print(label)
+                    
+    
+                epoch_loss[k + "_loss"] += loss.detach().item()   
+                accuracy[k + "_acc"] += calculate_multiclass_accuracy(preds, label)          
+                if probe.training:
                     loss.backward()
                     optim.step()
-                    epoch_loss[k + "_loss"] += loss.detach().item()
-                    preds = probe(f)
-                    accuracy[k + "_acc"] += calculate_multiclass_accuracy(preds, label)
-            epoch_loss = {k: loss / step for k, loss in epoch_loss.items()}
-            accuracy = {k: acc / step for k, acc in accuracy.items()}  
-            
-                                           
-
-            self.log_results(e,epoch_loss,accuracy)
+        epoch_loss = {k: loss / step for k, loss in epoch_loss.items()}
+        accuracy = {k: acc / step for k, acc in accuracy.items()}
+        return epoch_loss, accuracy
         
-
-    
+    def train(self, episodes, label_dicts):
+        for e in range(self.epochs):
+            epoch_loss, accuracy = self.do_one_epoch(episodes, label_dicts)
+            self.log_results(e,epoch_loss,accuracy)
+            
+    def test(self, test_episodes, test_label_dicts):
+        for k,probe in self.probes.items():
+            probe.eval()
+        epoch_loss, accuracy = self.do_one_epoch(test_episodes, test_label_dicts)
+        epoch_loss = {"test_" + k:v for k,v in epoch_loss.items()}
+        accuracy = {"test_" + k:v for k,v in accuracy.items()}
+        self.log_results(0,epoch_loss,accuracy)
+        
+           
     def log_results(self, epoch_idx, loss_dict, acc_dict):
         print("Epoch: {}".format(epoch_idx))
         for k in loss_dict.keys():

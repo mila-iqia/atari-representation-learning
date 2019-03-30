@@ -13,6 +13,9 @@ atari_dict = {"Pitfall": {"ram": dict(agent_x=97,agent_y=105),
                                     "num_classes": {}}
                  }
 
+
+# montezuma_revenge	http://www.bjars.com/source/Montezuma.asm	Tested	room number: 3	agent.x: 42	agent.y: 43	agent facing: 52	beams on/off: 27	beam countdown (on: 0, off: 36 → 0): 83	time: 0	death scene countdown: 55	objects Doors, skull, and key in 1st room: 67	skull.x: 47															
+
 class InfoWrapper(gym.Wrapper):
     def step(self, action):
         observation, reward, done, info = self.env.step(action)
