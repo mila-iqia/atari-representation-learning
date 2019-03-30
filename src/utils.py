@@ -65,7 +65,7 @@ def calculate_accuracy(preds, y):
 
 def calculate_multiclass_accuracy(preds, labels):
     preds = torch.argmax(preds,dim=1)
-    acc = preds.eq(labels).sum().float() / labels.numel()
+    acc = float(torch.sum(torch.eq(labels,preds)).data) / labels.size(0)
     return acc
 
 def save_model(model, envs, save_dir, model_name, use_cuda):

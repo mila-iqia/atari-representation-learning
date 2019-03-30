@@ -101,7 +101,7 @@ class ProbeTrainer(Trainer):
             print("\t {}: {}".format(k, loss_dict[k]))
         print("\t --")
         for k in acc_dict.keys():
-            print("\t {}: {}".format(k, acc_dict[k]))
+            print("\t {}: {}%".format(k, 100*acc_dict[k]))
                   
         self.wandb.log(loss_dict)
         self.wandb.log(acc_dict)
