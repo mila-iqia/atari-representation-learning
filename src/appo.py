@@ -18,8 +18,8 @@ class Classifier(nn.Module):
         else:
             self.network = nn.Bilinear(num_inputs, num_inputs, 1)
 
-    def forward(self, x):
-        return self.network(x)
+    def forward(self, x1, x2):
+        return self.network(x1, x2)
 
 
 class AppoTrainer(Trainer):
