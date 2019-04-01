@@ -16,7 +16,7 @@ class Classifier(nn.Module):
                 nn.Linear(hidden_size, 1)
             )
         else:
-            self.network = nn.Linear(num_inputs, 1)
+            self.network = nn.Bilinear(num_inputs, num_inputs, 1)
 
     def forward(self, x):
         return self.network(x)
@@ -32,7 +32,7 @@ class AppoTrainer(Trainer):
             'tcl': self.encoder.hidden_size + 1,
             'both': self.encoder.hidden_size * 2 + 1
         }
-        self.classifier = Classifier(self.feature_sizes[mode], linear=linear).to(device)
+        self.classifier = Classifier(self.encoder.hidden_size, linear=linear).to(device)
         self.epochs = epochs
         self.mini_batch_size = mini_batch_size
         self.device = device
