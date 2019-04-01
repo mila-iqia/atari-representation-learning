@@ -17,20 +17,20 @@ from collections import defaultdict
 def get_argparser():
     parser = argparse.ArgumentParser()
     parser.add_argument('--env-name', default='MontezumaRevengeNoFrameskip-v4',
-        help='environment to train on (default: MontezumaRevengeNoFrameskip-v4)')
+                        help='environment to train on (default: MontezumaRevengeNoFrameskip-v4)')
     parser.add_argument('--pretraining-steps', type=int, default=100000,
-                               help='Number of steps to pretrain representations (default: 100000)')
-    
+                        help='Number of steps to pretrain representations (default: 100000)')
+
     parser.add_argument('--probe-train-steps', type=int, default=30000,
-                               help='Number of steps to train probes (default: 30000 )')
-    
+                        help='Number of steps to train probes (default: 30000 )')
+
     parser.add_argument('--probe-test-steps', type=int, default=15000,
-                               help='Number of steps to train probes (default: 15000 )')
-    
+                        help='Number of steps to train probes (default: 15000 )')
+
     parser.add_argument('--num-processes', type=int, default=8,
-                               help='Number of parallel environments to collect samples from (default: 8)')
+                        help='Number of parallel environments to collect samples from (default: 8)')
     parser.add_argument('--method', type=str, default='appo',
-                               help='Method to use for training representations (default: appo)')
+                        help='Method to use for training representations (default: appo)')
     parser.add_argument('--mode', type=str, default='pcl',
                         help='Mode to use when using the Appo estimator [pcl | tcl | both] (default: pcl)')
     parser.add_argument('--linear', action='store_true', default=False,
@@ -42,11 +42,12 @@ def get_argparser():
     parser.add_argument('--epochs', type=int, default=100,
                         help='Number of epochs for  (default: 100)')
     parser.add_argument('--cuda-id', type=int, default=0,
-                               help='CUDA device index')
+                        help='CUDA device index')
     parser.add_argument('--seed', type=int, default=42,
-                               help='Random seed to use')
+                        help='Random seed to use')
 
     return parser
+
 
 def set_seeds(seed):
     torch.manual_seed(seed)
@@ -63,10 +64,12 @@ def calculate_accuracy(preds, y):
     acc = preds.eq(labels).sum().float() / labels.numel()
     return acc
 
+
 def calculate_multiclass_accuracy(preds, labels):
-    preds = torch.argmax(preds,dim=1)
-    acc = float(torch.sum(torch.eq(labels,preds)).data) / labels.size(0)
+    preds = torch.argmax(preds, dim=1)
+    acc = float(torch.sum(torch.eq(labels, preds)).data) / labels.size(0)
     return acc
+
 
 def save_model(model, envs, save_dir, model_name, use_cuda):
     save_path = os.path.join(save_dir)
@@ -148,17 +151,18 @@ def generate_video():
         'ffmpeg', '-framerate', '8', '-i', 'file%02d.png', '-r', '30', '-pix_fmt', 'yuv420p',
         'video_name.mp4'
     ])
-    
+
+
 class appendabledict(defaultdict):
-    def __init__(self,type_=list,*args,**kwargs):
-        self.type_ =  type_
-        super().__init__(type_,*args,**kwargs)
-    
-#     def map_(self, func):
-#         for k, v in self.items():
-#             self.__setitem__(k, func(v))
-    
-    def subslice(self,slice_):
+    def __init__(self, type_=list, *args, **kwargs):
+        self.type_ = type_
+        super().__init__(type_, *args, **kwargs)
+
+    #     def map_(self, func):
+    #         for k, v in self.items():
+    #             self.__setitem__(k, func(v))
+
+    def subslice(self, slice_):
         """indexes every value in the dict according to a specified slice
 
         Parameters
@@ -176,11 +180,11 @@ class appendabledict(defaultdict):
 
          """
         sliced_dict = {}
-        for k,v in self.items():
+        for k, v in self.items():
             sliced_dict[k] = v[slice_]
         return sliced_dict
-    
-    def append_update(self,other_dict):
+
+    def append_update(self, other_dict):
         """appends current dict's values with values from other_dict
 
         Parameters
@@ -194,5 +198,5 @@ class appendabledict(defaultdict):
         Nothing. The side effect is this dict's values change
 
          """
-        for k,v in other_dict.items():
+        for k, v in other_dict.items():
             self.__getitem__(k).append(v)

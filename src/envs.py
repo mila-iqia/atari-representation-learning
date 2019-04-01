@@ -1,6 +1,7 @@
 import torch
 from baselines.common.vec_env import SubprocVecEnv, DummyVecEnv
-from a2c_ppo_acktr.envs import TimeLimitMask, MaskGoal, TransposeObs,TransposeImage,VecPyTorch, VecNormalize, VecPyTorchFrameStack
+from a2c_ppo_acktr.envs import TimeLimitMask, MaskGoal, TransposeObs, TransposeImage, VecPyTorch, VecNormalize, \
+    VecPyTorchFrameStack
 from pathlib import Path
 import os
 import gym
@@ -25,7 +26,6 @@ def make_env(env_id, seed, rank, log_dir, allow_early_resets):
         if is_atari:
             env = make_atari(env_id)
             env = AtariWrapper(env)
-            
 
         env.seed(seed + rank)
 
@@ -57,10 +57,11 @@ def make_env(env_id, seed, rank, log_dir, allow_early_resets):
         return env
 
     return _thunk
+
+
 def make_vec_envs(env_name, seed, num_processes, gamma=0.99, log_dir='./tmp/',
                   device=torch.device('cpu'), allow_early_resets=False):
-    
-    Path(log_dir).mkdir(parents=True,exist_ok=True)
+    Path(log_dir).mkdir(parents=True, exist_ok=True)
     envs = [make_env(env_name, seed, i, log_dir, allow_early_resets)
             for i in range(num_processes)]
 
