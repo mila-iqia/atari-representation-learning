@@ -86,8 +86,11 @@ class AppoTrainer(Trainer):
                 target = torch.cat((torch.ones(self.mini_batch_size, 1),
                                     torch.zeros(self.mini_batch_size, 1)), dim=0).to(self.device)
 
+                x1, x2 = torch.stack([f_t, f_t_2]), torch.stack([f_t_prev, f_t_hat])
+                shuffled_idxs = torch.randperm(len(target))
+                x1, x2, target = x1[shuffled_idxs], x2[shuffled_idxs], target[shuffled_idxs]
                 self.optimizer.zero_grad()
-                loss = self.loss_fn(self.classifier(samples), target)
+                loss = self.loss_fn(self.classifier(x1, x2), target)
                 loss.backward()
                 self.optimizer.step()
 

@@ -22,7 +22,7 @@ def main():
     encoder.to(device)
     torch.set_num_threads(1)
 
-    wandb.init(project="curl-atari", entity="curl-atari", tags=['pretraining-only'])
+    wandb.init(project="curl-atari", entity="curl-atari", tags=['pretraining-only', 'bilinear'])
     config = {
         'pretraining_steps': args.pretraining_steps,
         'env_name': args.env_name,
