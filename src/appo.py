@@ -95,7 +95,7 @@ class AppoTrainer(Trainer):
                 self.optimizer.step()
 
                 epoch_loss += loss.detach().item()
-                preds = torch.sigmoid(self.classifier(samples))
+                preds = torch.sigmoid(self.classifier(x1, x2))
                 accuracy += calculate_accuracy(preds, target)
                 steps += 1
             self.log_results(e, epoch_loss / steps, accuracy / steps)
