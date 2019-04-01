@@ -37,7 +37,6 @@ class InfoWrapper(gym.Wrapper):
 
 
 class AtariWrapper(InfoWrapper):
-
     def __init__(self, env):
         super().__init__(env)
         env_name = self.env.spec.id
@@ -59,6 +58,6 @@ class AtariWrapper(InfoWrapper):
         return info
 
     def labels(self):
-        ram = self.env.env.ale.getRAM()
+        ram = self.env.unwrapped.ale.getRAM()
         label_dict = {k: ram[ind] for k, ind in self.ram_dict.items()}
         return label_dict
