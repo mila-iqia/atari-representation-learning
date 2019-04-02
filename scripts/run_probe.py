@@ -17,7 +17,7 @@ import sys
 
 def main():
     parser = get_argparser()
-    parser.set_defaults(env_name="PitfallNoFrameskip-v4")
+    parser.set_defaults(env_name="MontezumaRevengeNoFrameskip-v4")
     parser.add_argument("--weights_path", type=str, default="None")
     args = parser.parse_args()
     device = torch.device("cuda:" + str(args.cuda_id) if torch.cuda.is_available() else "cpu")
@@ -28,6 +28,7 @@ def main():
         print("Probing without loading in encoder weights!")
     else:
         encoder.load_state_dict(torch.load(args.weights_path))
+        encoder.eval()
 
     encoder.to(device)
     torch.set_num_threads(1)
