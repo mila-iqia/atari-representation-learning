@@ -1,3 +1,4 @@
+import os
 import torch
 import torch.nn as nn
 import numpy as np
@@ -24,21 +25,21 @@ class Classifier(nn.Module):
 
 class AppoTrainer(Trainer):
     # TODO: Make it work for all modes, right now only it defaults to pcl.
-    def __init__(self, encoder, mode='pcl', epochs=100, mini_batch_size=64, lr=3e-4, device=torch.device('cpu'),
-                 linear=False, wandb=None):
+    def __init__(self, encoder, config, device=torch.device('cpu'), wandb=None):
         super().__init__(encoder, wandb, device)
-        self.mode = mode
+        self.config = config
+        self.mode = config['mode']
         self.feature_sizes = {
             'pcl': self.encoder.hidden_size * 2,
             'tcl': self.encoder.hidden_size + 1,
             'both': self.encoder.hidden_size * 2 + 1
         }
-        self.classifier = Classifier(self.encoder.hidden_size, linear=linear).to(device)
-        self.epochs = epochs
-        self.mini_batch_size = mini_batch_size
+        self.classifier = Classifier(self.encoder.hidden_size, linear=config['linear']).to(device)
+        self.epochs = config['epochs']
+        self.mini_batch_size = config['mini_batch_size']
         self.device = device
         self.optimizer = torch.optim.Adam(list(self.classifier.parameters()) + list(self.encoder.parameters()),
-                                          lr=lr, eps=1e-5)
+                                          lr=config['lr'], eps=1e-5)
         self.loss_fn = nn.BCEWithLogitsLoss()
 
     def generate_batch(self, episodes):
@@ -100,6 +101,7 @@ class AppoTrainer(Trainer):
                 accuracy += calculate_accuracy(preds, target)
                 steps += 1
             self.log_results(e, epoch_loss / steps, accuracy / steps)
+        torch.save(os.path.join(self.wandb.run.dir,  self.config.env_name + '.pt'))
 
     def log_results(self, epoch_idx, epoch_loss, accuracy):
         print("Epoch: {}, Epoch Loss: {}, Accuracy: {}".format(epoch_idx, epoch_loss, accuracy))
