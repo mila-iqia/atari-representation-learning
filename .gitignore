@@ -109,3 +109,4 @@ runs/
 wandb/
 act_maps/
 trained_models/
+*monitor.csv

@@ -39,9 +39,7 @@ def main():
     wandb.config.update(config)
 
     if args.method == 'appo':
-        trainer = AppoTrainer(encoder, mode='pcl', epochs=config['epochs'], lr=config['lr'],
-                              mini_batch_size=config['mini_batch_size'], linear=config['linear'], device=device,
-                              wandb=wandb)
+        trainer = AppoTrainer(encoder, config, device=device, wandb=wandb)
 
     obs = envs.reset()
     episode_rewards = deque(maxlen=10)
