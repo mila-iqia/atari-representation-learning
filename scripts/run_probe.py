@@ -90,7 +90,7 @@ def main():
 
     tr_episodes, tr_episode_labels, info = collect_episodes(args.probe_train_steps)
     trainer = ProbeTrainer(encoder, wandb, info_dict=info["num_classes"], epochs=args.epochs,
-                           lr=args.lr, mini_batch_size=args.batch_size)
+                           lr=args.lr, mini_batch_size=args.batch_size, device=device)
 
     trainer.train(tr_episodes, tr_episode_labels)
 

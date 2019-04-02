@@ -29,7 +29,7 @@ class ProbeTrainer(Trainer):
         self.mini_batch_size = mini_batch_size
         # info_dict should have {label_name: number_of_classes_for_that_label}
         self.probes = {k: LinearProbe(input_dim=encoder.hidden_size,
-                                      num_classes=info_dict[k]) for k in info_dict.keys()}
+                                      num_classes=info_dict[k]).to(device) for k in info_dict.keys()}
         self.optimizers = {k: torch.optim.Adam(list(self.probes[k].parameters()),
                                                eps=1e-5, lr=self.lr) for k in info_dict.keys()}
         self.loss_fn = nn.CrossEntropyLoss()
