@@ -20,11 +20,16 @@ atari_dict = {"Pitfall": {"ram": dict(agent_x=97,
                                               agent_y=43,
                                               skull_x=47,
                                               skull_y=46),
-                                    "num_classes": {} }
-              }
-
-
-
+                                    "num_classes": {} },
+              
+              "Pong": {"ram":dict(player_y=51,
+                                           enemy=50,
+                                           ball_x=49,
+                                           ball_y=54,
+                                           enemy_score=13,
+                                           player_score=14),
+                                "num_classes":{}}
+             }
 														
 
 class InfoWrapper(gym.Wrapper):
