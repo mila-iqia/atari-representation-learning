@@ -77,8 +77,8 @@ class ProbeTrainer(Trainer):
                 if probe.training:
                     loss.backward()
                     optim.step()
-        epoch_loss = {k: loss / step for k, loss in epoch_loss.items()}
-        accuracy = {k: acc / step for k, acc in accuracy.items()}
+        epoch_loss = {k: loss / (step + 1) for k, loss in epoch_loss.items()}
+        accuracy = {k: acc / (step + 1) for k, acc in accuracy.items()}
         return epoch_loss, accuracy
         
     def train(self, episodes, label_dicts):
