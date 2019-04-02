@@ -23,6 +23,7 @@ class Classifier(nn.Module):
 
 
 class AppoTrainer(Trainer):
+    # TODO: Make it work for all modes, right now only it defaults to pcl.
     def __init__(self, encoder, mode='pcl', epochs=100, mini_batch_size=64, lr=3e-4, device=torch.device('cpu'),
                  linear=False, wandb=None):
         super().__init__(encoder, wandb, device)
@@ -68,6 +69,7 @@ class AppoTrainer(Trainer):
                   torch.Tensor(ts), torch.Tensor(thats)
 
     def train(self, episodes):
+        # TODO: Make it work for all modes, right now only it defaults to pcl.
         for e in range(self.epochs):
             epoch_loss, accuracy, steps = 0., 0., 0
             data_generator = self.generate_batch(episodes)
@@ -82,7 +84,6 @@ class AppoTrainer(Trainer):
                 elif self.mode == 'both':
                     f_pos, f_neg = torch.cat((f_t, f_t_prev, ts), dim=-1), torch.cat((f_t_2, f_t_hat, thats), dim=-1)
 
-                samples = torch.cat((f_pos, f_neg), dim=0)
                 target = torch.cat((torch.ones(self.mini_batch_size, 1),
                                     torch.zeros(self.mini_batch_size, 1)), dim=0).to(self.device)
 
