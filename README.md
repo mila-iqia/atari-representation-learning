@@ -31,7 +31,10 @@ pip install -r requirements.txt
 ```bash
 python -m scripts.run_contrastive --method appo
 ```
-
+#### Probing
+```bash
+python -m scripts.run_probe --weights_path ./path/where/I/store/my/models/model.pt
+```
 ### Notes
 
 Every estimator inherits from `Trainer`:

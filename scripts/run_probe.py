@@ -14,10 +14,11 @@ from src.appo import AppoTrainer
 import wandb
 import sys
 
+
 def main():
     parser = get_argparser()
     parser.set_defaults(env_name="PitfallNoFrameskip-v4")
-    parser.add_argument("--weights_path",type=str,default="None")
+    parser.add_argument("--weights_path", type=str, default="None")
     args = parser.parse_args()
     device = torch.device("cuda:" + str(args.cuda_id) if torch.cuda.is_available() else "cpu")
     envs = make_vec_envs(args.env_name, args.seed, args.num_processes)
@@ -55,13 +56,13 @@ def main():
         episode_labels = [[[]] for _ in range(args.num_processes)]
         for step in range(num_steps // args.num_processes):
             # Take action using a random policy
-            action = torch.tensor(np.array([np.random.randint(1, envs.action_space.n) for _ in range(args.num_processes)])) \
+            action = torch.tensor(
+                np.array([np.random.randint(1, envs.action_space.n) for _ in range(args.num_processes)])) \
                 .unsqueeze(dim=1).to(device)
             obs, reward, done, infos = envs.step(action)
             for i, info in enumerate(infos):
                 if 'episode' in info.keys():
                     episode_rewards.append(info['episode']['r'])
-
 
                 if done[i] != 1:
                     episodes[i][-1].append(obs[i])
@@ -85,18 +86,17 @@ def main():
         episode_labels = list(chain.from_iterable(episode_labels))
         episode_labels = [x for x in episode_labels if len(x) > 10]
         return episodes, episode_labels, info
-    
+
     tr_episodes, tr_episode_labels, info = collect_episodes(args.probe_train_steps)
-    trainer = ProbeTrainer(encoder, wandb, info_dict=info["num_classes"],epochs=args.epochs,
+    trainer = ProbeTrainer(encoder, wandb, info_dict=info["num_classes"], epochs=args.epochs,
                            lr=args.lr, mini_batch_size=args.batch_size)
 
-
     trainer.train(tr_episodes, tr_episode_labels)
-    
+
     te_episodes, te_episode_labels, _ = collect_episodes(args.probe_test_steps)
 
     trainer.test(te_episodes, te_episode_labels)
-    
-    
+
+
 if __name__ == "__main__":
     main()
