@@ -16,13 +16,14 @@ class Classifier(nn.Module):
                 nn.Linear(hidden_size, 1)
             )
         else:
-            self.network = nn.Linear(num_inputs, 1)
+            self.network = nn.Bilinear(num_inputs, num_inputs, 1)
 
-    def forward(self, x):
-        return self.network(x)
+    def forward(self, x1, x2):
+        return self.network(x1, x2)
 
 
 class AppoTrainer(Trainer):
+    # TODO: Make it work for all modes, right now only it defaults to pcl.
     def __init__(self, encoder, mode='pcl', epochs=100, mini_batch_size=64, lr=3e-4, device=torch.device('cpu'),
                  linear=False, wandb=None):
         super().__init__(encoder, wandb, device)
@@ -32,7 +33,7 @@ class AppoTrainer(Trainer):
             'tcl': self.encoder.hidden_size + 1,
             'both': self.encoder.hidden_size * 2 + 1
         }
-        self.classifier = Classifier(self.feature_sizes[mode], linear=linear).to(device)
+        self.classifier = Classifier(self.encoder.hidden_size, linear=linear).to(device)
         self.epochs = epochs
         self.mini_batch_size = mini_batch_size
         self.device = device
@@ -68,6 +69,7 @@ class AppoTrainer(Trainer):
                   torch.Tensor(ts), torch.Tensor(thats)
 
     def train(self, episodes):
+        # TODO: Make it work for all modes, right now only it defaults to pcl.
         for e in range(self.epochs):
             epoch_loss, accuracy, steps = 0., 0., 0
             data_generator = self.generate_batch(episodes)
@@ -82,17 +84,19 @@ class AppoTrainer(Trainer):
                 elif self.mode == 'both':
                     f_pos, f_neg = torch.cat((f_t, f_t_prev, ts), dim=-1), torch.cat((f_t_2, f_t_hat, thats), dim=-1)
 
-                samples = torch.cat((f_pos, f_neg), dim=0)
                 target = torch.cat((torch.ones(self.mini_batch_size, 1),
                                     torch.zeros(self.mini_batch_size, 1)), dim=0).to(self.device)
 
+                x1, x2 = torch.cat([f_t, f_t_2]), torch.cat([f_t_prev, f_t_hat])
+                shuffled_idxs = torch.randperm(len(target))
+                x1, x2, target = x1[shuffled_idxs], x2[shuffled_idxs], target[shuffled_idxs]
                 self.optimizer.zero_grad()
-                loss = self.loss_fn(self.classifier(samples), target)
+                loss = self.loss_fn(self.classifier(x1, x2), target)
                 loss.backward()
                 self.optimizer.step()
 
                 epoch_loss += loss.detach().item()
-                preds = torch.sigmoid(self.classifier(samples))
+                preds = torch.sigmoid(self.classifier(x1, x2))
                 accuracy += calculate_accuracy(preds, target)
                 steps += 1
             self.log_results(e, epoch_loss / steps, accuracy / steps)

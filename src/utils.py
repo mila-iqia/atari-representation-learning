@@ -20,20 +20,17 @@ def get_argparser():
                         help='environment to train on (default: MontezumaRevengeNoFrameskip-v4)')
     parser.add_argument('--pretraining-steps', type=int, default=100000,
                         help='Number of steps to pretrain representations (default: 100000)')
-
     parser.add_argument('--probe-train-steps', type=int, default=30000,
                         help='Number of steps to train probes (default: 30000 )')
-
     parser.add_argument('--probe-test-steps', type=int, default=15000,
                         help='Number of steps to train probes (default: 15000 )')
-
     parser.add_argument('--num-processes', type=int, default=8,
                         help='Number of parallel environments to collect samples from (default: 8)')
     parser.add_argument('--method', type=str, default='appo',
                         help='Method to use for training representations (default: appo)')
     parser.add_argument('--mode', type=str, default='pcl',
                         help='Mode to use when using the Appo estimator [pcl | tcl | both] (default: pcl)')
-    parser.add_argument('--linear', action='store_true', default=False,
+    parser.add_argument('--linear', action='store_true', default=True,
                         help='Whether to use a linear classifier')
     parser.add_argument('--lr', type=float, default=5e-4,
                         help='Learning Rate foe learning representations (default: 5e-4)')

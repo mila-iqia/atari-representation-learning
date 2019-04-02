@@ -37,7 +37,6 @@ class InfoWrapper(gym.Wrapper):
 
 
 class AtariWrapper(InfoWrapper):
-
     def __init__(self, env):
         super().__init__(env)
         env_name = self.env.spec.id
