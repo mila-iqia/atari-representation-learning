@@ -101,7 +101,7 @@ class AppoTrainer(Trainer):
                 accuracy += calculate_accuracy(preds, target)
                 steps += 1
             self.log_results(e, epoch_loss / steps, accuracy / steps)
-        torch.save(self.encoder.state_dict(), os.path.join(self.wandb.run.dir,  self.config.env_name + '.pt'))
+        torch.save(self.encoder.state_dict(), os.path.join(self.wandb.run.dir,  self.config['env_name'] + '.pt'))
 
     def log_results(self, epoch_idx, epoch_loss, accuracy):
         print("Epoch: {}, Epoch Loss: {}, Accuracy: {}".format(epoch_idx, epoch_loss, accuracy))
