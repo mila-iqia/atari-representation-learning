@@ -21,7 +21,7 @@ atari_dict = {"Pitfall": {"ram": dict(agent_x=97,
                                     "num_classes": {} },
               
               "Pong": {"ram":dict(player_y=51,
-                                           enemy=50,
+                                           enemy_y=50,
                                            ball_x=49,
                                            ball_y=54,
                                            enemy_score=13,
