@@ -19,6 +19,7 @@ def main():
     parser = get_argparser()
     parser.set_defaults(env_name="MontezumaRevengeNoFrameskip-v4")
     parser.add_argument("--weights-path", type=str, default="None")
+    parser.add_argument("--test",action="store_true")
     args = parser.parse_args()
     device = torch.device("cuda:" + str(args.cuda_id) if torch.cuda.is_available() else "cpu")
     envs = make_vec_envs(args.env_name, args.seed, args.num_processes)
@@ -94,9 +95,10 @@ def main():
 
     trainer.train(tr_episodes, tr_episode_labels)
 
-    te_episodes, te_episode_labels, _ = collect_episodes(args.probe_test_steps)
+    if args.test:
+        te_episodes, te_episode_labels, _ = collect_episodes(args.probe_test_steps)
 
-    trainer.test(te_episodes, te_episode_labels)
+        trainer.test(te_episodes, te_episode_labels)
 
 
 if __name__ == "__main__":
