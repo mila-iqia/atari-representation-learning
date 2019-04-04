@@ -43,6 +43,17 @@ def get_argparser():
     parser.add_argument('--seed', type=int, default=42,
                         help='Random seed to use')
 
+    # CPC-specific arguments
+    parser.add_argument('--sequence_length', type=int, default=12,
+                        help='Sequence length.')
+    parser.add_argument('--steps_to_ignore', type=int, default=0,
+                        help='Number of immediate future steps to ignore.')
+    parser.add_argument('--steps_to_predict', type=int, default=10,
+                        help='Number of future steps to predict.')
+    parser.add_argument('--gru_size', type=int, default=512,
+                        help='Hidden size of the GRU layers.')
+    parser.add_argument('--gru_layers', type=int, default=2,
+                        help='Number of GRU layers.')
     return parser
 
 
