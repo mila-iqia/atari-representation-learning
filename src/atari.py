@@ -2,8 +2,15 @@ from gym.envs.registration import register
 import gym
 from gym import spaces
 
-atari_dict = {"Pitfall": {"ram": dict(agent_x=97,
-                                      agent_y=105),
+atari_dict = {"Pitfall": {"ram": dict(agent_x=97,                                     
+                                      agent_y=105, # peak jump height to underground is 21-86. But when respawning goes as high as 255
+                                      log_x=98,
+                                      scorpion_x=99,
+                                      agent_ladder_y=108, #0-20 where on ladder player is
+                                      rope_y=18,#varies even when rope not in scene 0-20
+                                      player_leg_pos=100, #0-5 #which of 5 possible leg configs does player have
+                                      player_jump_trajectory_id=103 #0-32 #where in jump is player (0 is start, 16 is peak, 32 is right before landing)
+                                       ),
                                  "num_classes": {}},
                   
                   
@@ -17,7 +24,9 @@ atari_dict = {"Pitfall": {"ram": dict(agent_x=97,
                                               agent_x=42,
                                               agent_y=43,
                                               skull_x=47,
-                                              skull_y=46),
+                                              skull_y=46,
+                                              key_or_monster_x=44,
+                                              key_or_monster_y=45),
                                     "num_classes": {} },
               
               "Pong": {"ram":dict(player_y=51,
