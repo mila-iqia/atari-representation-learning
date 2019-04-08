@@ -18,6 +18,8 @@ def get_argparser():
     parser = argparse.ArgumentParser()
     parser.add_argument('--env-name', default='MontezumaRevengeNoFrameskip-v4',
                         help='environment to train on (default: MontezumaRevengeNoFrameskip-v4)')
+    parser.add_argument('--num-frame-stack', type=int, default=4,
+                        help='Number of frames to stack for a state')
     parser.add_argument('--pretraining-steps', type=int, default=100000,
                         help='Number of steps to pretrain representations (default: 100000)')
     parser.add_argument('--probe-train-steps', type=int, default=30000,

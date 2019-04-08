@@ -92,7 +92,7 @@ class NatureCNN(nn.Module):
             init_(nn.Conv2d(64, 32, 3, stride=1)),
             nn.ReLU(),
             Flatten(),
-            init_(nn.Linear(32 * 7 * 7, hidden_size)),
+            init_(nn.Linear(self.final_conv_size, hidden_size)),
             nn.ReLU()
         )
         self.train()

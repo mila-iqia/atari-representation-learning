@@ -60,7 +60,7 @@ def make_env(env_id, seed, rank, log_dir, allow_early_resets):
 
 
 def make_vec_envs(env_name, seed, num_processes, gamma=0.99, log_dir='./tmp/',
-                  device=torch.device('cpu'), allow_early_resets=False):
+                  device=torch.device('cpu'), num_frame_stack=1, allow_early_resets=False):
     Path(log_dir).mkdir(parents=True, exist_ok=True)
     envs = [make_env(env_name, seed, i, log_dir, allow_early_resets)
             for i in range(num_processes)]
@@ -78,9 +78,7 @@ def make_vec_envs(env_name, seed, num_processes, gamma=0.99, log_dir='./tmp/',
 
     envs = VecPyTorch(envs, device)
 
-    # if num_frame_stack is not None:
-    #     envs = VecPyTorchFrameStack(envs, num_frame_stack, device)
-    # elif len(envs.observation_space.shape) == 3:
-    #     envs = VecPyTorchFrameStack(envs, 4, device)
+    if num_frame_stack > 1:
+        envs = VecPyTorchFrameStack(envs, num_frame_stack, device)
 
     return envs
