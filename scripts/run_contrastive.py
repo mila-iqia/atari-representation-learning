@@ -9,6 +9,7 @@ from src.envs import make_vec_envs
 from src.utils import get_argparser, visualize_activation_maps
 from src.encoders import NatureCNN, ImpalaCNN
 from src.appo import AppoTrainer
+from src.cpc import CPCTrainer
 
 import wandb
 
@@ -24,22 +25,20 @@ def main():
 
     wandb.init(project="curl-atari", entity="curl-atari", tags=['pretraining-only'])
     config = {
-        'pretraining_steps': args.pretraining_steps,
-        'env_name': args.env_name,
-        'method': args.method,
-        'mode': args.mode,
         'encoder': encoder.__class__.__name__,
         'obs_space': str(envs.observation_space.shape),
-        'epochs': args.epochs,
-        'lr': args.lr,
-        'mini_batch_size': args.batch_size,
-        'linear': args.linear,
         'optimizer': 'Adam',
     }
+    config.update(vars(args))
     wandb.config.update(config)
 
     if args.method == 'appo':
         trainer = AppoTrainer(encoder, config, device=device, wandb=wandb)
+    if args.method == 'cpc':
+        #config['sequence_length'] = args.sequence_length
+        #config['steps_to_ignore'] = args.steps_to_ignore
+        #config['steps_to_predict'] = args.steps_to_predict
+        trainer = CPCTrainer(encoder, config, device=device, wandb=wandb)
 
     obs = envs.reset()
     episode_rewards = deque(maxlen=10)

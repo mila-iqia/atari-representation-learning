@@ -1,4 +1,4 @@
-# rl-reprsentation-learning
+# rl-representation-learning
 Representation Learning for RL
 
 Dependencies: 

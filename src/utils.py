@@ -45,6 +45,17 @@ def get_argparser():
     parser.add_argument('--seed', type=int, default=42,
                         help='Random seed to use')
 
+    # CPC-specific arguments
+    parser.add_argument('--sequence_length', type=int, default=12,
+                        help='Sequence length.')
+    parser.add_argument('--steps_to_ignore', type=int, default=0,
+                        help='Number of immediate future steps to ignore.')
+    parser.add_argument('--steps_to_predict', type=int, default=10,
+                        help='Number of future steps to predict.')
+    parser.add_argument('--gru_size', type=int, default=512,
+                        help='Hidden size of the GRU layers.')
+    parser.add_argument('--gru_layers', type=int, default=2,
+                        help='Number of GRU layers.')
     return parser
 
 
@@ -199,3 +210,27 @@ class appendabledict(defaultdict):
          """
         for k, v in other_dict.items():
             self.__getitem__(k).append(v)
+            
+            
+def bucket_coord(coord, num_buckets, min_coord=0, max_coord=255, stride=1):
+    # stride is how much a variable is incremented by (usually 1)
+    try:
+        assert (coord <= max_coord and coord >= min_coord)
+    except:
+        print("coord: %i, max: %i, min: %i, num_buckets: %i"%(coord, max_coord, min_coord,num_buckets))
+        assert False, coord
+    coord_range = (max_coord - min_coord) + 1
+    
+    # thresh is how many units in raw_coord space correspond to one bucket
+    if coord_range < num_buckets: # we never want to upsample from the original coord
+        thresh = stride 
+    else:
+        thresh =  coord_range / num_buckets
+    bucketed_coord =  np.floor((coord - min_coord) / thresh)
+    return bucketed_coord
+
+def bucket_discrete(coord, possible_values):
+    #possible values is a list of all values a coord can take on
+    inds = range(len(possible_values))
+    hash_table = dict(zip(possible_values,inds))
+    return hash_table[coord]

@@ -36,7 +36,7 @@ class AppoTrainer(Trainer):
         }
         self.classifier = Classifier(self.encoder.hidden_size, linear=config['linear']).to(device)
         self.epochs = config['epochs']
-        self.mini_batch_size = config['mini_batch_size']
+        self.batch_size = config['batch_size']
         self.device = device
         self.optimizer = torch.optim.Adam(list(self.classifier.parameters()) + list(self.encoder.parameters()),
                                           lr=config['lr'], eps=1e-5)
@@ -46,10 +46,10 @@ class AppoTrainer(Trainer):
         total_steps = sum([len(e) for e in episodes])
         print('Total Steps: {}'.format(total_steps))
         # Episode sampler
-        # Sample `num_samples` episodes then batchify them with `self.mini_batch_size` episodes per batch
+        # Sample `num_samples` episodes then batchify them with `self.batch_size` episodes per batch
         sampler = BatchSampler(RandomSampler(range(len(episodes)),
                                              replacement=True, num_samples=total_steps),
-                               self.mini_batch_size, drop_last=True)
+                               self.batch_size, drop_last=True)
         for indices in sampler:
             episodes_batch = [episodes[x] for x in indices]
             x_t, x_tprev, x_that, ts, thats = [], [], [], [], []
@@ -85,8 +85,8 @@ class AppoTrainer(Trainer):
                 elif self.mode == 'both':
                     f_pos, f_neg = torch.cat((f_t, f_t_prev, ts), dim=-1), torch.cat((f_t_2, f_t_hat, thats), dim=-1)
 
-                target = torch.cat((torch.ones(self.mini_batch_size, 1),
-                                    torch.zeros(self.mini_batch_size, 1)), dim=0).to(self.device)
+                target = torch.cat((torch.ones(self.batch_size, 1),
+                                    torch.zeros(self.batch_size, 1)), dim=0).to(self.device)
 
                 x1, x2 = torch.cat([f_t, f_t_2]), torch.cat([f_t_prev, f_t_hat])
                 shuffled_idxs = torch.randperm(len(target))
