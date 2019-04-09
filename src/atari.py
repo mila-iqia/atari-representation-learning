@@ -1,43 +1,7 @@
 from gym.envs.registration import register
 import gym
 from gym import spaces
-
-atari_dict = {"Pitfall": {"ram": dict(agent_x=97,                                     
-                                      agent_y=105, # peak jump height to underground is 21-86. But when respawning goes as high as 255
-                                      log_x=98,
-                                      scorpion_x=99,
-                                      agent_ladder_y=108, #0-20 where on ladder player is
-                                      rope_y=18,#varies even when rope not in scene 0-20
-                                      player_leg_pos=100, #0-5 #which of 5 possible leg configs does player have
-                                      player_jump_trajectory_id=103 #0-32 #where in jump is player (0 is start, 16 is peak, 32 is right before landing)
-                                       ),
-                                 "num_classes": {}},
-                  
-                  
-                  
-              "PrivateEye": {"ram": dict(agent_x=63,
-                                           agent_y=86),
-                                    "num_classes": {}},
-              
-              "MontezumaRevenge": {"ram": dict(room_number=3,
-                                              agent_facing_direction=52, # 72 if facing left, 128 if facing right
-                                              agent_x=42,
-                                              agent_y=43,
-                                              skull_x=47,
-                                              skull_y=46,
-                                              key_or_monster_x=44,
-                                              key_or_monster_y=45),
-                                    "num_classes": {} },
-              
-              "Pong": {"ram":dict(player_y=51,
-                                           enemy_y=50,
-                                           ball_x=49,
-                                           ball_y=54,
-                                           enemy_score=13,
-                                           player_score=14),
-                                "num_classes":{}}
-             }
-
+from .atari_ram_annotations import atari_dict
 
 class InfoWrapper(gym.Wrapper):
     def step(self, action):
@@ -59,18 +23,18 @@ class AtariWrapper(InfoWrapper):
     def __init__(self, env):
         super().__init__(env)
         env_name = self.env.spec.id
-        self.env_name = env_name.split("-")[0].split("No")[0]
+        self.env_name = env_name.split("-")[0].split("No")[0].lower()
+        print(list(atari_dict.keys()))
+        print(self.env_name)
 
         if self.env_name in atari_dict:
-            self.ram_dict = atari_dict[self.env_name]["ram"]
-            ncd = atari_dict[self.env_name]["num_classes"]
-            if len(ncd) > 0:
-                self.nclasses_dict = ncd
-            else:
-                self.nclasses_dict = {k: 256 for k in self.ram_dict.keys()}
+            
+            self.ram_dict = atari_dict[self.env_name]
+            self.nclasses_dict = {k: 256 for k in self.ram_dict.keys()}
 
     def info(self, info):
         if self.env_name in atari_dict:
+            
             info["num_classes"] = self.nclasses_dict
             label_dict = self.labels()
             info["labels"] = label_dict
