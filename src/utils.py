@@ -43,16 +43,18 @@ def get_argparser():
     parser.add_argument('--cuda-id', type=int, default=0,
                         help='CUDA device index')
     parser.add_argument('--seed', type=int, default=42,
-                        help='Random seed to use')   
+                        help='Random seed to use')
     parser.add_argument('--encoder-type', type=str, default="Nature", choices=["Impala", "Nature"],
                         help='Encoder type (Impala or Nature)')
-    
+
     # CPC-specific arguments
-    parser.add_argument('--sequence_length', type=int, default=12,
+    parser.add_argument('--sequence_length', type=int, default=100,
                         help='Sequence length.')
-    parser.add_argument('--steps_to_ignore', type=int, default=0,
+    parser.add_argument('--steps_start', type=int, default=0,
                         help='Number of immediate future steps to ignore.')
-    parser.add_argument('--steps_to_predict', type=int, default=10,
+    parser.add_argument('--steps_end', type=int, default=99,
+                        help='Number of future steps to predict.')
+    parser.add_argument('--steps_step', type=int, default=4,
                         help='Number of future steps to predict.')
     parser.add_argument('--gru_size', type=int, default=512,
                         help='Hidden size of the GRU layers.')
@@ -212,8 +214,8 @@ class appendabledict(defaultdict):
          """
         for k, v in other_dict.items():
             self.__getitem__(k).append(v)
-            
-            
+
+
 def bucket_coord(coord, num_buckets, min_coord=0, max_coord=255, stride=1):
     # stride is how much a variable is incremented by (usually 1)
     try:
@@ -222,10 +224,10 @@ def bucket_coord(coord, num_buckets, min_coord=0, max_coord=255, stride=1):
         print("coord: %i, max: %i, min: %i, num_buckets: %i"%(coord, max_coord, min_coord,num_buckets))
         assert False, coord
     coord_range = (max_coord - min_coord) + 1
-    
+
     # thresh is how many units in raw_coord space correspond to one bucket
     if coord_range < num_buckets: # we never want to upsample from the original coord
-        thresh = stride 
+        thresh = stride
     else:
         thresh =  coord_range / num_buckets
     bucketed_coord =  np.floor((coord - min_coord) / thresh)
