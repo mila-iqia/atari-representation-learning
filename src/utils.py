@@ -43,8 +43,10 @@ def get_argparser():
     parser.add_argument('--cuda-id', type=int, default=0,
                         help='CUDA device index')
     parser.add_argument('--seed', type=int, default=42,
-                        help='Random seed to use')
-
+                        help='Random seed to use')   
+    parser.add_argument('--encoder-type', type=str, default="Nature", choices=["Impala", "Nature"],
+                        help='Encoder type (Impala or Nature)')
+    
     # CPC-specific arguments
     parser.add_argument('--sequence_length', type=int, default=12,
                         help='Sequence length.')
