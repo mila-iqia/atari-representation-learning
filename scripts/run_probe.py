@@ -64,11 +64,11 @@ def main():
                     episode_rewards.append(info['episode']['r'])
 
                 if done[i] != 1:
-                    episodes[i][-1].append(obs[i])
+                    episodes[i][-1].append(obs[i].clone())
                     if "labels" in info.keys():
                         episode_labels[i][-1].append(info["labels"])
                 else:
-                    episodes[i].append([obs[i]])
+                    episodes[i].append([obs[i].clone()])
                     if "labels" in info.keys():
                         episode_labels[i].append([info["labels"]])
 
