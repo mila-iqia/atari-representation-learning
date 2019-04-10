@@ -21,12 +21,12 @@ class LinearProbe(nn.Module):
 class ProbeTrainer(Trainer):
     def __init__(self, encoder, wandb, info_dict,
                  device=torch.device('cpu'),
-                 epochs=100, lr=5e-4, mini_batch_size=64):
+                 epochs=100, lr=5e-4, batch_size=64):
         super().__init__(encoder, wandb, device)
         self.info_dict = info_dict
         self.epochs = epochs
         self.lr = lr
-        self.mini_batch_size = mini_batch_size
+        self.batch_size = batch_size
         # info_dict should have {label_name: number_of_classes_for_that_label}
         self.probes = {k: LinearProbe(input_dim=encoder.hidden_size,
                                       num_classes=info_dict[k]).to(device) for k in info_dict.keys()}
@@ -38,10 +38,10 @@ class ProbeTrainer(Trainer):
         total_steps = sum([len(e) for e in episodes])
         print('Total Steps: {}'.format(total_steps))
         # Episode sampler
-        # Sample `num_samples` episodes then batchify them with `self.mini_batch_size` episodes per batch
+        # Sample `num_samples` episodes then batchify them with `self.batch_size` episodes per batch
         sampler = BatchSampler(RandomSampler(range(len(episodes)),
                                              replacement=True, num_samples=total_steps),
-                               self.mini_batch_size, drop_last=True)
+                               self.batch_size, drop_last=True)
         for indices in sampler:
             episodes_batch = [episodes[x] for x in indices]
             episode_labels_batch = [episode_labels[x] for x in indices]

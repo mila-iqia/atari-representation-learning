@@ -35,17 +35,11 @@ def main():
 
     wandb.init(project="curl-atari", entity="curl-atari", tags=['probe-only'])
     config = {
-        'probe_train_steps': args.probe_train_steps,
-        'probe_test_steps': args.probe_test_steps,
-        'env_name': args.env_name,
-        'method': args.method,
         'encoder': encoder.__class__.__name__,
         'obs_space': str(envs.observation_space.shape),
-        'epochs': args.epochs,
-        'lr': args.lr,
-        'mini_batch_size': args.batch_size,
         'optimizer': 'Adam',
     }
+    config.update(vars(args))
     wandb.config.update(config)
 
     def collect_episodes(num_steps):
@@ -90,7 +84,7 @@ def main():
 
     tr_episodes, tr_episode_labels, info = collect_episodes(args.probe_train_steps)
     trainer = ProbeTrainer(encoder, wandb, info_dict=info["num_classes"], epochs=args.epochs,
-                           lr=args.lr, mini_batch_size=args.batch_size, device=device)
+                           lr=args.lr, batch_size=args.batch_size, device=device)
 
     trainer.train(tr_episodes, tr_episode_labels)
 

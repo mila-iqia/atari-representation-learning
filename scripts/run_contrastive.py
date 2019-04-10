@@ -35,9 +35,6 @@ def main():
     if args.method == 'appo':
         trainer = AppoTrainer(encoder, config, device=device, wandb=wandb)
     if args.method == 'cpc':
-        #config['sequence_length'] = args.sequence_length
-        #config['steps_to_ignore'] = args.steps_to_ignore
-        #config['steps_to_predict'] = args.steps_to_predict
         trainer = CPCTrainer(encoder, config, device=device, wandb=wandb)
 
     obs = envs.reset()
@@ -68,8 +65,9 @@ def main():
     episodes = [x for x in episodes if len(x) > 10]
 
     trainer.train(episodes)
-    frames = episodes[200][:60, :, :, :]
-    visualize_activation_maps(encoder, frames, wandb)
+    # TODO: Better data selection. This failed for a run on Pong.
+    # frames = episodes[200][:60, :, :, :]
+    # visualize_activation_maps(encoder, frames, wandb)
 
 
 if __name__ == "__main__":
