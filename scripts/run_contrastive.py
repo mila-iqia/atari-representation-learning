@@ -54,9 +54,9 @@ def main():
             if 'episode' in info.keys():
                 episode_rewards.append(info['episode']['r'])
             if done[i] != 1:
-                episodes[i][-1].append(obs[i])
+                episodes[i][-1].append(obs[i].clone())
             else:
-                episodes[i].append([obs[i]])
+                episodes[i].append([obs[i].clone()])
 
     # Put episode frames on the GPU.
     for p in range(args.num_processes):
