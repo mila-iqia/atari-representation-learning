@@ -1,39 +1,16 @@
 from gym.envs.registration import register
 import gym
 from gym import spaces
-
-atari_dict = {"Pitfall": {"ram": dict(agent_x=97,
-                                      agent_y=105),
-                                 "num_classes": {}},
-                  
-                  
-                  
-              "PrivateEye": {"ram": dict(agent_x=63,
-                                           agent_y=86),
-                                    "num_classes": {}},
-              
-              "MontezumaRevenge": {"ram": dict(room_number=3,
-                                              agent_facing_direction=52, # 72 if facing left, 128 if facing right
-                                              agent_x=42,
-                                              agent_y=43,
-                                              skull_x=47,
-                                              skull_y=46),
-                                    "num_classes": {} },
-              
-              "Pong": {"ram":dict(player_y=51,
-                                           enemy_y=50,
-                                           ball_x=49,
-                                           ball_y=54,
-                                           enemy_score=13,
-                                           player_score=14),
-                                "num_classes":{}}
-             }
-
+from .atari_ram_annotations import atari_dict
 
 class InfoWrapper(gym.Wrapper):
     def step(self, action):
         observation, reward, done, info = self.env.step(action)
         return observation, reward, done, self.info(info)
+    
+    def reset(self,**kwargs):
+        return self.env.reset(**kwargs)
+    
 
     def info(self):
         raise NotImplementedError
@@ -46,18 +23,18 @@ class AtariWrapper(InfoWrapper):
     def __init__(self, env):
         super().__init__(env)
         env_name = self.env.spec.id
-        self.env_name = env_name.split("-")[0].split("No")[0]
+        self.env_name = env_name.split("-")[0].split("No")[0].lower()
+        print(list(atari_dict.keys()))
+        print(self.env_name)
 
         if self.env_name in atari_dict:
-            self.ram_dict = atari_dict[self.env_name]["ram"]
-            ncd = atari_dict[self.env_name]["num_classes"]
-            if len(ncd) > 0:
-                self.nclasses_dict = ncd
-            else:
-                self.nclasses_dict = {k: 256 for k in self.ram_dict.keys()}
+            
+            self.ram_dict = atari_dict[self.env_name]
+            self.nclasses_dict = {k: 256 for k in self.ram_dict.keys()}
 
     def info(self, info):
         if self.env_name in atari_dict:
+            
             info["num_classes"] = self.nclasses_dict
             label_dict = self.labels()
             info["labels"] = label_dict

@@ -36,7 +36,7 @@ class ProbeTrainer(Trainer):
 
     def generate_batch(self, episodes, episode_labels):
         total_steps = sum([len(e) for e in episodes])
-        print('Total Steps: {}'.format(total_steps))
+        #print('Total Steps: {}'.format(total_steps))
         # Episode sampler
         # Sample `num_samples` episodes then batchify them with `self.batch_size` episodes per batch
         sampler = BatchSampler(RandomSampler(range(len(episodes)),
@@ -81,17 +81,26 @@ class ProbeTrainer(Trainer):
         return epoch_loss, accuracy
 
     def train(self, episodes, label_dicts):
+        inds = range(len(episodes))
+        split_ind = int(0.8*len(inds))
+        tr_eps, val_eps = episodes[:split_ind], episodes[split_ind:]
+        tr_labels, val_labels = label_dicts[:split_ind], label_dicts[split_ind:]
         for e in range(self.epochs):
-            epoch_loss, accuracy = self.do_one_epoch(episodes, label_dicts)
+            epoch_loss, accuracy = self.do_one_epoch(tr_eps, tr_labels)
             self.log_results(e, epoch_loss, accuracy)
+            
+            self.test(val_eps, val_labels,epoch=e, prefix="val_")
+            
 
-    def test(self, test_episodes, test_label_dicts):
+    def test(self, test_episodes, test_label_dicts, epoch=0, prefix="test_"):
         for k, probe in self.probes.items():
             probe.eval()
         epoch_loss, accuracy = self.do_one_epoch(test_episodes, test_label_dicts)
-        epoch_loss = {"test_" + k: v for k, v in epoch_loss.items()}
-        accuracy = {"test_" + k: v for k, v in accuracy.items()}
-        self.log_results(0, epoch_loss, accuracy)
+        epoch_loss = {prefix + k: v for k, v in epoch_loss.items()}
+        accuracy = {prefix + k: v for k, v in accuracy.items()}
+        self.log_results(epoch, epoch_loss, accuracy)
+        for k, probe in self.probes.items():
+            probe.train()
 
     def log_results(self, epoch_idx, loss_dict, acc_dict):
         print("Epoch: {}".format(epoch_idx))
