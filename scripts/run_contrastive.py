@@ -58,7 +58,7 @@ def main():
     # Put episode frames on the GPU.
     for p in range(args.num_processes):
         for e in range(len(episodes[p])):
-            episodes[p][e] = torch.stack(episodes[p][e]).to(device)
+            episodes[p][e] = torch.stack(episodes[p][e])
 
     # Convert to 1d list from 2d list
     episodes = list(chain.from_iterable(episodes))

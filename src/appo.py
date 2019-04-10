@@ -66,8 +66,8 @@ class AppoTrainer(Trainer):
                     x_that.append(episode[t_hat])
                 ts.append([t])
                 thats.append([t_hat])
-            yield torch.stack(x_t) / 255., torch.stack(x_tprev) / 255., torch.stack(x_that) / 255., \
-                  torch.Tensor(ts), torch.Tensor(thats)
+            yield torch.stack(x_t).to(self.device) / 255., torch.stack(x_tprev).to(self.device) / 255., torch.stack(x_that).to(self.device) / 255., \
+                  torch.Tensor(ts).to(self.device), torch.Tensor(thats).to(self.device)
 
     def train(self, episodes):
         # TODO: Make it work for all modes, right now only it defaults to pcl.
