@@ -23,7 +23,10 @@ def main():
     args = parser.parse_args()
     device = torch.device("cuda:" + str(args.cuda_id) if torch.cuda.is_available() else "cpu")
     envs = make_vec_envs(args.env_name, args.seed, args.num_processes)
-    encoder = NatureCNN(envs.observation_space.shape[0])
+    if args.encoder_type == "Nature":
+        encoder = NatureCNN(envs.observation_space.shape[0])
+    elif args.encoder_type == "Impala":
+        encoder = ImpalaCNN(envs.observation_space.shape[0])
 
     if args.weights_path == "None":
         print("Probing without loading in encoder weights!")
