@@ -32,8 +32,8 @@ class ProbeTrainer(Trainer):
                                       num_classes=info_dict[k]).to(device) for k in info_dict.keys()}
         self.optimizers = {k: torch.optim.Adam(list(self.probes[k].parameters()),
                                                eps=1e-5, lr=self.lr) for k in info_dict.keys()}
-        self.schedulers = {k: torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizers[k], patience=5, factor=0.5, verbose=True)
-                           for k in info_dict.keys()}
+        self.schedulers = {k: torch.optim.lr_scheduler.ReduceLROnPlateau(
+            self.optimizers[k], patience=5, factor=0.2, verbose=True, mode='max') for k in info_dict.keys()}
         self.loss_fn = nn.CrossEntropyLoss()
 
     def generate_batch(self, episodes, episode_labels):

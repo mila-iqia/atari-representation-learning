@@ -42,6 +42,7 @@ def main():
         'encoder_type': encoder.__class__.__name__,
         'obs_space': str(envs.observation_space.shape),
         'optimizer': 'Adam',
+        'probe_lr': args.lr
     }
     config.update(vars(args))
     wandb.config.update(config)
@@ -95,6 +96,7 @@ def main():
     if args.test:
         te_episodes, te_episode_labels, _ = collect_episodes(args.probe_test_steps)
         trainer.evaluate(te_episodes, te_episode_labels, prefix='test_')
+    envs.close()
 
 
 if __name__ == "__main__":
