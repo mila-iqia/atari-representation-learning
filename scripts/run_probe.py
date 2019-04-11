@@ -34,7 +34,7 @@ def main():
         encoder.load_state_dict(torch.load(args.weights_path))
         encoder.eval()
 
-    #encoder.to(device)
+    # encoder.to(device)
     torch.set_num_threads(1)
 
     wandb.init(project="curl-atari", entity="curl-atari", tags=['probe-only'])
@@ -93,10 +93,10 @@ def main():
 
     trainer.train(tr_episodes, tr_episode_labels)
 
-
     te_episodes, te_episode_labels, _ = collect_episodes(args.probe_test_steps)
 
     trainer.test(te_episodes, te_episode_labels)
+
 
 if __name__ == "__main__":
     main()
