@@ -143,7 +143,8 @@ class ProbeTrainer(Trainer):
                 break
 
             for k, scheduler in self.schedulers.items():
-                scheduler.step(val_accuracy['val_' + k + '_acc'])
+                if not self.early_stoppers[k].early_stop:
+                    scheduler.step(val_accuracy['val_' + k + '_acc'])
 
     def evaluate(self, test_episodes, test_label_dicts, epoch=None, prefix="test_"):
         if prefix == "test_":
