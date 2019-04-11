@@ -19,7 +19,7 @@ def main():
     parser = get_argparser()
     parser.set_defaults(env_name="MontezumaRevengeNoFrameskip-v4")
     parser.add_argument("--weights-path", type=str, default="None")
-    parser.add_argument("--test",action="store_true")
+    parser.add_argument("--patience", type=int, default=15)
     args = parser.parse_args()
     device = torch.device("cuda:" + str(args.cuda_id) if torch.cuda.is_available() else "cpu")
     envs = make_vec_envs(args.env_name, args.seed, args.num_processes, num_frame_stack=args.num_frame_stack)
@@ -34,7 +34,7 @@ def main():
         encoder.load_state_dict(torch.load(args.weights_path))
         encoder.eval()
 
-    encoder.to(device)
+    #encoder.to(device)
     torch.set_num_threads(1)
 
     wandb.init(project="curl-atari", entity="curl-atari", tags=['probe-only'])
@@ -76,7 +76,7 @@ def main():
         # Put episode frames on the GPU.
         for p in range(args.num_processes):
             for e in range(len(episodes[p])):
-                episodes[p][e] = torch.stack(episodes[p][e]).to(device)
+                episodes[p][e] = torch.stack(episodes[p][e])
 
         # Convert to 1d list from 2d list
         episodes = list(chain.from_iterable(episodes))
@@ -89,15 +89,14 @@ def main():
 
     tr_episodes, tr_episode_labels, info = collect_episodes(args.probe_train_steps)
     trainer = ProbeTrainer(encoder, wandb, info_dict=info["num_classes"], epochs=args.epochs,
-                           lr=args.lr, batch_size=args.batch_size, device=device)
+                           lr=args.lr, batch_size=args.batch_size, device=device, patience=args.patience)
 
     trainer.train(tr_episodes, tr_episode_labels)
 
-    if args.test:
-        te_episodes, te_episode_labels, _ = collect_episodes(args.probe_test_steps)
-        trainer.evaluate(te_episodes, te_episode_labels, prefix='test_')
-    envs.close()
 
+    te_episodes, te_episode_labels, _ = collect_episodes(args.probe_test_steps)
+
+    trainer.test(te_episodes, te_episode_labels)
 
 if __name__ == "__main__":
     main()

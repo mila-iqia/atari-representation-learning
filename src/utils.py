@@ -28,7 +28,7 @@ def get_argparser():
                         help='Number of steps to train probes (default: 15000 )')
     parser.add_argument('--num-processes', type=int, default=8,
                         help='Number of parallel environments to collect samples from (default: 8)')
-    parser.add_argument('--method', type=str, default='appo',
+    parser.add_argument('--method', type=str, default='appo', choices = ["appo", "cpc", "supervised", "random"],
                         help='Method to use for training representations (default: appo)')
     parser.add_argument('--mode', type=str, default='pcl',
                         help='Mode to use when using the Appo estimator [pcl | tcl | both] (default: pcl)')
@@ -218,7 +218,7 @@ class appendabledict(defaultdict):
 #Thanks Bjarten! (https://github.com/Bjarten/early-stopping-pytorch)
 class EarlyStopping(object):
     """Early stops the training if validation loss doesn't improve after a given patience."""
-    def __init__(self, patience=7, verbose=False, name=""):
+    def __init__(self, patience=7, verbose=False, wandb=None, name=""):
         """
         Args:
             patience (int): How long to wait after last time validation loss improved.
@@ -232,7 +232,8 @@ class EarlyStopping(object):
         self.best_score = None
         self.early_stop = False
         self.val_loss_min = np.Inf
-        self.name
+        self.name = name
+        self.wandb = wandb
 
     def __call__(self, val_loss, model):
 
@@ -241,12 +242,15 @@ class EarlyStopping(object):
         if self.best_score is None:
             self.best_score = score
             self.save_checkpoint(val_loss, model)
-        elif score < self.best_score:
+        elif score <= self.best_score:
             self.counter += 1
-            print(f'EarlyStopping counter: {self.counter} out of {self.patience}')
+            print(f'EarlyStopping for {self.name} counter: {self.counter} out of {self.patience}')
             if self.counter >= self.patience:
                 self.early_stop = True
+                print(f'{self.name} has stopped')
+                
         else:
+            
             self.best_score = score
             self.save_checkpoint(val_loss, model)
             self.counter = 0
@@ -254,8 +258,10 @@ class EarlyStopping(object):
     def save_checkpoint(self, val_loss, model):
         '''Saves model when validation loss decrease.'''
         if self.verbose:
-            print(f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}).  Saving model ...')
-        torch.save(model.state_dict(), name+'_checkpoint.pt')
+            print(f'Validation loss decreased for {self.name}  ({self.val_loss_min:.6f} --> {val_loss:.6f}).  Saving model ...')
+    
+        save_dir = self.wandb.run.dir       
+        torch.save(model.state_dict(), save_dir + "/" + self.name + ".pt")
         self.val_loss_min = val_loss  
         
         
