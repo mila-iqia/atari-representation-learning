@@ -215,7 +215,7 @@ class appendabledict(defaultdict):
         for k, v in other_dict.items():
             self.__getitem__(k).append(v)
 
-
+#Thanks Bjarten! (https://github.com/Bjarten/early-stopping-pytorch)
 class EarlyStopping(object):
     """Early stops the training if validation loss doesn't improve after a given patience."""
     def __init__(self, patience=7, verbose=False, name=""):
