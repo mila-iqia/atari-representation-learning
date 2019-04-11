@@ -32,13 +32,13 @@ class ProbeTrainer(Trainer):
                                       num_classes=info_dict[k]).to(device) for k in info_dict.keys()}
         self.optimizers = {k: torch.optim.Adam(list(self.probes[k].parameters()),
                                                eps=1e-5, lr=self.lr) for k in info_dict.keys()}
-        self.schedulers = {k: torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizers[k], patience=5, factor=0.2)
+        self.schedulers = {k: torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizers[k], patience=5, factor=0.5, verbose=True)
                            for k in info_dict.keys()}
         self.loss_fn = nn.CrossEntropyLoss()
 
     def generate_batch(self, episodes, episode_labels):
         total_steps = sum([len(e) for e in episodes])
-        #print('Total Steps: {}'.format(total_steps))
+        # print('Total Steps: {}'.format(total_steps))
         # Episode sampler
         # Sample `num_samples` episodes then batchify them with `self.batch_size` episodes per batch
         sampler = BatchSampler(RandomSampler(range(len(episodes)),
@@ -84,7 +84,7 @@ class ProbeTrainer(Trainer):
 
     def train(self, episodes, label_dicts):
         inds = range(len(episodes))
-        split_ind = int(0.8*len(inds))
+        split_ind = int(0.8 * len(inds))
         tr_eps, val_eps = episodes[:split_ind], episodes[split_ind:]
         tr_labels, val_labels = label_dicts[:split_ind], label_dicts[split_ind:]
         for e in range(self.epochs):
@@ -92,7 +92,7 @@ class ProbeTrainer(Trainer):
             self.log_results(e, epoch_loss, accuracy)
             val_loss, val_acc = self.evaluate(val_eps, val_labels, epoch=e, prefix="val_")
             for k, scheduler in self.schedulers.items():
-                scheduler.step(val_acc[k])
+                scheduler.step(val_acc['val_' + k + '_acc'])
 
     def evaluate(self, eval_episodes, eval_label_dicts, epoch=0, prefix="test_"):
         for k, probe in self.probes.items():

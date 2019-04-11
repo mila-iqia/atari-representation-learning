@@ -77,14 +77,6 @@ class AppoTrainer(Trainer):
             for x_t, x_tprev, x_that, ts, thats in data_generator:
                 f_t, f_t_prev = self.encoder(x_t), self.encoder(x_tprev)
                 f_t_2, f_t_hat = self.encoder(x_t), self.encoder(x_that)
-
-                if self.mode == 'pcl':
-                    f_pos, f_neg = torch.cat((f_t, f_t_prev), dim=-1), torch.cat((f_t_2, f_t_hat), dim=-1)
-                elif self.mode == 'tcl':
-                    f_pos, f_neg = torch.cat((f_t, ts), dim=-1), torch.cat((f_t_2, thats), dim=-1)
-                elif self.mode == 'both':
-                    f_pos, f_neg = torch.cat((f_t, f_t_prev, ts), dim=-1), torch.cat((f_t_2, f_t_hat, thats), dim=-1)
-
                 target = torch.cat((torch.ones(self.batch_size, 1),
                                     torch.zeros(self.batch_size, 1)), dim=0).to(self.device)
 
