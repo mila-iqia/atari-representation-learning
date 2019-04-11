@@ -92,8 +92,7 @@ class ProbeTrainer(Trainer):
             self.log_results(e, epoch_loss, accuracy)
             val_loss, val_acc = self.evaluate(val_eps, val_labels, epoch=e, prefix="val_")
             for k, scheduler in self.schedulers.items():
-                pass
-                # scheduler.step(val_acc['val_' + k + '_acc'])
+                scheduler.step(val_acc['val_' + k + '_acc'])
 
     def evaluate(self, eval_episodes, eval_label_dicts, epoch=0, prefix="test_"):
         for k, probe in self.probes.items():
