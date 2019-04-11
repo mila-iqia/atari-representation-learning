@@ -32,6 +32,8 @@ class ProbeTrainer(Trainer):
                                       num_classes=info_dict[k]).to(device) for k in info_dict.keys()}
         self.optimizers = {k: torch.optim.Adam(list(self.probes[k].parameters()),
                                                eps=1e-5, lr=self.lr) for k in info_dict.keys()}
+        self.schedulers = {k: torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizers[k], patience=5, factor=0.2)
+                           for k in info_dict.keys()}
         self.loss_fn = nn.CrossEntropyLoss()
 
     def generate_batch(self, episodes, episode_labels):
@@ -88,19 +90,20 @@ class ProbeTrainer(Trainer):
         for e in range(self.epochs):
             epoch_loss, accuracy = self.do_one_epoch(tr_eps, tr_labels)
             self.log_results(e, epoch_loss, accuracy)
-            
-            self.test(val_eps, val_labels,epoch=e, prefix="val_")
-            
+            val_loss, val_acc = self.evaluate(val_eps, val_labels, epoch=e, prefix="val_")
+            for k, scheduler in self.schedulers.items():
+                scheduler.step(val_acc[k])
 
-    def test(self, test_episodes, test_label_dicts, epoch=0, prefix="test_"):
+    def evaluate(self, eval_episodes, eval_label_dicts, epoch=0, prefix="test_"):
         for k, probe in self.probes.items():
             probe.eval()
-        epoch_loss, accuracy = self.do_one_epoch(test_episodes, test_label_dicts)
+        epoch_loss, accuracy = self.do_one_epoch(eval_episodes, eval_label_dicts)
         epoch_loss = {prefix + k: v for k, v in epoch_loss.items()}
         accuracy = {prefix + k: v for k, v in accuracy.items()}
         self.log_results(epoch, epoch_loss, accuracy)
         for k, probe in self.probes.items():
             probe.train()
+        return epoch_loss, accuracy
 
     def log_results(self, epoch_idx, loss_dict, acc_dict):
         print("Epoch: {}".format(epoch_idx))
