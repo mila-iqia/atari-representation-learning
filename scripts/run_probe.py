@@ -22,7 +22,7 @@ def main():
     parser.add_argument("--test",action="store_true")
     args = parser.parse_args()
     device = torch.device("cuda:" + str(args.cuda_id) if torch.cuda.is_available() else "cpu")
-    envs = make_vec_envs(args.env_name, args.seed, args.num_processes)
+    envs = make_vec_envs(args.env_name, args.seed, args.num_processes, num_frame_stack=args.num_frame_stack)
     if args.encoder_type == "Nature":
         encoder = NatureCNN(envs.observation_space.shape[0])
     elif args.encoder_type == "Impala":
@@ -39,7 +39,7 @@ def main():
 
     wandb.init(project="curl-atari", entity="curl-atari", tags=['probe-only'])
     config = {
-        'encoder': encoder.__class__.__name__,
+        'encoder_type': encoder.__class__.__name__,
         'obs_space': str(envs.observation_space.shape),
         'optimizer': 'Adam',
     }
@@ -64,11 +64,11 @@ def main():
                     episode_rewards.append(info['episode']['r'])
 
                 if done[i] != 1:
-                    episodes[i][-1].append(obs[i])
+                    episodes[i][-1].append(obs[i].clone())
                     if "labels" in info.keys():
                         episode_labels[i][-1].append(info["labels"])
                 else:
-                    episodes[i].append([obs[i]])
+                    episodes[i].append([obs[i].clone()])
                     if "labels" in info.keys():
                         episode_labels[i].append([info["labels"]])
 

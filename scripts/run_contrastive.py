@@ -28,7 +28,7 @@ def main():
 
     wandb.init(project="curl-atari", entity="curl-atari", tags=['pretraining-only'])
     config = {
-        'encoder': encoder.__class__.__name__,
+        'encoder_type': encoder.__class__.__name__,
         'obs_space': str(envs.observation_space.shape),
         'optimizer': 'Adam',
     }
@@ -58,6 +58,12 @@ def main():
             else:
                 episodes[i].append([obs[i].clone()])
 
+    episode_lens = []
+    for i in range(args.num_processes):
+        episode_lens += [len(episode) for episode in episodes[i]]
+    print("Episode lengths: mean/std/min/max",
+            np.mean(episode_lens), np.std(episode_lens),
+            np.min(episode_lens), np.max(episode_lens))
     # Put episode frames on the GPU.
     for p in range(args.num_processes):
         for e in range(len(episodes[p])):

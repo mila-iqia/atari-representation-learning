@@ -43,16 +43,18 @@ def get_argparser():
     parser.add_argument('--cuda-id', type=int, default=0,
                         help='CUDA device index')
     parser.add_argument('--seed', type=int, default=42,
-                        help='Random seed to use')   
+                        help='Random seed to use')
     parser.add_argument('--encoder-type', type=str, default="Nature", choices=["Impala", "Nature"],
                         help='Encoder type (Impala or Nature)')
-    
+
     # CPC-specific arguments
-    parser.add_argument('--sequence_length', type=int, default=12,
+    parser.add_argument('--sequence_length', type=int, default=100,
                         help='Sequence length.')
-    parser.add_argument('--steps_to_ignore', type=int, default=0,
+    parser.add_argument('--steps_start', type=int, default=0,
                         help='Number of immediate future steps to ignore.')
-    parser.add_argument('--steps_to_predict', type=int, default=10,
+    parser.add_argument('--steps_end', type=int, default=99,
+                        help='Number of future steps to predict.')
+    parser.add_argument('--steps_step', type=int, default=4,
                         help='Number of future steps to predict.')
     parser.add_argument('--gru_size', type=int, default=512,
                         help='Hidden size of the GRU layers.')
@@ -212,8 +214,52 @@ class appendabledict(defaultdict):
          """
         for k, v in other_dict.items():
             self.__getitem__(k).append(v)
-            
-            
+
+#Thanks Bjarten! (https://github.com/Bjarten/early-stopping-pytorch)
+class EarlyStopping(object):
+    """Early stops the training if validation loss doesn't improve after a given patience."""
+    def __init__(self, patience=7, verbose=False, name=""):
+        """
+        Args:
+            patience (int): How long to wait after last time validation loss improved.
+                            Default: 7
+            verbose (bool): If True, prints a message for each validation loss improvement. 
+                            Default: False
+        """
+        self.patience = patience
+        self.verbose = verbose
+        self.counter = 0
+        self.best_score = None
+        self.early_stop = False
+        self.val_loss_min = np.Inf
+        self.name
+
+    def __call__(self, val_loss, model):
+
+        score = -val_loss
+
+        if self.best_score is None:
+            self.best_score = score
+            self.save_checkpoint(val_loss, model)
+        elif score < self.best_score:
+            self.counter += 1
+            print(f'EarlyStopping counter: {self.counter} out of {self.patience}')
+            if self.counter >= self.patience:
+                self.early_stop = True
+        else:
+            self.best_score = score
+            self.save_checkpoint(val_loss, model)
+            self.counter = 0
+
+    def save_checkpoint(self, val_loss, model):
+        '''Saves model when validation loss decrease.'''
+        if self.verbose:
+            print(f'Validation loss decreased ({self.val_loss_min:.6f} --> {val_loss:.6f}).  Saving model ...')
+        torch.save(model.state_dict(), name+'_checkpoint.pt')
+        self.val_loss_min = val_loss  
+        
+        
+        
 def bucket_coord(coord, num_buckets, min_coord=0, max_coord=255, stride=1):
     # stride is how much a variable is incremented by (usually 1)
     try:
@@ -222,10 +268,10 @@ def bucket_coord(coord, num_buckets, min_coord=0, max_coord=255, stride=1):
         print("coord: %i, max: %i, min: %i, num_buckets: %i"%(coord, max_coord, min_coord,num_buckets))
         assert False, coord
     coord_range = (max_coord - min_coord) + 1
-    
+
     # thresh is how many units in raw_coord space correspond to one bucket
     if coord_range < num_buckets: # we never want to upsample from the original coord
-        thresh = stride 
+        thresh = stride
     else:
         thresh =  coord_range / num_buckets
     bucketed_coord =  np.floor((coord - min_coord) / thresh)
