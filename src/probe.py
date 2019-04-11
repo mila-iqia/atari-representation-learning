@@ -78,7 +78,7 @@ class ProbeTrainer(Trainer):
                 t = np.random.randint(len(episode))
                 xs.append(episode[t])
                 labels.append_update(episode_labels_batch[ep_ind][t])
-            yield torch.stack(xs) / 255., labels
+            yield torch.stack(xs).to(self.device) / 255., labels
 
     def probe(self, batch, k):
         [probe.to("cpu") for probe in self.probes.values()]
@@ -100,7 +100,6 @@ class ProbeTrainer(Trainer):
 
         data_generator = self.generate_batch(episodes, label_dicts)
         for step, (x, labels_batch) in enumerate(data_generator):
-            x.to(self.device)
             for k, label in labels_batch.items():
                 if self.early_stoppers[k].early_stop:
                     continue
@@ -108,12 +107,8 @@ class ProbeTrainer(Trainer):
                 optim.zero_grad()
 
                 label = torch.tensor(label).long().to(self.device)
-
                 preds = self.probe(x, k)
-                try:
-                    loss = self.loss_fn(preds, label)
-                except:
-                    print(label)
+                loss = self.loss_fn(preds, label)
 
                 epoch_loss[k + "_loss"].append(loss.detach().item())
                 accuracy[k + "_acc"].append(calculate_multiclass_accuracy(preds, label))
