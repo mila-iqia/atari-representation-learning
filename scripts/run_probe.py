@@ -95,7 +95,7 @@ def main():
 
     te_episodes, te_episode_labels, _ = collect_episodes(args.probe_test_steps)
 
-    trainer.test(te_episodes, te_episode_labels)
+    trainer.evaluate(te_episodes, te_episode_labels)
 
 
 if __name__ == "__main__":
