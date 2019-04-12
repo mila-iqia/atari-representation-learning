@@ -233,17 +233,17 @@ class EarlyStopping(object):
         self.counter = 0
         self.best_score = None
         self.early_stop = False
-        self.val_loss_min = np.Inf
+        self.val_acc_max = 0.
         self.name = name
         self.wandb = wandb
 
-    def __call__(self, val_loss, model):
+    def __call__(self, val_acc, model):
 
-        score = -val_loss
+        score = val_acc
 
         if self.best_score is None:
             self.best_score = score
-            self.save_checkpoint(val_loss, model)
+            self.save_checkpoint(val_acc, model)
         elif score <= self.best_score:
             self.counter += 1
             print(f'EarlyStopping for {self.name} counter: {self.counter} out of {self.patience}')
@@ -252,20 +252,19 @@ class EarlyStopping(object):
                 print(f'{self.name} has stopped')
 
         else:
-
             self.best_score = score
-            self.save_checkpoint(val_loss, model)
+            self.save_checkpoint(val_acc, model)
             self.counter = 0
 
-    def save_checkpoint(self, val_loss, model):
+    def save_checkpoint(self, val_acc, model):
         '''Saves model when validation loss decrease.'''
         if self.verbose:
             print(
-                f'Validation loss decreased for {self.name}  ({self.val_loss_min:.6f} --> {val_loss:.6f}).  Saving model ...')
+                f'Validation loss decreased for {self.name}  ({self.val_acc_max:.6f} --> {val_acc:.6f}).  Saving model ...')
 
         save_dir = self.wandb.run.dir
         torch.save(model.state_dict(), save_dir + "/" + self.name + ".pt")
-        self.val_loss_min = val_loss
+        self.val_acc_max = val_acc
 
 
 def bucket_coord(coord, num_buckets, min_coord=0, max_coord=255, stride=1):

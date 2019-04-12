@@ -135,7 +135,7 @@ class ProbeTrainer(Trainer):
             # update all early stoppers
             for k in self.info_dict.keys():
                 if not self.early_stoppers[k].early_stop:
-                    self.early_stoppers[k](val_loss["val_" + k + "_loss"], self.probes[k])
+                    self.early_stoppers[k](val_accuracy["val_" + k + "_acc"], self.probes[k])
 
             # if all probes are done
             if np.all([early_stopper.early_stop for early_stopper in self.early_stoppers.values()]):
