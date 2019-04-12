@@ -260,7 +260,7 @@ class EarlyStopping(object):
         '''Saves model when validation loss decrease.'''
         if self.verbose:
             print(
-                f'Validation loss decreased for {self.name}  ({self.val_acc_max:.6f} --> {val_acc:.6f}).  Saving model ...')
+                f'Validation accuracy increased for {self.name}  ({self.val_acc_max:.6f} --> {val_acc:.6f}).  Saving model ...')
 
         save_dir = self.wandb.run.dir
         torch.save(model.state_dict(), save_dir + "/" + self.name + ".pt")
