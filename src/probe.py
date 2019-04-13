@@ -18,6 +18,19 @@ class LinearProbe(nn.Module):
         return self.model(feature_vectors)
 
 
+class NonLinearProbe(nn.Module):
+    def __init__(self, input_dim, num_classes=255):
+        super().__init__()
+        self.model = nn.Sequential(
+            nn.Linear(input_dim, 512),
+            nn.ReLU(),
+            nn.Linear(in_features=512, out_features=num_classes)
+        )
+
+    def forward(self, feature_vectors):
+        return self.model(feature_vectors)
+
+
 class FullySupervisedLinearProbe(nn.Module):
     def __init__(self, encoder, num_classes=255):
         super().__init__()
@@ -46,6 +59,9 @@ class ProbeTrainer(Trainer):
         if self.method == "supervised":
             self.probes = {k: FullySupervisedLinearProbe(encoder=self.encoder,
                                                          num_classes=info_dict[k]).to(device) for k in info_dict.keys()}
+        elif self.method == 'nonlinear':
+            self.probes = {k: NonLinearProbe(input_dim=encoder.hidden_size,
+                                             num_classes=info_dict[k]).to(device) for k in info_dict.keys()}
         else:
             # info_dict should have {label_name: number_of_classes_for_that_label}
             self.probes = {k: LinearProbe(input_dim=encoder.hidden_size,
