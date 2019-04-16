@@ -30,7 +30,7 @@ def main():
     config = {
         'encoder_type': encoder.__class__.__name__,
         'obs_space': str(envs.observation_space.shape),
-        'optimizer': 'Adam',
+        'optimizer': 'Adam'
     }
     config.update(vars(args))
     wandb.config.update(config)

@@ -5,7 +5,7 @@ import numpy as np
 from torch.utils.data import RandomSampler, BatchSampler
 from .utils import calculate_accuracy
 from .trainer import Trainer
-
+from src.utils import EarlyStopping
 
 class Classifier(nn.Module):
     def __init__(self, num_inputs, hidden_size=256, linear=False):
@@ -34,6 +34,7 @@ class AppoTrainer(Trainer):
             'tcl': self.encoder.hidden_size + 1,
             'both': self.encoder.hidden_size * 2 + 1
         }
+        self.patience = self.config["patience"]
         self.classifier = Classifier(self.encoder.hidden_size, linear=config['linear']).to(device)
         self.epochs = config['epochs']
         self.batch_size = config['batch_size']
@@ -41,6 +42,7 @@ class AppoTrainer(Trainer):
         self.optimizer = torch.optim.Adam(list(self.classifier.parameters()) + list(self.encoder.parameters()),
                                           lr=config['lr'], eps=1e-5)
         self.loss_fn = nn.BCEWithLogitsLoss()
+        self.early_stopper = EarlyStopping(patience=self.patience, verbose=False, wandb=self.wandb, name="encoder")
 
     def generate_batch(self, episodes):
         total_steps = sum([len(e) for e in episodes])
@@ -95,6 +97,8 @@ class AppoTrainer(Trainer):
             accuracy += calculate_accuracy(preds, target)
             steps += 1
         self.log_results(epoch, epoch_loss / steps, accuracy / steps, prefix=mode )
+        if mode == "val":
+            self.early_stopper(accuracy, self.encoder)
         
     def train(self, tr_eps, val_eps):
         # TODO: Make it work for all modes, right now only it defaults to pcl.
@@ -104,6 +108,9 @@ class AppoTrainer(Trainer):
             
             self.encoder.eval(), self.classifier.eval()
             self.do_one_epoch(e, val_eps)
+            
+            if self.early_stopper.early_stop:
+                break
             
             
             
