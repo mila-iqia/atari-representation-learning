@@ -46,6 +46,7 @@ def get_argparser():
                         help='Random seed to use')
     parser.add_argument('--encoder-type', type=str, default="Nature", choices=["Impala", "Nature"],
                         help='Encoder type (Impala or Nature)')
+    parser.add_argument("--patience", type=int, default=10)
 
     # CPC-specific arguments
     parser.add_argument('--sequence_length', type=int, default=100,

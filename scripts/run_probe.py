@@ -19,7 +19,6 @@ def main():
     parser = get_argparser()
     parser.set_defaults(env_name="MontezumaRevengeNoFrameskip-v4")
     parser.add_argument("--weights-path", type=str, default="None")
-    parser.add_argument("--patience", type=int, default=10)
     args = parser.parse_args()
     device = torch.device("cuda:" + str(args.cuda_id) if torch.cuda.is_available() else "cpu")
     envs = make_vec_envs(args.env_name, args.seed, args.num_processes, num_frame_stack=args.num_frame_stack)
