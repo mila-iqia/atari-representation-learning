@@ -47,7 +47,7 @@ def main():
     config.update(vars(args))
     wandb.config.update(config)
 
-    def collect_episodes(num_steps):
+    def collect_episodes(num_steps, val=False):
         obs = envs.reset()
         episode_rewards = deque(maxlen=10)
         start = time.time()
@@ -80,22 +80,34 @@ def main():
 
         # Convert to 1d list from 2d list
         episodes = list(chain.from_iterable(episodes))
-        episodes = [x for x in episodes if len(x) > 10]
+        episodes = [x for x in episodes if len(x) > args.batch_size]
 
         # Convert to 1d list from 2d list
         episode_labels = list(chain.from_iterable(episode_labels))
-        episode_labels = [x for x in episode_labels if len(x) > 10]
-        return episodes, episode_labels, info
+        episode_labels = [x for x in episode_labels if len(x) > args.batch_size]
 
-    tr_episodes, tr_episode_labels, info = collect_episodes(args.probe_train_steps)
+        if val:
+            inds = range(len(episodes))
+            split_ind = int(0.8 * len(inds))
+
+            tr_eps, val_eps = episodes[:split_ind], episodes[split_ind:]
+            tr_labels, val_labels = episode_labels[:split_ind], episode_labels[split_ind:]
+
+            return tr_eps, val_eps, tr_labels, val_labels, info
+
+        else:
+            return episodes, episode_labels, info
+
+    tr_eps, val_eps, tr_labels, val_labels, info = collect_episodes(args.probe_train_steps, val=True)
     trainer = ProbeTrainer(encoder, wandb, info_dict=info["num_classes"], epochs=args.epochs,
                            lr=args.lr, batch_size=args.batch_size, device=device, patience=args.patience)
 
-    trainer.train(tr_episodes, tr_episode_labels)
+    trainer.train(tr_eps, val_eps, tr_labels, val_labels)
 
     te_episodes, te_episode_labels, _ = collect_episodes(args.probe_test_steps)
 
     trainer.evaluate(te_episodes, te_episode_labels)
+
 
 
 if __name__ == "__main__":
