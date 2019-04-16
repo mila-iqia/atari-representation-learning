@@ -69,32 +69,47 @@ class AppoTrainer(Trainer):
             yield torch.stack(x_t).to(self.device) / 255., torch.stack(x_tprev).to(self.device) / 255., torch.stack(x_that).to(self.device) / 255., \
                   torch.Tensor(ts).to(self.device), torch.Tensor(thats).to(self.device)
 
-    def train(self, episodes):
-        # TODO: Make it work for all modes, right now only it defaults to pcl.
-        for e in range(self.epochs):
-            epoch_loss, accuracy, steps = 0., 0., 0
-            data_generator = self.generate_batch(episodes)
-            for x_t, x_tprev, x_that, ts, thats in data_generator:
-                f_t, f_t_prev = self.encoder(x_t), self.encoder(x_tprev)
-                f_t_2, f_t_hat = self.encoder(x_t), self.encoder(x_that)
-                target = torch.cat((torch.ones(self.batch_size, 1),
-                                    torch.zeros(self.batch_size, 1)), dim=0).to(self.device)
+            
+    def do_one_epoch(self, epoch, episodes):
+        mode = "train" if self.encoder.training and self.classifier.training else "val"
+        epoch_loss, accuracy, steps = 0., 0., 0
+        data_generator = self.generate_batch(episodes)
+        for x_t, x_tprev, x_that, ts, thats in data_generator:
+            f_t, f_t_prev = self.encoder(x_t), self.encoder(x_tprev)
+            f_t_2, f_t_hat = self.encoder(x_t), self.encoder(x_that)
+            target = torch.cat((torch.ones(self.batch_size, 1),
+                                torch.zeros(self.batch_size, 1)), dim=0).to(self.device)
 
-                x1, x2 = torch.cat([f_t, f_t_2]), torch.cat([f_t_prev, f_t_hat])
-                shuffled_idxs = torch.randperm(len(target))
-                x1, x2, target = x1[shuffled_idxs], x2[shuffled_idxs], target[shuffled_idxs]
-                self.optimizer.zero_grad()
-                loss = self.loss_fn(self.classifier(x1, x2), target)
+            x1, x2 = torch.cat([f_t, f_t_2]), torch.cat([f_t_prev, f_t_hat])
+            shuffled_idxs = torch.randperm(len(target))
+            x1, x2, target = x1[shuffled_idxs], x2[shuffled_idxs], target[shuffled_idxs]
+            self.optimizer.zero_grad()
+            loss = self.loss_fn(self.classifier(x1, x2), target)
+            
+            if mode == "train":
                 loss.backward()
                 self.optimizer.step()
 
-                epoch_loss += loss.detach().item()
-                preds = torch.sigmoid(self.classifier(x1, x2))
-                accuracy += calculate_accuracy(preds, target)
-                steps += 1
-            self.log_results(e, epoch_loss / steps, accuracy / steps)
+            epoch_loss += loss.detach().item()
+            preds = torch.sigmoid(self.classifier(x1, x2))
+            accuracy += calculate_accuracy(preds, target)
+            steps += 1
+        self.log_results(epoch, epoch_loss / steps, accuracy / steps, prefix=mode )
+        
+    def train(self, tr_eps, val_eps):
+        # TODO: Make it work for all modes, right now only it defaults to pcl.
+        for e in range(self.epochs):
+            self.encoder.train(), self.classifier.train()
+            self.do_one_epoch(e, tr_eps)
+            
+            self.encoder.eval(), self.classifier.eval()
+            self.do_one_epoch(e, val_eps)
+            
+            
+            
+            
         torch.save(self.encoder.state_dict(), os.path.join(self.wandb.run.dir,  self.config['env_name'] + '.pt'))
 
-    def log_results(self, epoch_idx, epoch_loss, accuracy):
-        print("Epoch: {}, Epoch Loss: {}, Accuracy: {}".format(epoch_idx, epoch_loss, accuracy))
-        self.wandb.log({'Loss': epoch_loss, 'Accuracy': accuracy})
+    def log_results(self, epoch_idx, epoch_loss, accuracy, prefix=""):
+        print("{} Epoch: {}, Epoch Loss: {}, {} Accuracy: {}".format(prefix.capitalize(), epoch_idx, epoch_loss, prefix.capitalize(), accuracy))
+        self.wandb.log({prefix + '_loss': epoch_loss, prefix + '_accuracy': accuracy})

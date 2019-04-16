@@ -71,9 +71,15 @@ def main():
 
     # Convert to 1d list from 2d list
     episodes = list(chain.from_iterable(episodes))
-    episodes = [x for x in episodes if len(x) > 10]
+    episodes = [x for x in episodes if len(x) > args.batch_size]
+    
+    inds = range(len(episodes))
+    split_ind = int(0.8 * len(inds))
 
-    trainer.train(episodes)
+    tr_eps, val_eps = episodes[:split_ind], episodes[split_ind:]
+
+
+    trainer.train(tr_eps, val_eps)
     # TODO: Better data selection. This failed for a run on Pong.
     # frames = episodes[200][:60, :, :, :]
     # visualize_activation_maps(encoder, frames, wandb)
