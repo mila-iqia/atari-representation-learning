@@ -43,50 +43,67 @@ class CPCTrainer(Trainer):
               sequences.append(seq)
             yield torch.stack(sequences)
 
-    def train(self, episodes):
-        for e in range(self.epochs):
-            steps = 0
-            step_losses = {i: [] for i in self.steps_gen()}
-            step_accuracies = {i: [] for i in self.steps_gen()}
+            
+    def do_one_epoch(self, epoch, episodes):
+        mode = "train" if self.encoder.training and self.gru.training else "val"
+        steps = 0
+        step_losses = {i: [] for i in self.steps_gen()}
+        step_accuracies = {i: [] for i in self.steps_gen()}
 
-            data_generator = self.generate_batch(episodes)
-            for sequence in data_generator:
-                sequence = sequence.to(self.device)
-                sequence = sequence / 255.
-                flat_sequence = sequence.view(-1, self.num_frame_stack, 84, 84)
-                flat_latents = self.encoder(flat_sequence)
-                latents = flat_latents.view(
-                    self.batch_size, self.sequence_length, self.encoder.hidden_size)
-                contexts, _ = self.gru(latents)
-                loss = 0.
-                for i in self.steps_gen():
-                  predictions = self.discriminators[i](contexts[:, :-(i+1), :]).contiguous().view(-1, self.encoder.hidden_size)
-                  targets = latents[:, i+1:, :].contiguous().view(-1, self.encoder.hidden_size)
-                  logits = torch.matmul(predictions, targets.t())
-                  step_loss = F.cross_entropy(logits, self.labels[i])
-                  step_losses[i].append(step_loss.detach().item())
-                  loss += step_loss
+        data_generator = self.generate_batch(episodes)
+        for sequence in data_generator:
+            sequence = sequence.to(self.device)
+            sequence = sequence / 255.
+            flat_sequence = sequence.view(-1, self.num_frame_stack, 84, 84)
+            flat_latents = self.encoder(flat_sequence)
+            latents = flat_latents.view(
+                self.batch_size, self.sequence_length, self.encoder.hidden_size)
+            contexts, _ = self.gru(latents)
+            loss = 0.
+            for i in self.steps_gen():
+              predictions = self.discriminators[i](contexts[:, :-(i+1), :]).contiguous().view(-1, self.encoder.hidden_size)
+              targets = latents[:, i+1:, :].contiguous().view(-1, self.encoder.hidden_size)
+              logits = torch.matmul(predictions, targets.t())
+              step_loss = F.cross_entropy(logits, self.labels[i])
+              step_losses[i].append(step_loss.detach().item())
+              loss += step_loss
 
-                  preds = torch.argmax(logits, dim=1)
-                  step_accuracy = preds.eq(self.labels[i]).sum().float() / self.labels[i].numel()
-                  step_accuracies[i].append(step_accuracy.detach().item())
+              preds = torch.argmax(logits, dim=1)
+              step_accuracy = preds.eq(self.labels[i]).sum().float() / self.labels[i].numel()
+              step_accuracies[i].append(step_accuracy.detach().item())
 
+            if mode == "train":
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
 
-                steps += 1
-            epoch_losses = {i: np.mean(step_losses[i]) for i in step_losses}
-            epoch_accuracies = {i: np.mean(step_accuracies[i]) for i in step_accuracies}
-            self.log_results(e, epoch_losses, epoch_accuracies)
+            steps += 1
+        epoch_losses = {i: np.mean(step_losses[i]) for i in step_losses}
+        epoch_accuracies = {i: np.mean(step_accuracies[i]) for i in step_accuracies}
+        self.log_results(epoch, epoch_losses, epoch_accuracies, prefix=mode)
+        
+    def train(self, tr_eps, val_eps):
+        for e in range(self.epochs):
+            self.encoder.train(), self.gru.train()
+            for k, disc in self.discriminators.items():
+                disc.train()
+            self.do_one_epoch(e, tr_eps)
+            
+            self.encoder.eval(), self.gru.eval()
+            for k, disc in self.discriminators.items():
+                disc.eval()
+            self.do_one_epoch(e, val_eps)
+            
+            
+
         torch.save(self.encoder.state_dict(), os.path.join(self.wandb.run.dir,  self.config['env_name'] + '.pt'))
 
-    def log_results(self, epoch_idx, epoch_losses, epoch_accuracies):
+    def log_results(self, epoch_idx, epoch_losses, epoch_accuracies, prefix=""):
         print("Epoch: {}".format(epoch_idx))
         print("Step Losses[{}: {}: {}]: {}".format(self.steps_start, self.steps_end, self.steps_step, ", ".join(map(str, epoch_losses.values()))))
         print("Step Accuracies[{}: {}: {}]: {}".format(self.steps_start, self.steps_end, self.steps_step, ", ".join(map(str, epoch_accuracies.values()))))
         log_results = {}
         for i in self.steps_gen():
-          log_results['step_loss_{}'.format(i+1)] = epoch_losses[i]
-          log_results['step_accuracy_{}'.format(i+1)] = epoch_accuracies[i]
+          log_results[prefix + '_step_loss_{}'.format(i+1)] = epoch_losses[i]
+          log_results[prefix + '_step_accuracy_{}'.format(i+1)] = epoch_accuracies[i]
         self.wandb.log(log_results)
