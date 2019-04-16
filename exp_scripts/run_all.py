@@ -1,8 +1,9 @@
 import subprocess
 
-base_cmd = "sbatch exp_scripts/run_gpu.sl"
+base_cmd = "sbatch"
+ss= "exp_scripts/run_gpu.sl"
 module = "scripts.run_probe"
-args = [base_cmd, module]
+args = [base_cmd, ss, module]
 args.append("--method supervised")
 
 envs = ['asteroids', 'berzerk', 'boxing', 'defender', 
