@@ -6,7 +6,9 @@ module = "scripts.run_probe"
 args = [base_cmd, ss, module]
 args.append("--method supervised")
 args.append("--num-frame-stack 1")
-envs =["boxing"] 
+args.append("--num-processes 1")
+envs = ["boxing", "hero",'montezuma_revenge',"private_eye", "qbert", "seaquest", "space_invaders", "video_pinball"] 
+
 """
 ['asteroids', 'berzerk', 'boxing', 'defender', 
         'demon_attack', 'enduro', 'freeway', 'frostbite', 'hero', 
@@ -14,6 +16,8 @@ envs =["boxing"]
         'seaquest', 'solaris', 'space_invaders', 'venture', 'video_pinball', 
         'yars_revenge','breakout','pitfall','montezuma_revenge'
         ]"""
+
+
 suffix = "NoFrameskip-v4"
 for i,env in enumerate(envs):
     
