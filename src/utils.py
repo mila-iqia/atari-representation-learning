@@ -28,7 +28,7 @@ def get_argparser():
                         help='Number of steps to train probes (default: 15000 )')
     parser.add_argument('--num-processes', type=int, default=8,
                         help='Number of parallel environments to collect samples from (default: 8)')
-    parser.add_argument('--method', type=str, default='appo', choices=["appo", "cpc", "supervised", "random", "nonlinear"],
+    parser.add_argument('--method', type=str, default='appo', choices=["appo", "cpc", "supervised", "random_cnn", "nonlinear"],
                         help='Method to use for training representations (default: appo)')
     parser.add_argument('--mode', type=str, default='pcl',
                         help='Mode to use when using the Appo estimator [pcl | tcl | both] (default: pcl)')

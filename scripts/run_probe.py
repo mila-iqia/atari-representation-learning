@@ -27,11 +27,17 @@ def main():
     elif args.encoder_type == "Impala":
         encoder = ImpalaCNN(envs.observation_space.shape[0])
 
-    if args.weights_path == "None":
-        print("Probing without loading in encoder weights!")
+    if args.method == "random_cnn":
+        print("Random CNN, so not loading in encoder weights!")
+    elif args.method == "supervised":
+        print("Fully supervised, so starting from random encoder weights!")
     else:
-        encoder.load_state_dict(torch.load(args.weights_path))
-        encoder.eval()
+        if args.weights_path == "None":
+            print("Probing without loading in encoder weights! Are sure you want to do that??")
+        else:
+            print("Print loading in encoder weights from probe of type {} from the following path: {}".format(args.method, args.weight_path))
+            encoder.load_state_dict(torch.load(args.weights_path))
+            encoder.eval()
 
     # encoder.to(device)
     torch.set_num_threads(1)
