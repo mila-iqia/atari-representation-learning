@@ -145,7 +145,6 @@ class ProbeTrainer(Trainer):
             self.log_results(e, epoch_loss, accuracy)
 
             val_loss, val_accuracy = self.evaluate(val_eps, val_labels, epoch=e, prefix="val_")
-
             # update all early stoppers
             for k in self.info_dict.keys():
                 if not self.early_stoppers[k].early_stop:
@@ -170,7 +169,7 @@ class ProbeTrainer(Trainer):
         epoch_loss, accuracy = self.do_one_epoch(test_episodes, test_label_dicts)
         epoch_loss = {prefix + k: v for k, v in epoch_loss.items()}
         accuracy = {prefix + k: v for k, v in accuracy.items()}
-        #self.log_results(epoch, epoch_loss, accuracy)
+        self.log_results(epoch, epoch_loss, accuracy)
         for k, probe in self.probes.items():
             probe.train()
         return epoch_loss, accuracy
