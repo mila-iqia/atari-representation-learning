@@ -264,7 +264,7 @@ atari_dict = {"asteroids": dict(asteroids_y=range(3,21), # 224 means end of list
                     currentRoom         = 90),   # The number of the room the player is currently in 0 to 9_
                               
     "videopinball" : dict(ball_x= 67,
-                           ball_y= 68
+                           ball_y= 68,
                           left_paddle_pos=98,
                           right_paddle_pos = 102,
                           score_1=48,
