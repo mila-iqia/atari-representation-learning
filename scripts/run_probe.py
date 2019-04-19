@@ -36,7 +36,7 @@ def main():
         if args.weights_path == "None":
             print("Probing without loading in encoder weights! Are sure you want to do that??")
         else:
-            print("Print loading in encoder weights from probe of type {} from the following path: {}".format(args.method, args.weight_path))
+            print("Print loading in encoder weights from probe of type {} from the following path: {}".format(args.method, args.weights_path))
             encoder.load_state_dict(torch.load(args.weights_path))
             encoder.eval()
 
