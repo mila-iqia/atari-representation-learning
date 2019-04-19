@@ -24,9 +24,9 @@ def main():
     envs = make_vec_envs(args.env_name, args.seed, args.num_processes, num_frame_stack=args.num_frame_stack,
                          downsample=not args.no_downsample)
     if args.encoder_type == "Nature":
-        encoder = NatureCNN(envs.observation_space.shape[0], )
+        encoder = NatureCNN(envs.observation_space.shape[0], downsample=not args.no_downsample)
     elif args.encoder_type == "Impala":
-        encoder = ImpalaCNN(envs.observation_space.shape[0])
+        encoder = ImpalaCNN(envs.observation_space.shape[0], downsample=not args.no_downsample)
 
     if args.method == "random_cnn":
         print("Random CNN, so not loading in encoder weights!")
