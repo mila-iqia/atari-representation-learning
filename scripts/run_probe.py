@@ -21,9 +21,10 @@ def main():
     parser.add_argument("--weights-path", type=str, default="None")
     args = parser.parse_args()
     device = torch.device("cuda:" + str(args.cuda_id) if torch.cuda.is_available() else "cpu")
-    envs = make_vec_envs(args.env_name, args.seed, args.num_processes, num_frame_stack=args.num_frame_stack)
+    envs = make_vec_envs(args.env_name, args.seed, args.num_processes, num_frame_stack=args.num_frame_stack,
+                         downsample=not args.no_downsample)
     if args.encoder_type == "Nature":
-        encoder = NatureCNN(envs.observation_space.shape[0])
+        encoder = NatureCNN(envs.observation_space.shape[0], )
     elif args.encoder_type == "Impala":
         encoder = ImpalaCNN(envs.observation_space.shape[0])
 
@@ -112,7 +113,6 @@ def main():
     te_episodes, te_episode_labels, _ = collect_episodes(args.probe_test_steps)
 
     trainer.evaluate(te_episodes, te_episode_labels)
-
 
 
 if __name__ == "__main__":

@@ -20,6 +20,8 @@ def get_argparser():
                         help='environment to train on (default: MontezumaRevengeNoFrameskip-v4)')
     parser.add_argument('--num-frame-stack', type=int, default=4,
                         help='Number of frames to stack for a state')
+    parser.add_argument('--no-downsample', action='store_true', default=False,
+                        help='Whether to use a linear classifier')
     parser.add_argument('--pretraining-steps', type=int, default=100000,
                         help='Number of steps to pretrain representations (default: 100000)')
     parser.add_argument('--probe-train-steps', type=int, default=30000,
@@ -34,7 +36,7 @@ def get_argparser():
                         help='Mode to use when using the Appo estimator [pcl | tcl | both] (default: pcl)')
     parser.add_argument('--linear', action='store_true', default=True,
                         help='Whether to use a linear classifier')
-    parser.add_argument('--lr', type=float, default=5e-4,
+    parser.add_argument('--lr', type=float, default=3e-4,
                         help='Learning Rate foe learning representations (default: 5e-4)')
     parser.add_argument('--batch-size', type=int, default=64,
                         help='Mini-Batch Size (default: 64)')
