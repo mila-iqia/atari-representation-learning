@@ -1,6 +1,8 @@
 import cv2
 import torch
 from baselines.common.vec_env import SubprocVecEnv, DummyVecEnv
+from gym import spaces
+
 from a2c_ppo_acktr.envs import TimeLimitMask, MaskGoal, TransposeObs, TransposeImage, VecPyTorch, VecNormalize, \
     VecPyTorchFrameStack
 from pathlib import Path
@@ -8,7 +10,6 @@ import os
 import gym
 import numpy as np
 import torch
-from gym.spaces.box import Box
 from baselines import bench
 from baselines.common.atari_wrappers import make_atari, EpisodicLifeEnv, FireResetEnv, WarpFrame, ScaledFloatFrame, \
     ClipRewardEnv, FrameStack
@@ -91,7 +92,7 @@ class GrayscaleWrapper(gym.ObservationWrapper):
         """Warp frames to 84x84 as done in the Nature paper and later work."""
         gym.ObservationWrapper.__init__(self, env)
         self.observation_space = spaces.Box(low=0, high=255,
-                shape=(self.height, self.width, 1), dtype=np.uint8)
+                                            shape=(self.observation_space.shape[0], self.observation_space.shape[1], 1), dtype=np.uint8)
 
     def observation(self, frame):
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
