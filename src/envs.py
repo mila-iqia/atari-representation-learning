@@ -1,5 +1,8 @@
+import cv2
 import torch
 from baselines.common.vec_env import SubprocVecEnv, DummyVecEnv
+from gym import spaces
+
 from a2c_ppo_acktr.envs import TimeLimitMask, MaskGoal, TransposeObs, TransposeImage, VecPyTorch, VecNormalize, \
     VecPyTorchFrameStack
 from pathlib import Path
@@ -7,13 +10,13 @@ import os
 import gym
 import numpy as np
 import torch
-from gym.spaces.box import Box
 from baselines import bench
-from baselines.common.atari_wrappers import make_atari, wrap_deepmind
+from baselines.common.atari_wrappers import make_atari, EpisodicLifeEnv, FireResetEnv, WarpFrame, ScaledFloatFrame, \
+    ClipRewardEnv, FrameStack
 from src.atari import AtariWrapper
 
 
-def make_env(env_id, seed, rank, log_dir, allow_early_resets):
+def make_env(env_id, seed, rank, log_dir, allow_early_resets, downsample=True):
     def _thunk():
         if env_id.startswith("dm"):
             _, domain, task = env_id.split('.')
@@ -42,7 +45,7 @@ def make_env(env_id, seed, rank, log_dir, allow_early_resets):
 
         if is_atari:
             if len(env.observation_space.shape) == 3:
-                env = wrap_deepmind(env)
+                env = wrap_deepmind(env, downsample)
         elif len(env.observation_space.shape) == 3:
             raise NotImplementedError(
                 "CNN models work only for atari,\n"
@@ -60,9 +63,9 @@ def make_env(env_id, seed, rank, log_dir, allow_early_resets):
 
 
 def make_vec_envs(env_name, seed, num_processes, gamma=0.99, log_dir='./tmp/',
-                  device=torch.device('cpu'), num_frame_stack=1, allow_early_resets=False):
+                  device=torch.device('cpu'), num_frame_stack=1, allow_early_resets=False, downsample=True):
     Path(log_dir).mkdir(parents=True, exist_ok=True)
-    envs = [make_env(env_name, seed, i, log_dir, allow_early_resets)
+    envs = [make_env(env_name, seed, i, log_dir, allow_early_resets, downsample)
             for i in range(num_processes)]
 
     if len(envs) > 1:
@@ -82,3 +85,36 @@ def make_vec_envs(env_name, seed, num_processes, gamma=0.99, log_dir='./tmp/',
         envs = VecPyTorchFrameStack(envs, num_frame_stack, device)
 
     return envs
+
+
+class GrayscaleWrapper(gym.ObservationWrapper):
+    def __init__(self, env):
+        """Warp frames to 84x84 as done in the Nature paper and later work."""
+        gym.ObservationWrapper.__init__(self, env)
+        self.observation_space = spaces.Box(low=0, high=255,
+                                            shape=(self.observation_space.shape[0], self.observation_space.shape[1], 1), dtype=np.uint8)
+
+    def observation(self, frame):
+        frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
+        frame = np.expand_dims(frame, -1)
+        return frame
+
+
+def wrap_deepmind(env, downsample=True, episode_life=True, clip_rewards=True, frame_stack=False, scale=False):
+    """Configure environment for DeepMind-style Atari.
+    """
+    if episode_life:
+        env = EpisodicLifeEnv(env)
+    if 'FIRE' in env.unwrapped.get_action_meanings():
+        env = FireResetEnv(env)
+    if downsample:
+        env = WarpFrame(env)
+    else:
+        env = GrayscaleWrapper(env)
+    if scale:
+        env = ScaledFloatFrame(env)
+    if clip_rewards:
+        env = ClipRewardEnv(env)
+    if frame_stack:
+        env = FrameStack(env, 4)
+    return env

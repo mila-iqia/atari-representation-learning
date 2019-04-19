@@ -18,11 +18,12 @@ def main():
     parser = get_argparser()
     args = parser.parse_args()
     device = torch.device("cuda:" + str(args.cuda_id) if torch.cuda.is_available() else "cpu")
-    envs = make_vec_envs(args.env_name, args.seed, args.num_processes, num_frame_stack=args.num_frame_stack)
+    envs = make_vec_envs(args.env_name, args.seed, args.num_processes, num_frame_stack=args.num_frame_stack,
+                         downsample=not args.no_downsample)
     if args.encoder_type == "Nature":
-        encoder = NatureCNN(envs.observation_space.shape[0])
+        encoder = NatureCNN(envs.observation_space.shape[0], downsample=not args.no_downsample)
     elif args.encoder_type == "Impala":
-        encoder = ImpalaCNN(envs.observation_space.shape[0])
+        encoder = ImpalaCNN(envs.observation_space.shape[0], downsample=not args.no_downsample)
     encoder.to(device)
     torch.set_num_threads(1)
 

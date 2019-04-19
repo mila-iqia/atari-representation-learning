@@ -41,17 +41,19 @@ class ResidualBlock(nn.Module):
 
 
 class ImpalaCNN(nn.Module):
-    def __init__(self, input_channels, mode='atari', hidden_size=512):
+    def __init__(self, input_channels, downsample=True, hidden_size=512):
         super(ImpalaCNN, self).__init__()
         self.hidden_size = hidden_size
-        self.depths = [16, 32, 32]
-        if mode == 'atari':
+        self.depths = [16, 32, 32, 32]
+        self.downsample = downsample
+        if downsample:
             self.final_conv_size = self.depths[2] * 9 * 9
-        elif self.mode == 'coinrun':
-            self.final_conv_size = self.depths[2] * 7 * 7
+        else:
+            self.final_conv_size = self.depths[2] * 9 * 12
         self.layer1 = self._make_layer(input_channels, self.depths[0])
         self.layer2 = self._make_layer(self.depths[0], self.depths[1])
         self.layer3 = self._make_layer(self.depths[1], self.depths[2])
+        self.layer4 = self._make_layer(self.depths[2], self.depths[3])
         self.flatten = Flatten()
         self.final_linear = nn.Linear(self.final_conv_size, hidden_size)
         self.train()
@@ -68,33 +70,53 @@ class ImpalaCNN(nn.Module):
 
     def forward(self, inputs):
         out = inputs
-        out = self.layer3(self.layer2(self.layer1(out)))
+        if self.downsample:
+            out = self.layer3(self.layer2(self.layer1(out)))
+        else:
+            out = self.layer4(self.layer3(self.layer2(self.layer1(out))))
         out = F.relu(self.final_linear(self.flatten(out)))
         return out
 
 
 class NatureCNN(nn.Module):
-    def __init__(self, input_channels, mode='atari', hidden_size=512):
+    def __init__(self, input_channels, downsample=True, hidden_size=512):
         super().__init__()
         self.hidden_size = hidden_size
-        if mode == 'atari':
+        if downsample:
             self.final_conv_size = 32 * 7 * 7
+        else:
+            self.final_conv_size = 32 * 6 * 9
         init_ = lambda m: init(m,
                                nn.init.orthogonal_,
                                lambda x: nn.init.constant_(x, 0),
                                nn.init.calculate_gain('relu'))
 
-        self.main = nn.Sequential(
-            init_(nn.Conv2d(input_channels, 32, 8, stride=4)),
-            nn.ReLU(),
-            init_(nn.Conv2d(32, 64, 4, stride=2)),
-            nn.ReLU(),
-            init_(nn.Conv2d(64, 32, 3, stride=1)),
-            nn.ReLU(),
-            Flatten(),
-            init_(nn.Linear(self.final_conv_size, hidden_size)),
-            nn.ReLU()
-        )
+        if downsample:
+            self.main = nn.Sequential(
+                init_(nn.Conv2d(input_channels, 32, 8, stride=4)),
+                nn.ReLU(),
+                init_(nn.Conv2d(32, 64, 4, stride=2)),
+                nn.ReLU(),
+                init_(nn.Conv2d(64, 32, 3, stride=1)),
+                nn.ReLU(),
+                Flatten(),
+                init_(nn.Linear(self.final_conv_size, hidden_size)),
+                nn.ReLU()
+            )
+        else:
+            self.main = nn.Sequential(
+                init_(nn.Conv2d(input_channels, 32, 8, stride=4)),
+                nn.ReLU(),
+                init_(nn.Conv2d(32, 64, 4, stride=2)),
+                nn.ReLU(),
+                init_(nn.Conv2d(64, 64, 4, stride=2)),
+                nn.ReLU(),
+                init_(nn.Conv2d(64, 32, 3, stride=1)),
+                nn.ReLU(),
+                Flatten(),
+                init_(nn.Linear(self.final_conv_size, hidden_size)),
+                nn.ReLU()
+            )
         self.train()
 
     def forward(self, inputs):
