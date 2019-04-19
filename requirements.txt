@@ -1,3 +1,5 @@
 gym[atari]
 matplotlib
 wandb
+wget
+

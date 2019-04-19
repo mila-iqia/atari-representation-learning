@@ -7,6 +7,7 @@ Dependencies:
 * pytorch-a2c-ppo-acktr (for actor-critic algorithms)
 * wandb (logging tool)
 * gym
+* wget
 
 To install the requirements, follow these steps:
 ```bash
