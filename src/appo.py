@@ -7,6 +7,7 @@ from .utils import calculate_accuracy
 from .trainer import Trainer
 from src.utils import EarlyStopping
 
+
 class Classifier(nn.Module):
     def __init__(self, num_inputs, hidden_size=256, linear=False):
         super().__init__()
@@ -58,8 +59,7 @@ class AppoTrainer(Trainer):
             for episode in episodes_batch:
                 # Get one sample from this episode
                 t, t_hat = 0, 0
-                while abs(t_hat - t) < 5:
-                    t, t_hat = np.random.randint(1, len(episode)), np.random.randint(1, len(episode))
+                t, t_hat = np.random.randint(0, len(episode)), np.random.randint(0, len(episode))
                 x_t.append(episode[t])
                 x_tprev.append(episode[t - 1])
                 if self.mode == 'both':
@@ -71,7 +71,6 @@ class AppoTrainer(Trainer):
             yield torch.stack(x_t).to(self.device) / 255., torch.stack(x_tprev).to(self.device) / 255., torch.stack(x_that).to(self.device) / 255., \
                   torch.Tensor(ts).to(self.device), torch.Tensor(thats).to(self.device)
 
-            
     def do_one_epoch(self, epoch, episodes):
         mode = "train" if self.encoder.training and self.classifier.training else "val"
         epoch_loss, accuracy, steps = 0., 0., 0
@@ -111,10 +110,6 @@ class AppoTrainer(Trainer):
             
             if self.early_stopper.early_stop:
                 break
-            
-            
-            
-            
         torch.save(self.encoder.state_dict(), os.path.join(self.wandb.run.dir,  self.config['env_name'] + '.pt'))
 
     def log_results(self, epoch_idx, epoch_loss, accuracy, prefix=""):
