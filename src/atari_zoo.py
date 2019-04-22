@@ -3,6 +3,7 @@ from pathlib import Path
 import numpy as np
 from src.atari import convert_ram_to_label
 import cv2
+import sys
 def separate_into_episodes(arr, ep_inds):
     middle_eps = [arr[ep_inds[i]:ep_inds[i+1]] for i in range(0,len(ep_inds)-1)] # gets all episodes except the first and last
     first_ep, last_ep = arr[:ep_inds[0]], arr[ep_inds[-1]:]
@@ -23,7 +24,7 @@ def get_atari_zoo_episodes(env,tags=["pretraining-only"], num_frame_stack=4, dow
     basepath = Path("./data")
 
     basepath.mkdir(parents=True,exist_ok=True)
-    algos = ["a2c","apex","ga","es"]
+    algos = ["apex","a2c","ga","es"]
     tags = ["initial","1HR","2HR", "6HR", "10HR","final", "400M", "1B"]
 
     representations, ep_rewards, scores, observations, rams, frames, labels = [],[],[],[],[],[],[]
@@ -32,13 +33,18 @@ def get_atari_zoo_episodes(env,tags=["pretraining-only"], num_frame_stack=4, dow
         for tag in tags:
             if (algo == "dqn" or algo == "rainbow") and tag != "final":
                 assert False, "DQN and Rainbow only work with the tag \"final\" not the one you put: \"{}\"".format(tag)
+
             for run_id in run_ids:
                 fname = "_".join([env,algo,str(run_id),tag]) + ".npz"
                 savepath = basepath/fname
 
                 if not savepath.exists():
                     final_url = "/".join([base_url,algo,env,"model{}_{}_rollout.npz".format(run_id, tag)])
-                    wget.download(final_url, str(savepath))
+                    try:
+                        wget.download(final_url, str(savepath))
+                    except:
+                        sys.stderr.write("Unable to download {}. On to Cincinnati...".format(final_url))
+                        continue
 
                 fnp = np.load(savepath)
 
