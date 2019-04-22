@@ -8,7 +8,9 @@ __pycache__/
 
 slurm-*
 
-
+*DS_STORE
+*.ipynb
+data/*
 # Distribution / packaging
 .Python
 build/
