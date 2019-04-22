@@ -24,10 +24,10 @@ def get_argparser():
                         help='Whether to use a linear classifier')
     parser.add_argument('--pretraining-steps', type=int, default=100000,
                         help='Number of steps to pretrain representations (default: 100000)')
-    parser.add_argument('--probe-train-steps', type=int, default=30000,
+    parser.add_argument('--probe-steps', type=int, default=50000,
                         help='Number of steps to train probes (default: 30000 )')
-    parser.add_argument('--probe-test-steps', type=int, default=15000,
-                        help='Number of steps to train probes (default: 15000 )')
+#     parser.add_argument('--probe-test-steps', type=int, default=15000,
+#                         help='Number of steps to train probes (default: 15000 )')
     parser.add_argument('--num-processes', type=int, default=8,
                         help='Number of parallel environments to collect samples from (default: 8)')
     parser.add_argument('--method', type=str, default='appo', choices=["appo", "cpc", "supervised", "random_cnn", "nonlinear"],
@@ -63,6 +63,7 @@ def get_argparser():
                         help='Hidden size of the GRU layers.')
     parser.add_argument('--gru_layers', type=int, default=2,
                         help='Number of GRU layers.')
+    parser.add_argument("--collect-mode", type=str,choices=["random_agent","atari_zoo"], default="random_agent")
     return parser
 
 

@@ -1,7 +1,7 @@
 import wget
 from pathlib import Path
 import numpy as np
-from .atari import convert_ram_to_label
+from src.atari import convert_ram_to_label
 import cv2
 def separate_into_episodes(arr, ep_inds):
     middle_eps = [arr[ep_inds[i]:ep_inds[i+1]] for i in range(0,len(ep_inds)-1)] # gets all episodes except the first and last
@@ -79,12 +79,12 @@ def get_atari_zoo_episodes(env,tags=["pretraining-only"], num_frame_stack=4, dow
                     if num_frame_stack == 4:
                         episodes = observations
                     elif num_frame_stack == 1:
-                        assert "No you can't do num frame stack {} and downsample {}".format(num_frame_stack, downsample)
+                        assert False, "No you can't do num frame stack {} and downsample {}".format(num_frame_stack, downsample)
                 else:
                     if num_frame_stack == 1:
                         episodes = frames
                     else:
-                        assert "No you can't do num frame stack {} and downsample {}".format(num_frame_stack, downsample)
+                        assert False, "No you can't do num frame stack {} and downsample {}".format(num_frame_stack, downsample)
                         
                         
                 

@@ -10,16 +10,22 @@ from src.envs import make_vec_envs
 from src.utils import get_argparser, visualize_activation_maps
 from src.encoders import NatureCNN, ImpalaCNN
 from src.appo import AppoTrainer
-
+from src.atari_zoo import get_atari_zoo_episodes
 import wandb
 import sys
 
 
 def main():
     parser = get_argparser()
+#     sys.argv = []
     parser.set_defaults(env_name="MontezumaRevengeNoFrameskip-v4")
     parser.add_argument("--weights-path", type=str, default="None")
+
     args = parser.parse_args()
+#     args.probe_steps = 2000
+#     args.collect_mode = "atari_zoo"
+#     args.num_processes = 4
+#     args.patience = 1
     device = torch.device("cuda:" + str(args.cuda_id) if torch.cuda.is_available() else "cpu")
     envs = make_vec_envs(args.env_name, args.seed, args.num_processes, num_frame_stack=args.num_frame_stack,
                          downsample=not args.no_downsample)
@@ -42,8 +48,8 @@ def main():
 
     # encoder.to(device)
     torch.set_num_threads(1)
-
-    wandb.init(project="curl-atari", entity="curl-atari", tags=['probe-only'])
+    tags=['probe-only']
+    wandb.init(project="curl-atari", entity="curl-atari", tags=tags)
     config = {
         'encoder_type': encoder.__class__.__name__,
         'obs_space': str(envs.observation_space.shape),
@@ -53,14 +59,15 @@ def main():
     config.update(vars(args))
     wandb.config.update(config)
 
-    def collect_episodes(num_steps, val=False):
+
+    if args.collect_mode == "random_agent":
         obs = envs.reset()
         episode_rewards = deque(maxlen=10)
         start = time.time()
         print('-------Collecting samples----------')
         episodes = [[[]] for _ in range(args.num_processes)]  # (n_processes * n_episodes * episode_len)
         episode_labels = [[[]] for _ in range(args.num_processes)]
-        for step in range(num_steps // args.num_processes):
+        for step in range(args.probe_steps // args.num_processes):
             # Take action using a random policy
             action = torch.tensor(
                 np.array([np.random.randint(1, envs.action_space.n) for _ in range(args.num_processes)])) \
@@ -86,33 +93,28 @@ def main():
 
         # Convert to 1d list from 2d list
         episodes = list(chain.from_iterable(episodes))
-        episodes = [x for x in episodes if len(x) > args.batch_size]
-
         # Convert to 1d list from 2d list
-        episode_labels = list(chain.from_iterable(episode_labels))
-        episode_labels = [x for x in episode_labels if len(x) > args.batch_size]
+        episode_labels = list(chain.from_iterable(episode_labels))    
+    else:
+        episodes, episode_labels = get_atari_zoo_episodes(args.env_name, tags=tags, num_frame_stack=args.num_frame_stack, downsample= not args.no_downsample)
+        episodes = [torch.from_numpy(ep).transpose(2,3).transpose(1,2) for ep in episodes]
 
-        if val:
-            inds = range(len(episodes))
-            split_ind = int(0.8 * len(inds))
 
-            tr_eps, val_eps = episodes[:split_ind], episodes[split_ind:]
-            tr_labels, val_labels = episode_labels[:split_ind], episode_labels[split_ind:]
+    episodes = [x for x in episodes if len(x) > args.batch_size]
+    episode_labels = [x for x in episode_labels if len(x) > args.batch_size]
 
-            return tr_eps, val_eps, tr_labels, val_labels, info
 
-        else:
-            return episodes, episode_labels, info
+    inds = range(len(episodes))
+    val_split_ind, te_split_ind = int(0.6 * len(inds)), int(0.8 * len(inds))
 
-    tr_eps, val_eps, tr_labels, val_labels, info = collect_episodes(args.probe_train_steps, val=True)
-    trainer = ProbeTrainer(encoder, wandb, info_dict=info["num_classes"], epochs=args.epochs,
+    tr_eps, val_eps, test_eps = episodes[:val_split_ind], episodes[val_split_ind:te_split_ind], episodes[te_split_ind:]
+    tr_labels, val_labels, test_labels = episode_labels[:val_split_ind], episode_labels[val_split_ind:te_split_ind], episode_labels[te_split_ind:]
+
+    trainer = ProbeTrainer(encoder, wandb, epochs=args.epochs, sample_label=tr_labels[0][0],
                            lr=args.lr, batch_size=args.batch_size, device=device, patience=args.patience)
 
     trainer.train(tr_eps, val_eps, tr_labels, val_labels)
-
-    te_episodes, te_episode_labels, _ = collect_episodes(args.probe_test_steps)
-
-    trainer.evaluate(te_episodes, te_episode_labels)
+    trainer.evaluate(test_eps, test_labels)
 
 
 if __name__ == "__main__":
