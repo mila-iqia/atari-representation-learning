@@ -23,8 +23,8 @@ def get_atari_zoo_episodes(env,tags=["pretraining-only"], num_frame_stack=4, dow
     basepath = Path("./data")
 
     basepath.mkdir(parents=True,exist_ok=True)
-    algos = ["a2c"]#,"apex","ga","es"]
-    tags = ["initial"]#,"1HR","2HR", "6HR", "10HR","final", "400M", "1B"]
+    algos = ["a2c","apex","ga","es"]
+    tags = ["initial","1HR","2HR", "6HR", "10HR","final", "400M", "1B"]
 
     representations, ep_rewards, scores, observations, rams, frames, labels = [],[],[],[],[],[],[]
     
