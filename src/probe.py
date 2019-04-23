@@ -44,43 +44,43 @@ class FullySupervisedLinearProbe(nn.Module):
 
 
 class ProbeTrainer(Trainer):
-    def __init__(self, encoder, wandb, info_dict,
+    def __init__(self, encoder, wandb, sample_label,
                  device=torch.device('cpu'),
                  epochs=100, lr=5e-4, batch_size=64, patience=15):
         super().__init__(encoder, wandb, device)
-        self.info_dict = info_dict
+        self.sample_label = sample_label
+        self.num_classes = 256
         self.epochs = epochs
         self.lr = lr
         self.batch_size = batch_size
         self.patience = patience
         self.method = wandb.config["method"]
-        self.info_dict = info_dict
 
         if self.method == "supervised":
             self.probes = {k: FullySupervisedLinearProbe(encoder=self.encoder,
-                                                         num_classes=info_dict[k]).to(device) for k in info_dict.keys()}
+                                                         num_classes=self.num_classes).to(device) for k in sample_label.keys()}
         elif self.method == 'nonlinear':
             self.probes = {k: NonLinearProbe(input_dim=encoder.hidden_size,
-                                             num_classes=info_dict[k]).to(device) for k in info_dict.keys()}
+                                             num_classes=self.num_classes).to(device) for k in sample_label.keys()}
         else:
-            # info_dict should have {label_name: number_of_classes_for_that_label}
+            # sample_label should have {label_name: number_of_classes_for_that_label}
             self.probes = {k: LinearProbe(input_dim=encoder.hidden_size,
-                                          num_classes=info_dict[k]).to(device) for k in info_dict.keys()}
+                                          num_classes=self.num_classes).to(device) for k in sample_label.keys()}
 
         self.early_stoppers = {k: EarlyStopping(patience=patience, verbose=False, wandb=self.wandb, name=k + "_probe")
                                for k in
-                               info_dict.keys()}
+                               sample_label.keys()}
 
         self.optimizers = {k: torch.optim.Adam(list(self.probes[k].parameters()),
-                                               eps=1e-5, lr=self.lr) for k in info_dict.keys()}
+                                               eps=1e-5, lr=self.lr) for k in sample_label.keys()}
         self.schedulers = {k: torch.optim.lr_scheduler.ReduceLROnPlateau(
-            self.optimizers[k], patience=5, factor=0.2, verbose=True, mode='max') for k in info_dict.keys()}
+            self.optimizers[k], patience=5, factor=0.2, verbose=True, mode='max') for k in sample_label.keys()}
         self.loss_fn = nn.CrossEntropyLoss()
 
     def generate_batch(self, episodes, episode_labels):
         total_steps = sum([len(e) for e in episodes])
         assert total_steps > self.batch_size
-        # print('Total Steps: {}'.format(total_steps))
+        print('Total Steps: {}'.format(total_steps))
         # Episode sampler
         # Sample `num_samples` episodes then batchify them with `self.batch_size` episodes per batch
         sampler = BatchSampler(RandomSampler(range(len(episodes)),
@@ -112,9 +112,9 @@ class ProbeTrainer(Trainer):
         return preds
 
     def do_one_epoch(self, episodes, label_dicts):
-        epoch_loss, accuracy = {k + "_loss": [] for k in self.info_dict.keys() if
+        epoch_loss, accuracy = {k + "_loss": [] for k in self.sample_label.keys() if
                                 not self.early_stoppers[k].early_stop}, \
-                               {k + "_acc": [] for k in self.info_dict.keys() if not self.early_stoppers[k].early_stop}
+                               {k + "_acc": [] for k in self.sample_label.keys() if not self.early_stoppers[k].early_stop}
 
         data_generator = self.generate_batch(episodes, label_dicts)
         for step, (x, labels_batch) in enumerate(data_generator):
@@ -146,7 +146,7 @@ class ProbeTrainer(Trainer):
 
             val_loss, val_accuracy = self.evaluate(val_eps, val_labels, epoch=e, prefix="val_")
             # update all early stoppers
-            for k in self.info_dict.keys():
+            for k in self.sample_label.keys():
                 if not self.early_stoppers[k].early_stop:
                     self.early_stoppers[k](val_accuracy["val_" + k + "_acc"], self.probes[k])
 
