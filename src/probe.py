@@ -141,7 +141,9 @@ class ProbeTrainer(Trainer):
         return epoch_loss, accuracy
 
     def train(self, tr_eps, val_eps, tr_labels, val_labels):
-        for e in range(self.epochs):
+        e = 0
+        all_probes_stopped = np.all([early_stopper.early_stop for early_stopper in self.early_stoppers.values()])
+        while not all_probes_stopped:
             epoch_loss, accuracy = self.do_one_epoch(tr_eps, tr_labels)
             self.log_results(e, epoch_loss, accuracy)
 
@@ -151,14 +153,13 @@ class ProbeTrainer(Trainer):
                 if not self.early_stoppers[k].early_stop:
                     self.early_stoppers[k](val_accuracy["val_" + k + "_acc"], self.probes[k])
 
-            # if all probes are done
-            if np.all([early_stopper.early_stop for early_stopper in self.early_stoppers.values()]):
-                print("All probes early stopped!")
-                break
 
             for k, scheduler in self.schedulers.items():
                 if not self.early_stoppers[k].early_stop:
                     scheduler.step(val_accuracy['val_' + k + '_acc'])
+            e +=1
+            all_probes_stopped = np.all([early_stopper.early_stop for early_stopper in self.early_stoppers.values()])
+        print("All probes early stopped!")
 
     def evaluate(self, test_episodes, test_label_dicts, epoch=None, prefix="test_"):
         if prefix == "test_":
