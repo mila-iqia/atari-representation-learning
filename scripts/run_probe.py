@@ -99,10 +99,7 @@ def main():
         episode_labels = list(chain.from_iterable(episode_labels))    
     else:
         episodes, episode_labels = get_atari_zoo_episodes(args.env_name, tags=tags, num_frame_stack=args.num_frame_stack, downsample= not args.no_downsample)
-
-
-
-    episodes = [torch.from_numpy(ep).permute(0,3,1,2).float() for ep in episodes]
+        episodes = [torch.from_numpy(ep).permute(0,3,1,2).float() for ep in episodes]
 
     episodes = [x for x in episodes if len(x) > args.batch_size]
     episode_labels = [x for x in episode_labels if len(x) > args.batch_size]
