@@ -6,6 +6,7 @@ import numpy as np
 import torch
 
 from src.envs import make_vec_envs
+from src.spatio_temporal import SpatioTemporalTrainer
 from src.utils import get_argparser, visualize_activation_maps
 from src.encoders import NatureCNN, ImpalaCNN
 from src.appo import AppoTrainer
@@ -20,10 +21,11 @@ def main():
     device = torch.device("cuda:" + str(args.cuda_id) if torch.cuda.is_available() else "cpu")
     envs = make_vec_envs(args.env_name, args.seed, args.num_processes, num_frame_stack=args.num_frame_stack,
                          downsample=not args.no_downsample)
+    spatial_features = 'spatial' in args.method
     if args.encoder_type == "Nature":
-        encoder = NatureCNN(envs.observation_space.shape[0], downsample=not args.no_downsample)
+        encoder = NatureCNN(envs.observation_space.shape[0], downsample=not args.no_downsample, spatial_features=spatial_features)
     elif args.encoder_type == "Impala":
-        encoder = ImpalaCNN(envs.observation_space.shape[0], downsample=not args.no_downsample)
+        encoder = ImpalaCNN(envs.observation_space.shape[0], downsample=not args.no_downsample, spatial_features=spatial_features)
     encoder.to(device)
     torch.set_num_threads(1)
 
@@ -40,6 +42,8 @@ def main():
         trainer = AppoTrainer(encoder, config, device=device, wandb=wandb)
     if args.method == 'cpc':
         trainer = CPCTrainer(encoder, config, device=device, wandb=wandb)
+    if args.method == 'spatial-appo':
+        trainer = SpatioTemporalTrainer(encoder, config, device=device, wandb=wandb)
 
     obs = envs.reset()
     episode_rewards = deque(maxlen=10)

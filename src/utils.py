@@ -30,7 +30,7 @@ def get_argparser():
 #                         help='Number of steps to train probes (default: 15000 )')
     parser.add_argument('--num-processes', type=int, default=8,
                         help='Number of parallel environments to collect samples from (default: 8)')
-    parser.add_argument('--method', type=str, default='appo', choices=["appo", "cpc", "supervised", "random_cnn", "nonlinear"],
+    parser.add_argument('--method', type=str, default='appo', choices=["appo", "cpc", "supervised", "random_cnn", "nonlinear", "spatial-appo"],
                         help='Method to use for training representations (default: appo)')
     parser.add_argument('--mode', type=str, default='pcl',
                         help='Mode to use when using the Appo estimator [pcl | tcl | both] (default: pcl)')
@@ -48,6 +48,7 @@ def get_argparser():
                         help='Random seed to use')
     parser.add_argument('--encoder-type', type=str, default="Nature", choices=["Impala", "Nature"],
                         help='Encoder type (Impala or Nature)')
+    parser.add_argument('--spatial', action='store_true', default=False)
     parser.add_argument("--patience", type=int, default=10)
 
     # CPC-specific arguments

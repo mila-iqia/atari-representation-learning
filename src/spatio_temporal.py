@@ -1,3 +1,4 @@
+import torch
 import os
 import torch
 import torch.nn as nn
@@ -11,20 +12,13 @@ from src.utils import EarlyStopping
 class Classifier(nn.Module):
     def __init__(self, num_inputs, hidden_size=256, linear=False):
         super().__init__()
-        if not linear:
-            self.network = nn.Sequential(
-                nn.Linear(num_inputs, hidden_size),
-                nn.ReLU(),
-                nn.Linear(hidden_size, 1)
-            )
-        else:
-            self.network = nn.Bilinear(num_inputs, num_inputs, 1)
+        self.network = nn.Bilinear(num_inputs, num_inputs, 1)
 
     def forward(self, x1, x2):
         return self.network(x1, x2)
 
 
-class AppoTrainer(Trainer):
+class SpatioTemporalTrainer(Trainer):
     # TODO: Make it work for all modes, right now only it defaults to pcl.
     def __init__(self, encoder, config, device=torch.device('cpu'), wandb=None):
         super().__init__(encoder, wandb, device)
@@ -36,7 +30,7 @@ class AppoTrainer(Trainer):
             'both': self.encoder.hidden_size * 2 + 1
         }
         self.patience = self.config["patience"]
-        self.classifier = Classifier(self.encoder.hidden_size, linear=config['linear']).to(device)
+        self.classifier = Classifier(32, linear=config['linear']).to(device) # n_channels = 32
         self.epochs = config['epochs']
         self.batch_size = config['batch_size']
         self.device = device
@@ -78,36 +72,37 @@ class AppoTrainer(Trainer):
         for x_t, x_tprev, x_that, ts, thats in data_generator:
             f_t, f_t_prev = self.encoder(x_t), self.encoder(x_tprev)
             f_t_2, f_t_hat = self.encoder(x_t), self.encoder(x_that)
-            target = torch.cat((torch.ones(self.batch_size, 1),
-                                torch.zeros(self.batch_size, 1)), dim=0).to(self.device)
+
+            target = torch.cat((torch.ones_like(f_t[:,:,:,0]),
+                                torch.zeros_like(f_t[:,:,:,0])), dim=0).to(self.device)
 
             x1, x2 = torch.cat([f_t, f_t_2], dim=0), torch.cat([f_t_prev, f_t_hat], dim=0)
             shuffled_idxs = torch.randperm(len(target))
             x1, x2, target = x1[shuffled_idxs], x2[shuffled_idxs], target[shuffled_idxs]
             self.optimizer.zero_grad()
-            loss = self.loss_fn(self.classifier(x1, x2), target)
-            
+            loss = self.loss_fn(self.classifier(x1, x2).squeeze(), target)
+
             if mode == "train":
                 loss.backward()
                 self.optimizer.step()
 
             epoch_loss += loss.detach().item()
-            preds = torch.sigmoid(self.classifier(x1, x2))
+            preds = torch.sigmoid(self.classifier(x1, x2).squeeze())
             accuracy += calculate_accuracy(preds, target)
             steps += 1
         self.log_results(epoch, epoch_loss / steps, accuracy / steps, prefix=mode )
         if mode == "val":
             self.early_stopper(accuracy, self.encoder)
-        
+
     def train(self, tr_eps, val_eps):
         # TODO: Make it work for all modes, right now only it defaults to pcl.
         for e in range(self.epochs):
             self.encoder.train(), self.classifier.train()
             self.do_one_epoch(e, tr_eps)
-            
+
             self.encoder.eval(), self.classifier.eval()
             self.do_one_epoch(e, val_eps)
-            
+
             if self.early_stopper.early_stop:
                 break
         torch.save(self.encoder.state_dict(), os.path.join(self.wandb.run.dir,  self.config['env_name'] + '.pt'))

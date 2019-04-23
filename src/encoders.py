@@ -41,11 +41,12 @@ class ResidualBlock(nn.Module):
 
 
 class ImpalaCNN(nn.Module):
-    def __init__(self, input_channels, downsample=True, hidden_size=512):
+    def __init__(self, input_channels, downsample=True, hidden_size=512, spatial_features=False):
         super(ImpalaCNN, self).__init__()
         self.hidden_size = hidden_size
         self.depths = [16, 32, 32, 32]
         self.downsample = downsample
+        self.spatial_features = spatial_features
         if downsample:
             self.final_conv_size = self.depths[2] * 9 * 9
         else:
@@ -74,14 +75,18 @@ class ImpalaCNN(nn.Module):
             out = self.layer3(self.layer2(self.layer1(out)))
         else:
             out = self.layer4(self.layer3(self.layer2(self.layer1(out))))
+        if self.spatial_features:
+            return out.permute(0, 2, 3, 1)
         out = F.relu(self.final_linear(self.flatten(out)))
         return out
 
 
 class NatureCNN(nn.Module):
-    def __init__(self, input_channels, downsample=True, hidden_size=512):
+    def __init__(self, input_channels, downsample=True, hidden_size=512, spatial_features=False):
         super().__init__()
         self.hidden_size = hidden_size
+        self.downsample = downsample
+        self.spatial_features = spatial_features
         if downsample:
             self.final_conv_size = 32 * 7 * 7
         else:
@@ -120,4 +125,9 @@ class NatureCNN(nn.Module):
         self.train()
 
     def forward(self, inputs):
+        if self.spatial_features:
+            final_index = 6
+            if not self.downsample:
+                final_index = 8
+            return self.main[:final_index](inputs).permute(0, 2, 3, 1)
         return self.main(inputs)
