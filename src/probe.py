@@ -133,10 +133,11 @@ class ProbeTrainer(Trainer):
                 if self.probes[k].training:
                     loss.backward()
                     optim.step()
+   
+        epoch_loss = { k: np.mean(loss) for k, loss in epoch_loss.items() }
+        accuracy = {k: np.mean(acc)  for k, acc in accuracy.items() }
 
-        epoch_loss = {k: np.mean(loss) for k, loss in epoch_loss.items()}
-        accuracy = {k: np.mean(acc) for k, acc in accuracy.items()}
-
+        
         return epoch_loss, accuracy
 
     def train(self, tr_eps, val_eps, tr_labels, val_labels):

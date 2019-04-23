@@ -10,6 +10,15 @@ def separate_into_episodes(arr, ep_inds):
     episodes =  [first_ep] + middle_eps + [last_ep]
     return episodes
 
+def get_episode_inds(obs):
+    #get index where the ep
+    # aka indices in which the last 3 frames of the observation at i-1 do not equal the first 3 frames of the observation at i
+    diff = obs[1:,:,:,:3] - obs[:-1,:,:,1:]
+    diff_arr = np.asarray([int(np.all(d==0)) for d in diff])
+    inds = np.arange(len(diff_arr))
+    ep_inds = inds[diff_arr < 1] + 1 #add one to offset the off by one error
+    return ep_inds
+    
 def convert2grayscale(frame):
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
         frame = np.expand_dims(frame, -1)
@@ -24,10 +33,10 @@ def get_atari_zoo_episodes(env,tags=["pretraining-only"], num_frame_stack=4, dow
     basepath = Path("./data")
 
     basepath.mkdir(parents=True,exist_ok=True)
-    algos = ["apex","a2c","ga","es"]
+    algos = ["a2c","apex","ga","es"]
     tags = ["initial","1HR","2HR", "6HR", "10HR","final", "400M", "1B"]
 
-    representations, ep_rewards, scores, observations, rams, frames, labels = [],[],[],[],[],[],[]
+    episodes, episode_labels = [],[]
     
     for algo in algos:
         for tag in tags:
@@ -43,56 +52,32 @@ def get_atari_zoo_episodes(env,tags=["pretraining-only"], num_frame_stack=4, dow
                     try:
                         wget.download(final_url, str(savepath))
                     except:
-                        sys.stderr.write("Unable to download {}. On to Cincinnati...".format(final_url))
+                        sys.stderr.write("Unable to download {}. Skipping... On to Cincinnati...".format(final_url))
                         continue
+                try:
+                    fnp = np.load(savepath)
+                    cur_obs, cur_rams, cur_frames = fnp['observations'], fnp['ram'], fnp['frames']
+                except:
+                    sys.stderr.write("Had trouble opening {}. Skipping this one for now...".format(savepath))
+                    continue
+            
+                ep_inds = get_episode_inds(cur_obs)
 
-                fnp = np.load(savepath)
-
-                cur_reps, cur_ep_rewards, cur_scores, cur_obs, cur_rams, cur_frames = [fnp[k] for k in ['representation',
-                                                                            'ep_rewards', 
-                                                                            'score', 
-                                                                            'observations', 
-                                                                            'ram',
-                                                                            'frames']]
-                
-     
                 cur_labels = [convert_ram_to_label(env,ram) for ram in cur_rams]
-                #get index where the ep
-                # aka indices in which the last 3 frames of the observation at i-1 do not equal the first 3 frames of the observation at i
-                diff = cur_obs[1:,:,:,:3] - cur_obs[:-1,:,:,1:]
-                diff_arr = np.asarray([int(np.all(d==0)) for d in diff])
-                inds = np.arange(len(diff_arr))
-                ep_inds = inds[diff_arr < 1] + 1 #add one to offset the off by one error
-                
-                cur_frames = [convert2grayscale(frame) for frame in cur_frames]
-                
-                rep_eps = separate_into_episodes(cur_reps, ep_inds)
-                score_eps = separate_into_episodes(cur_scores, ep_inds)
-                obs_eps = separate_into_episodes(cur_obs, ep_inds)
-                ram_eps = separate_into_episodes(cur_rams, ep_inds)
-                frame_eps = separate_into_episodes(cur_frames, ep_inds)
                 label_eps = separate_into_episodes(cur_labels, ep_inds)
-                
-                representations.extend(rep_eps)
-                ep_rewards.extend(cur_ep_rewards)
-                scores.extend(score_eps)
-                observations.extend(obs_eps)
-                rams.extend(ram_eps)
-                frames.extend(frame_eps)
-                labels.extend(label_eps)
-                
-                if downsample==True:
-                    if num_frame_stack == 4:
-                        episodes = observations
-                    elif num_frame_stack == 1:
-                        assert False, "No you can't do num frame stack {} and downsample {}".format(num_frame_stack, downsample)
+                episode_labels.extend(label_eps)
+
+                if downsample==True and num_frame_stack == 4:
+                        eps = separate_into_episodes(cur_obs, ep_inds)
+
+                elif downsample==False and  num_frame_stack == 1:
+                        cur_frames = [convert2grayscale(frame) for frame in cur_frames]
+                        eps = separate_into_episodes(cur_frames, ep_inds)
+                        eps = [np.asarray(ep) for ep in eps]
                 else:
-                    if num_frame_stack == 1:
-                        episodes = frames
-                    else:
-                        assert False, "No you can't do num frame stack {} and downsample {}".format(num_frame_stack, downsample)
-                        
-                        
+                    assert False, "No you can't do num frame stack {} and downsample {}".format(num_frame_stack, downsample)
+
+                episodes.extend(eps)
                 
                 
-    return episodes, labels
+    return episodes, episode_labels
