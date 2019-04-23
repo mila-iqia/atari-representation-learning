@@ -17,24 +17,19 @@ import sys
 
 def main():
     parser = get_argparser()
-#     sys.argv = []
-#     parser.set_defaults(env_name="MontezumaRevengeNoFrameskip-v4")
     parser.add_argument("--weights-path", type=str, default="None")
 
     args = parser.parse_args()
-#     args.probe_steps = 2000
-#     args.collect_mode = "atari_zoo"
-#     args.num_processes = 4
-#     args.patience = 1
-#     args.no_downsample = False
-#     args.num_frame_stack = 4
     device = torch.device("cuda:" + str(args.cuda_id) if torch.cuda.is_available() else "cpu")
     envs = make_vec_envs(args.env_name, args.seed, args.num_processes, num_frame_stack=args.num_frame_stack,
                          downsample=not args.no_downsample)
+
     if args.encoder_type == "Nature":
-        encoder = NatureCNN(envs.observation_space.shape[0], downsample=not args.no_downsample)
+        encoder = NatureCNN(envs.observation_space.shape[0], downsample=not args.no_downsample,
+                            spatial_features=args.spatial, probing=True)
     elif args.encoder_type == "Impala":
-        encoder = ImpalaCNN(envs.observation_space.shape[0], downsample=not args.no_downsample)
+        encoder = ImpalaCNN(envs.observation_space.shape[0], downsample=not args.no_downsample,
+                            spatial_features=args.spatial, probing=True)
 
     if args.method == "random_cnn":
         print("Random CNN, so not loading in encoder weights!")
@@ -60,7 +55,6 @@ def main():
     }
     config.update(vars(args))
     wandb.config.update(config)
-
 
     if args.collect_mode == "random_agent":
         obs = envs.reset()
@@ -103,7 +97,6 @@ def main():
 
     episodes = [x for x in episodes if len(x) > args.batch_size]
     episode_labels = [x for x in episode_labels if len(x) > args.batch_size]
-
 
     inds = range(len(episodes))
     val_split_ind, te_split_ind = int(0.6 * len(inds)), int(0.8 * len(inds))

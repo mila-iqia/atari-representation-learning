@@ -82,11 +82,12 @@ class ImpalaCNN(nn.Module):
 
 
 class NatureCNN(nn.Module):
-    def __init__(self, input_channels, downsample=True, hidden_size=512, spatial_features=False):
+    def __init__(self, input_channels, downsample=True, hidden_size=512, spatial_features=False, probing=False):
         super().__init__()
         self.hidden_size = hidden_size
         self.downsample = downsample
         self.spatial_features = spatial_features
+        self.probing = probing
         if downsample:
             self.final_conv_size = 32 * 7 * 7
         else:
@@ -95,6 +96,8 @@ class NatureCNN(nn.Module):
                                nn.init.orthogonal_,
                                lambda x: nn.init.constant_(x, 0),
                                nn.init.calculate_gain('relu'))
+        self.pool = nn.AvgPool2d(3, 2)
+        self.flatten = Flatten()
 
         if downsample:
             self.main = nn.Sequential(
@@ -125,9 +128,12 @@ class NatureCNN(nn.Module):
         self.train()
 
     def forward(self, inputs):
+        # TODO: fix hidden size for downsampled images when using spatial features
         if self.spatial_features:
             final_index = 6
             if not self.downsample:
                 final_index = 8
+            if self.probing:
+                return self.flatten(self.pool(self.main[:final_index](inputs)))
             return self.main[:final_index](inputs).permute(0, 2, 3, 1)
         return self.main(inputs)
