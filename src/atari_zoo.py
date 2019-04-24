@@ -18,14 +18,14 @@ def get_episode_inds(obs):
     inds = np.arange(len(diff_arr))
     ep_inds = inds[diff_arr < 1] + 1 #add one to offset the off by one error
     return ep_inds
-    
+
 def convert2grayscale(frame):
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
         frame = np.expand_dims(frame, -1)
         return frame
-def get_atari_zoo_episodes(env,tags=["pretraining-only"], num_frame_stack=4, downsample=True, algos = ["a2c","apex","ga","es"],
-                           tags = ["initial","1HR","2HR", "6HR", "10HR","final", "400M", "1B"]):
-    
+def get_atari_zoo_episodes(env, num_frame_stack=4, downsample=True, algos = ["a2c","apex","ga","es"],
+                           tags=["initial","1HR","2HR", "6HR", "10HR","final", "400M", "1B"]):
+
     #using atari zoo (https://github.com/uber-research/atari-model-zoo) url. Thanks, Uber!
     base_url = "https://dgqeqexrlnkvd.cloudfront.net/zoo"
     if "pretraining-only" in tags:
@@ -35,10 +35,10 @@ def get_atari_zoo_episodes(env,tags=["pretraining-only"], num_frame_stack=4, dow
     basepath = Path("./data")
 
     basepath.mkdir(parents=True,exist_ok=True)
-   
+
 
     episodes, episode_labels = [],[]
-    
+
     for algo in algos:
         for tag in tags:
             if (algo == "dqn" or algo == "rainbow") and tag != "final":
@@ -61,7 +61,7 @@ def get_atari_zoo_episodes(env,tags=["pretraining-only"], num_frame_stack=4, dow
                 except:
                     sys.stderr.write("Had trouble opening {}. Skipping this one for now...".format(savepath))
                     continue
-            
+
                 ep_inds = get_episode_inds(cur_obs)
 
                 cur_labels = [convert_ram_to_label(env,ram) for ram in cur_rams]
@@ -79,6 +79,6 @@ def get_atari_zoo_episodes(env,tags=["pretraining-only"], num_frame_stack=4, dow
                     assert False, "No you can't do num frame stack {} and downsample {}".format(num_frame_stack, downsample)
 
                 episodes.extend(eps)
-                
-                
+
+
     return episodes, episode_labels
