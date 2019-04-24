@@ -23,7 +23,9 @@ def convert2grayscale(frame):
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
         frame = np.expand_dims(frame, -1)
         return frame
-def get_atari_zoo_episodes(env,tags=["pretraining-only"], num_frame_stack=4, downsample=True):
+def get_atari_zoo_episodes(env,tags=["pretraining-only"], num_frame_stack=4, downsample=True, algos = ["a2c","apex","ga","es"],
+                           tags = ["initial","1HR","2HR", "6HR", "10HR","final", "400M", "1B"]):
+    
     #using atari zoo (https://github.com/uber-research/atari-model-zoo) url. Thanks, Uber!
     base_url = "https://dgqeqexrlnkvd.cloudfront.net/zoo"
     if "pretraining-only" in tags:
@@ -33,8 +35,7 @@ def get_atari_zoo_episodes(env,tags=["pretraining-only"], num_frame_stack=4, dow
     basepath = Path("./data")
 
     basepath.mkdir(parents=True,exist_ok=True)
-    algos = ["a2c","apex","ga","es"]
-    tags = ["initial","1HR","2HR", "6HR", "10HR","final", "400M", "1B"]
+   
 
     episodes, episode_labels = [],[]
     
