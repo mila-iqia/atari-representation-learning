@@ -183,6 +183,9 @@ class ProbeTrainer(Trainer):
         print("\t --")
         for k in acc_dict.keys():
             print("\t {}: {:8.4f}%".format(k, 100 * acc_dict[k]))
+        # Log mean test accuracy
+        if 'test' in list(acc_dict.keys())[0]:
+            acc_dict['test_mean_acc'] = np.mean(list(acc_dict.values()))
         if self.wandb:
             self.wandb.log(loss_dict, step=epoch_idx)
             self.wandb.log(acc_dict, step=epoch_idx)
