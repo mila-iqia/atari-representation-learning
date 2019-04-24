@@ -153,7 +153,6 @@ class ProbeTrainer(Trainer):
                 if not self.early_stoppers[k].early_stop:
                     self.early_stoppers[k](val_accuracy["val_" + k + "_acc"], self.probes[k])
 
-
             for k, scheduler in self.schedulers.items():
                 if not self.early_stoppers[k].early_stop:
                     scheduler.step(val_accuracy['val_' + k + '_acc'])
@@ -186,6 +185,4 @@ class ProbeTrainer(Trainer):
         # Log mean test accuracy
         if 'test' in list(acc_dict.keys())[0]:
             acc_dict['test_mean_acc'] = np.mean(list(acc_dict.values()))
-        if self.wandb:
-            self.wandb.log(loss_dict, step=epoch_idx)
             self.wandb.log(acc_dict, step=epoch_idx)

@@ -25,6 +25,7 @@ def main():
 
     args = parser.parse_args()
     env = gym.make(args.env_name)
+    wandb.config.update(vars(args))
 
     if args.train_encoder:
         assert(args.method in ['appo', 'spatial-appo', 'cpc'])
@@ -58,14 +59,6 @@ def main():
 
     # encoder.to(device)
     torch.set_num_threads(1)
-    config = {
-        'encoder_type': encoder.__class__.__name__,
-        'obs_space': str(envs.observation_space.shape),
-        'optimizer': 'Adam',
-        'probe_lr': args.lr
-    }
-    config.update(vars(args))
-    wandb.config.update(config)
 
     if args.collect_mode == "random_agent":
         obs = envs.reset()
@@ -124,6 +117,6 @@ def main():
 
 if __name__ == "__main__":
     tags = ['probe']
-    wandb.init(project="curl-atari", entity="curl-atari", tags=tags)
+    wandb.init(project="curl-atari-2", entity="curl-atari", tags=tags)
     main()
 
