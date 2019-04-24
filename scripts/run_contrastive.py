@@ -16,36 +16,19 @@ import wandb
 import sys
 
 
-def main():
-    
-    parser = get_argparser()
-    #sys.argv = []
-    args = parser.parse_args()
-#     args.pretraining_steps = 1000
-#     args.no_downsample = True
-#     args.num_frame_stack = 1
-#     args.collect_mode = "atari_zoo"
+def train_encoder(args):
     device = torch.device("cuda:" + str(args.cuda_id) if torch.cuda.is_available() else "cpu")
     envs = make_vec_envs(args.env_name, args.seed, args.num_processes, num_frame_stack=args.num_frame_stack,
                          downsample=not args.no_downsample)
-    spatial_features = 'spatial' in args.method
+
     if args.encoder_type == "Nature":
         encoder = NatureCNN(envs.observation_space.shape[0], args)
     elif args.encoder_type == "Impala":
         encoder = ImpalaCNN(envs.observation_space.shape[0], args)
     encoder.to(device)
     torch.set_num_threads(1)
-    tags=['pretraining-only']
-    wandb.init(project="curl-atari", entity="curl-atari", tags=tags)
-    config = {
-        'encoder_type': encoder.__class__.__name__,
-        'obs_space': str(envs.observation_space.shape),
-        'optimizer': 'Adam'
-    }
-    config.update(vars(args))
-    wandb.config.update(config)
 
-    config['obs_space'] = envs.observation_space.shape # weird hack
+    config['obs_space'] = envs.observation_space.shape  # weird hack
     if args.method == 'appo':
         trainer = AppoTrainer(encoder, config, device=device, wandb=wandb)
     if args.method == 'cpc':
@@ -61,7 +44,8 @@ def main():
         episodes = [[[]] for _ in range(args.num_processes)]  # (n_processes * n_episodes * episode_len)
         for step in range(args.pretraining_steps // args.num_processes):
             # Take action using a random policy
-            action = torch.tensor(np.array([np.random.randint(1, envs.action_space.n) for _ in range(args.num_processes)])) \
+            action = torch.tensor(
+                np.array([np.random.randint(1, envs.action_space.n) for _ in range(args.num_processes)])) \
                 .unsqueeze(dim=1).to(device)
             obs, reward, done, infos = envs.step(action)
             for i, info in enumerate(infos):
@@ -76,8 +60,8 @@ def main():
         for i in range(args.num_processes):
             episode_lens += [len(episode) for episode in episodes[i]]
         print("Episode lengths: mean/std/min/max",
-                np.mean(episode_lens), np.std(episode_lens),
-                np.min(episode_lens), np.max(episode_lens))
+              np.mean(episode_lens), np.std(episode_lens),
+              np.min(episode_lens), np.max(episode_lens))
         # Put episode frames on the GPU.
         for p in range(args.num_processes):
             for e in range(len(episodes[p])):
@@ -87,24 +71,24 @@ def main():
         episodes = list(chain.from_iterable(episodes))
         episodes = [x for x in episodes if len(x) > args.batch_size]
     elif args.collect_mode == "atari_zoo":
-        episodes, _ = get_atari_zoo_episodes(args.env_name, tags=tags, num_frame_stack=args.num_frame_stack, downsample= not args.no_downsample)
-        episodes = [torch.from_numpy(ep).permute(0,3,1,2).float() for ep in episodes]
-        
-        
-    
-    
-    
+        episodes, _ = get_atari_zoo_episodes(args.env_name, tags=tags, num_frame_stack=args.num_frame_stack,
+                                             downsample=not args.no_downsample)
+        episodes = [torch.from_numpy(ep).permute(0, 3, 1, 2).float() for ep in episodes]
+
     inds = range(len(episodes))
     split_ind = int(0.8 * len(inds))
 
     tr_eps, val_eps = episodes[:split_ind], episodes[split_ind:]
 
-
     trainer.train(tr_eps, val_eps)
-    # TODO: Better data selection. This failed for a run on Pong.
-    # frames = episodes[200][:60, :, :, :]
-    # visualize_activation_maps(encoder, frames, wandb)
+    return encoder
 
 
 if __name__ == "__main__":
-    main()
+    parser = get_argparser()
+    args = parser.parse_args()
+    tags = ['pretraining-only']
+    wandb.init(project="curl-atari", entity="curl-atari", tags=tags)
+    config = {}
+    config.update(vars(args))
+    train_encoder(args)

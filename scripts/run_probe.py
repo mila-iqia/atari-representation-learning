@@ -1,3 +1,4 @@
+from scripts.run_contrastive import train_encoder
 from src.probe import ProbeTrainer
 import time
 from collections import deque
@@ -18,33 +19,42 @@ import sys
 def main():
     parser = get_argparser()
     parser.add_argument("--weights-path", type=str, default="None")
+    parser.add_argument("--train-encoder", action='store_true')
+    parser.add_argument('--probe-lr', type=float, default=3e-4)
 
     args = parser.parse_args()
     device = torch.device("cuda:" + str(args.cuda_id) if torch.cuda.is_available() else "cpu")
     envs = make_vec_envs(args.env_name, args.seed, args.num_processes, num_frame_stack=args.num_frame_stack,
                          downsample=not args.no_downsample)
 
-    if args.encoder_type == "Nature":
-        encoder = NatureCNN(envs.observation_space.shape[0], args, probing=True)
-    elif args.encoder_type == "Impala":
-        encoder = ImpalaCNN(envs.observation_space.shape[0], args, probing=True)
+    if args.train_encoder:
+        assert(args.method in ['appo', 'spatial-appo', 'cpc'])
+        print("Training encoder from scratch")
+        encoder = train_encoder(args)
+        encoder.probing = True
+        encoder.eval()
 
-    if args.method == "random_cnn":
-        print("Random CNN, so not loading in encoder weights!")
-    elif args.method == "supervised":
-        print("Fully supervised, so starting from random encoder weights!")
     else:
-        if args.weights_path == "None":
-            sys.stderr.write("Probing without loading in encoder weights! Are sure you want to do that??")
+        if args.encoder_type == "Nature":
+            encoder = NatureCNN(envs.observation_space.shape[0], args, probing=True)
+        elif args.encoder_type == "Impala":
+            encoder = ImpalaCNN(envs.observation_space.shape[0], args, probing=True)
+
+        if args.method == "random_cnn":
+            print("Random CNN, so not loading in encoder weights!")
+        elif args.method == "supervised":
+            print("Fully supervised, so starting from random encoder weights!")
         else:
-            print("Print loading in encoder weights from probe of type {} from the following path: {}".format(args.method, args.weights_path))
-            encoder.load_state_dict(torch.load(args.weights_path))
-            encoder.eval()
+            if args.weights_path == "None":
+                sys.stderr.write("Probing without loading in encoder weights! Are sure you want to do that??")
+            else:
+                print("Print loading in encoder weights from probe of type {} from the following path: {}"
+                      .format(args.method, args.weights_path))
+                encoder.load_state_dict(torch.load(args.weights_path))
+                encoder.eval()
 
     # encoder.to(device)
     torch.set_num_threads(1)
-    tags=['probe-only']
-    wandb.init(project="curl-atari", entity="curl-atari", tags=tags)
     config = {
         'encoder_type': encoder.__class__.__name__,
         'obs_space': str(envs.observation_space.shape),
@@ -110,5 +120,7 @@ def main():
 
 
 if __name__ == "__main__":
+    tags = ['probe']
+    wandb.init(project="curl-atari", entity="curl-atari", tags=tags)
     main()
 
