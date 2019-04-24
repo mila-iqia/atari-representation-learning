@@ -43,7 +43,6 @@ class CPCTrainer(Trainer):
               sequences.append(seq)
             yield torch.stack(sequences)
 
-            
     def do_one_epoch(self, epoch, episodes):
         mode = "train" if self.encoder.training and self.gru.training else "val"
         steps = 0
@@ -54,7 +53,8 @@ class CPCTrainer(Trainer):
         for sequence in data_generator:
             sequence = sequence.to(self.device)
             sequence = sequence / 255.
-            flat_sequence = sequence.view(-1, self.num_frame_stack, 84, 84)
+            w, h = self.config['obs_space'].shape[-2], self.config['obs_space'].shape[-1]
+            flat_sequence = sequence.view(-1, self.num_frame_stack, w, h)
             flat_latents = self.encoder(flat_sequence)
             latents = flat_latents.view(
                 self.batch_size, self.sequence_length, self.encoder.hidden_size)
@@ -93,9 +93,6 @@ class CPCTrainer(Trainer):
             for k, disc in self.discriminators.items():
                 disc.eval()
             self.do_one_epoch(e, val_eps)
-            
-            
-
         torch.save(self.encoder.state_dict(), os.path.join(self.wandb.run.dir,  self.config['env_name'] + '.pt'))
 
     def log_results(self, epoch_idx, epoch_losses, epoch_accuracies, prefix=""):
