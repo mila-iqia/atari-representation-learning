@@ -60,11 +60,11 @@ class ProbeTrainer(Trainer):
             self.probes = {k: FullySupervisedLinearProbe(encoder=self.encoder,
                                                          num_classes=self.num_classes).to(device) for k in sample_label.keys()}
         elif self.method == 'nonlinear':
-            self.probes = {k: NonLinearProbe(input_dim=encoder.hidden_size,
+            self.probes = {k: NonLinearProbe(input_dim=encoder.feature_size,
                                              num_classes=self.num_classes).to(device) for k in sample_label.keys()}
         else:
             # sample_label should have {label_name: number_of_classes_for_that_label}
-            self.probes = {k: LinearProbe(input_dim=encoder.hidden_size,
+            self.probes = {k: LinearProbe(input_dim=encoder.feature_size,
                                           num_classes=self.num_classes).to(device) for k in sample_label.keys()}
 
         self.early_stoppers = {k: EarlyStopping(patience=patience, verbose=False, wandb=self.wandb, name=k + "_probe")

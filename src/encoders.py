@@ -82,13 +82,13 @@ class ImpalaCNN(nn.Module):
 
 
 class NatureCNN(nn.Module):
-    def __init__(self, input_channels, downsample=True, hidden_size=512, spatial_features=False, probing=False):
+    def __init__(self, input_channels, args, probing=False):
         super().__init__()
-        self.hidden_size = hidden_size
-        self.downsample = downsample
-        self.spatial_features = spatial_features
+        self.feature_size = args.feature_size
+        self.downsample = not args.no_downsample
+        self.spatial_features = 'spatial' in args.method
         self.probing = probing
-        if downsample:
+        if self.downsample:
             self.final_conv_size = 32 * 7 * 7
         else:
             self.final_conv_size = 32 * 6 * 9
@@ -96,10 +96,10 @@ class NatureCNN(nn.Module):
                                nn.init.orthogonal_,
                                lambda x: nn.init.constant_(x, 0),
                                nn.init.calculate_gain('relu'))
-        self.pool = nn.AvgPool2d((6, 3), 1)
+        self.pool = nn.AvgPool2d((8, 5), 1)
         self.flatten = Flatten()
 
-        if downsample:
+        if self.downsample:
             self.main = nn.Sequential(
                 init_(nn.Conv2d(input_channels, 32, 8, stride=4)),
                 nn.ReLU(),
@@ -108,7 +108,7 @@ class NatureCNN(nn.Module):
                 init_(nn.Conv2d(64, 32, 3, stride=1)),
                 nn.ReLU(),
                 Flatten(),
-                init_(nn.Linear(self.final_conv_size, hidden_size)),
+                init_(nn.Linear(self.final_conv_size, self.feature_size)),
                 nn.ReLU()
             )
         else:
@@ -122,7 +122,7 @@ class NatureCNN(nn.Module):
                 init_(nn.Conv2d(64, 32, 3, stride=1)),
                 nn.ReLU(),
                 Flatten(),
-                init_(nn.Linear(self.final_conv_size, hidden_size)),
+                init_(nn.Linear(self.final_conv_size, self.feature_size)),
                 nn.ReLU()
             )
         self.train()

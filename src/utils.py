@@ -48,6 +48,8 @@ def get_argparser():
                         help='Random seed to use')
     parser.add_argument('--encoder-type', type=str, default="Nature", choices=["Impala", "Nature"],
                         help='Encoder type (Impala or Nature)')
+    parser.add_argument('--feature-size', type=int, default=128,
+                        help='Size of features')
     parser.add_argument('--spatial', action='store_true', default=False)
     parser.add_argument("--patience", type=int, default=10)
 

@@ -30,9 +30,9 @@ def main():
                          downsample=not args.no_downsample)
     spatial_features = 'spatial' in args.method
     if args.encoder_type == "Nature":
-        encoder = NatureCNN(envs.observation_space.shape[0], downsample=not args.no_downsample, spatial_features=spatial_features)
+        encoder = NatureCNN(envs.observation_space.shape[0], args)
     elif args.encoder_type == "Impala":
-        encoder = ImpalaCNN(envs.observation_space.shape[0], downsample=not args.no_downsample, spatial_features=spatial_features)
+        encoder = ImpalaCNN(envs.observation_space.shape[0], args)
     encoder.to(device)
     torch.set_num_threads(1)
     tags=['pretraining-only']
