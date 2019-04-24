@@ -24,7 +24,9 @@ def main():
     parser.add_argument('--probe-lr', type=float, default=5e-2)
 
     args = parser.parse_args()
-    env = gym.make(args.env_name)
+    # dummy env
+    env = make_vec_envs(args.env_name, args.seed, 1, num_frame_stack=args.num_frame_stack,
+                        downsample=not args.no_downsample)
     wandb.config.update(vars(args))
 
     if args.train_encoder:
@@ -36,9 +38,9 @@ def main():
 
     else:
         if args.encoder_type == "Nature":
-            encoder = NatureCNN(env.observation_space.shape[2], args, probing=True)
+            encoder = NatureCNN(env.observation_space.shape[0], args, probing=True)
         elif args.encoder_type == "Impala":
-            encoder = ImpalaCNN(env.observation_space.shape[2], args, probing=True)
+            encoder = ImpalaCNN(env.observation_space.shape[0], args, probing=True)
 
         if args.method == "random_cnn":
             print("Random CNN, so not loading in encoder weights!")
