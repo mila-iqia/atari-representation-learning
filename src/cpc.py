@@ -8,7 +8,6 @@ from .utils import calculate_accuracy
 from .trainer import Trainer
 
 
-
 class CPCTrainer(Trainer):
     # TODO: Make it work for all modes, right now only it defaults to pcl.
     def __init__(self, encoder, config, device=torch.device('cpu'), wandb=None):
