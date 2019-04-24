@@ -39,11 +39,9 @@ def main():
     wandb.init(project="curl-atari", entity="curl-atari", tags=tags)
     config = {
         'encoder_type': encoder.__class__.__name__,
-        'obs_space': str(envs.observation_space.shape),
+        'obs_space': envs.observation_space.shape,
         'optimizer': 'Adam'
     }
-    config.update(vars(args))
-    wandb.config.update(config)
 
     if args.method == 'appo':
         trainer = AppoTrainer(encoder, config, device=device, wandb=wandb)
@@ -51,6 +49,9 @@ def main():
         trainer = CPCTrainer(encoder, config, device=device, wandb=wandb)
     if args.method == 'spatial-appo':
         trainer = SpatioTemporalTrainer(encoder, config, device=device, wandb=wandb)
+    config['obs_space'] = str(envs.observation_space.shape)
+    config.update(vars(args))
+    wandb.config.update(config)
 
     if args.collect_mode == "random_agent":
         obs = envs.reset()
