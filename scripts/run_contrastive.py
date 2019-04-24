@@ -81,6 +81,8 @@ def train_encoder(args):
     tr_eps, val_eps = episodes[:split_ind], episodes[split_ind:]
 
     trainer.train(tr_eps, val_eps)
+    envs.close()
+
     return encoder
 
 

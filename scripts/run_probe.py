@@ -6,6 +6,7 @@ from itertools import chain
 
 import numpy as np
 import torch
+import gym
 
 from src.envs import make_vec_envs
 from src.utils import get_argparser, visualize_activation_maps
@@ -23,9 +24,8 @@ def main():
     parser.add_argument('--probe-lr', type=float, default=3e-4)
 
     args = parser.parse_args()
-    device = torch.device("cuda:" + str(args.cuda_id) if torch.cuda.is_available() else "cpu")
-    envs = make_vec_envs(args.env_name, args.seed, args.num_processes, num_frame_stack=args.num_frame_stack,
-                         downsample=not args.no_downsample)
+
+    env = gym.make(args.env_name)
 
     if args.train_encoder:
         assert(args.method in ['appo', 'spatial-appo', 'cpc'])
@@ -36,9 +36,9 @@ def main():
 
     else:
         if args.encoder_type == "Nature":
-            encoder = NatureCNN(envs.observation_space.shape[0], args, probing=True)
+            encoder = NatureCNN(env.observation_space.shape[0], args, probing=True)
         elif args.encoder_type == "Impala":
-            encoder = ImpalaCNN(envs.observation_space.shape[0], args, probing=True)
+            encoder = ImpalaCNN(env.observation_space.shape[0], args, probing=True)
 
         if args.method == "random_cnn":
             print("Random CNN, so not loading in encoder weights!")
@@ -52,6 +52,10 @@ def main():
                       .format(args.method, args.weights_path))
                 encoder.load_state_dict(torch.load(args.weights_path))
                 encoder.eval()
+
+    device = torch.device("cuda:" + str(args.cuda_id) if torch.cuda.is_available() else "cpu")
+    envs = make_vec_envs(args.env_name, args.seed, args.num_processes, num_frame_stack=args.num_frame_stack,
+                         downsample=not args.no_downsample)
 
     # encoder.to(device)
     torch.set_num_threads(1)
