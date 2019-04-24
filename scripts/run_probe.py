@@ -24,7 +24,6 @@ def main():
     parser.add_argument('--probe-lr', type=float, default=3e-4)
 
     args = parser.parse_args()
-
     env = gym.make(args.env_name)
 
     if args.train_encoder:

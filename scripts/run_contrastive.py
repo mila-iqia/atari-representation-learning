@@ -28,6 +28,8 @@ def train_encoder(args):
     encoder.to(device)
     torch.set_num_threads(1)
 
+    config = {}
+    config.update(vars(args))
     config['obs_space'] = envs.observation_space.shape  # weird hack
     if args.method == 'appo':
         trainer = AppoTrainer(encoder, config, device=device, wandb=wandb)
@@ -93,4 +95,5 @@ if __name__ == "__main__":
     wandb.init(project="curl-atari", entity="curl-atari", tags=tags)
     config = {}
     config.update(vars(args))
+    wandb.config.update(config)
     train_encoder(args)
