@@ -22,7 +22,7 @@ def main():
     parser.add_argument("--weights-path", type=str, default="None")
     parser.add_argument("--train-encoder", action='store_true')
     parser.add_argument('--probe-lr', type=float, default=5e-2)
-
+    parser.add_argument("--probe-collect-mode", type=str,choices=["random_agent","atari_zoo"], default="random_agent")
     args = parser.parse_args()
     # dummy env
     env = make_vec_envs(args.env_name, args.seed, 1, num_frame_stack=args.num_frame_stack,
@@ -62,7 +62,7 @@ def main():
     # encoder.to(device)
     torch.set_num_threads(1)
 
-    if args.collect_mode == "random_agent":
+    if args.probe_collect_mode == "random_agent":
         obs = envs.reset()
         episode_rewards = deque(maxlen=10)
         start = time.time()
