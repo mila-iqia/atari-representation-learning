@@ -55,16 +55,17 @@ class ProbeTrainer(Trainer):
         self.batch_size = batch_size
         self.patience = patience
         self.method = wandb.config["method"]
+        self.feature_size = 512 if self.method == "pretrained-rl-agent" else encoder.feature_size
 
         if self.method == "supervised":
             self.probes = {k: FullySupervisedLinearProbe(encoder=self.encoder,
                                                          num_classes=self.num_classes).to(device) for k in sample_label.keys()}
         elif self.method == 'nonlinear':
-            self.probes = {k: NonLinearProbe(input_dim=encoder.feature_size,
+            self.probes = {k: NonLinearProbe(input_dim=self.feature_size,
                                              num_classes=self.num_classes).to(device) for k in sample_label.keys()}
         else:
             # sample_label should have {label_name: number_of_classes_for_that_label}
-            self.probes = {k: LinearProbe(input_dim=encoder.feature_size,
+            self.probes = {k: LinearProbe(input_dim=self.feature_size,
                                           num_classes=self.num_classes).to(device) for k in sample_label.keys()}
 
         self.early_stoppers = {k: EarlyStopping(patience=patience, verbose=False, wandb=self.wandb, name=k + "_probe")
@@ -102,8 +103,11 @@ class ProbeTrainer(Trainer):
         [probe.to("cpu") for probe in self.probes.values()]
         probe = self.probes[k]
         probe.to(self.device)
-        if self.method == "supervised":
-            preds = probe(batch)
+        if self.method == "supervised" or self.method == "pretrained-rl-agent": 
+            '''#if method is supervised batch is a batch of frames and probe is a full encoder + linear or nonlinear probe
+                if method is pretrained-rl-agent, then batch is a batch of feature vectors and probe is just a linear or nonlinear probe'''
+            preds = probe(batch) 
+
         else:
             with torch.no_grad():
                 self.encoder.to(self.device)

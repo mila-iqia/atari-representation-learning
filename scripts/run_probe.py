@@ -22,7 +22,9 @@ def main():
     parser.add_argument("--weights-path", type=str, default="None")
     parser.add_argument("--train-encoder", action='store_true')
     parser.add_argument('--probe-lr', type=float, default=5e-2)
-
+    parser.add_argument("--probe-collect-mode", type=str,choices=["random_agent","atari_zoo"], default="random_agent")
+    parser.add_argument('--zoo-algos', nargs='+',default=["a2c"])
+    parser.add_argument('--zoo-tags', nargs='+',default=["10HR"])
     args = parser.parse_args()
     # dummy env
     env = make_vec_envs(args.env_name, args.seed, 1, num_frame_stack=args.num_frame_stack,
@@ -62,7 +64,7 @@ def main():
     # encoder.to(device)
     torch.set_num_threads(1)
 
-    if args.collect_mode == "random_agent":
+    if args.probe_collect_mode == "random_agent":
         obs = envs.reset()
         episode_rewards = deque(maxlen=10)
         start = time.time()
@@ -98,8 +100,19 @@ def main():
         # Convert to 1d list from 2d list
         episode_labels = list(chain.from_iterable(episode_labels))    
     else:
-        episodes, episode_labels = get_atari_zoo_episodes(args.env_name, tags=tags, num_frame_stack=args.num_frame_stack, downsample= not args.no_downsample)
-        episodes = [torch.from_numpy(ep).permute(0,3,1,2).float() for ep in episodes]
+        episodes, episode_labels = get_atari_zoo_episodes(args.env_name,
+                                                          run_ids=[1],
+                                                          num_frame_stack=args.num_frame_stack,
+                                                          downsample= not args.no_downsample,
+                                                          algos=args.zoo_algos,
+                                                          tags=args.zoo_tags, 
+                                                          use_representations_instead_of_frames=("pretrained-rl-agent" in args.method))
+
+        episodes = [torch.from_numpy(ep).float() for ep in episodes]
+
+        if len(episodes[0].shape) > 2:
+            episodes = [ep.permute(0,3,1,2) for ep in episodes]
+
 
     episodes = [x for x in episodes if len(x) > args.batch_size]
     episode_labels = [x for x in episode_labels if len(x) > args.batch_size]
@@ -121,4 +134,3 @@ if __name__ == "__main__":
     tags = ['probe']
     wandb.init(project="curl-atari-2", entity="curl-atari", tags=tags)
     main()
-
