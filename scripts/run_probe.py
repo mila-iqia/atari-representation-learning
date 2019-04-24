@@ -36,9 +36,9 @@ def main():
 
     else:
         if args.encoder_type == "Nature":
-            encoder = NatureCNN(env.observation_space.shape[0], args, probing=True)
+            encoder = NatureCNN(env.observation_space.shape[2], args, probing=True)
         elif args.encoder_type == "Impala":
-            encoder = ImpalaCNN(env.observation_space.shape[0], args, probing=True)
+            encoder = ImpalaCNN(env.observation_space.shape[2], args, probing=True)
 
         if args.method == "random_cnn":
             print("Random CNN, so not loading in encoder weights!")
