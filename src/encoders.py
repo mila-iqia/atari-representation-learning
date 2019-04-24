@@ -85,6 +85,7 @@ class NatureCNN(nn.Module):
     def __init__(self, input_channels, args, probing=False):
         super().__init__()
         self.feature_size = args.feature_size
+        self.hidden_size = self.feature_size # redundant
         self.downsample = not args.no_downsample
         self.spatial_features = 'spatial' in args.method
         self.probing = probing
