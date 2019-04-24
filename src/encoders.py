@@ -97,7 +97,7 @@ class NatureCNN(nn.Module):
                                nn.init.orthogonal_,
                                lambda x: nn.init.constant_(x, 0),
                                nn.init.calculate_gain('relu'))
-        self.pool = nn.AvgPool2d((8, 5), 1)
+        self.pool = nn.AvgPool2d((6, 3), 1)
         self.flatten = Flatten()
 
         if self.downsample:
