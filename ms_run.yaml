@@ -1,0 +1,28 @@
+description: CURL-ATRI
+
+auth:
+  cluster: rr2
+  vc: msrlabs
+  docker:
+    image: ankeshanand/curl-atari:latest
+    registry: index.docker.io
+
+storage:
+  _default:
+    use_phillyfs: True
+
+# data
+#   data upload is not required for this example
+
+search:
+  job_template:
+    name: oredered_memory_logic
+    sku: G1
+    command:
+    - python -m scripts.run_probe --train-encoder --probe-lr 5e-2 --env-name {env_name} --patience 20 --epochs 50 --method spatial-appo
+  type: grid
+  max_trials: 23
+  params:
+    - name: env_name
+      spec: discrete
+      values: ['AsteroidsNoFrameskip-v4', 'BerzerkNoFrameskip-v4', 'BoxingNoFrameskip-v4', 'BreakoutNoFrameskip-v4', 'DefenderNoFrameskip-v4', 'DemonAttackNoFrameskip-v4', 'EnduroNoFrameskip-v4', 'FreewayNoFrameskip-v4', 'FrostbiteNoFrameskip-v4', 'HeroNoFrameskip-v4', 'MontezumaRevengeNoFrameskip-v4', 'MsPacmanNoFrameskip-v4', 'PitfallNoFrameskip-v4', 'PongNoFrameskip-v4', 'PrivateEyeNoFrameskip-v4', 'QbertNoFrameskip-v4', 'RiverraidNoFrameskip-v4', 'SeaquestNoFrameskip-v4', 'SolarisNoFrameskip-v4', 'SpaceInvadersNoFrameskip-v4', 'VentureNoFrameskip-v4', 'VideoPinballNoFrameskip-v4', 'YarsRevengeNoFrameskip-v4']
