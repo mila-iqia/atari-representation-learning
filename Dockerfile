@@ -71,7 +71,7 @@ RUN git clone https://github.com/ikostrikov/pytorch-a2c-ppo-acktr-gail.git \
  && pip install -e .
 
 # Install additional requirements
-RUN pip install 'gym[atari]' matplotlib wandb
+RUN pip install 'gym[atari]' matplotlib wandb wget
 
 # Login to wandb
 ARG wandb_key
