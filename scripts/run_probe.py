@@ -60,13 +60,14 @@ def main():
                 encoder.eval()
 
     device = torch.device("cuda:" + str(args.cuda_id) if torch.cuda.is_available() else "cpu")
-    envs = make_vec_envs(args.env_name, args.seed, args.num_processes, num_frame_stack=args.num_frame_stack,
-                         downsample=not args.no_downsample)
+
 
     # encoder.to(device)
     torch.set_num_threads(1)
 
     if args.probe_collect_mode == "random_agent":
+        envs = make_vec_envs(args.env_name, args.seed, args.num_processes, num_frame_stack=args.num_frame_stack,
+                         downsample=not args.no_downsample)
         obs = envs.reset()
         episode_rewards = deque(maxlen=10)
         start = time.time()
