@@ -103,7 +103,6 @@ def main():
         episode_labels = list(chain.from_iterable(episode_labels))    
     else:
         episodes, episode_labels = get_atari_zoo_episodes(args.env_name,
-                                                          run_ids=[1],
                                                           num_frame_stack=args.num_frame_stack,
                                                           downsample= not args.no_downsample,
                                                           algos=args.zoo_algos,
