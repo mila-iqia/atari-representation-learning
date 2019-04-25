@@ -48,6 +48,8 @@ def main():
             print("Random CNN, so not loading in encoder weights!")
         elif args.method == "supervised":
             print("Fully supervised, so starting from random encoder weights!")
+        elif args.method == "pretrained-rl-agent":
+            print("Representation from pretrained rl agent, so we don't need an encoder!")           
         else:
             if args.weights_path == "None":
                 sys.stderr.write("Probing without loading in encoder weights! Are sure you want to do that??")
