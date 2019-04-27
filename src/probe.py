@@ -46,7 +46,9 @@ class FullySupervisedLinearProbe(nn.Module):
 class ProbeTrainer(Trainer):
     def __init__(self, encoder, wandb, sample_label,
                  device=torch.device('cpu'),
-                 epochs=100, lr=5e-4, batch_size=64, patience=15):
+                 epochs=100, lr=5e-4,
+                 batch_size=64,
+                 patience=15, log=True):
         super().__init__(encoder, wandb, device)
         self.sample_label = sample_label
         self.num_classes = 256
@@ -56,7 +58,7 @@ class ProbeTrainer(Trainer):
         self.patience = patience
         self.method = wandb.config["method"]
         self.feature_size = 512 if self.method == "pretrained-rl-agent" else encoder.feature_size
-
+        self.log = log
         if self.method == "supervised":
             self.probes = {k: FullySupervisedLinearProbe(encoder=self.encoder,
                                                          num_classes=self.num_classes).to(device) for k in sample_label.keys()}
@@ -174,6 +176,8 @@ class ProbeTrainer(Trainer):
         epoch_loss, accuracy = self.do_one_epoch(test_episodes, test_label_dicts)
         epoch_loss = {prefix + k: v for k, v in epoch_loss.items()}
         accuracy = {prefix + k: v for k, v in accuracy.items()}
+        if prefix == "test_":
+            accuracy['test_mean_acc'] = np.mean(list(accuracy.values()))
         self.log_results(epoch, epoch_loss, accuracy)
         for k, probe in self.probes.items():
             probe.train()
@@ -186,7 +190,7 @@ class ProbeTrainer(Trainer):
         print("\t --")
         for k in acc_dict.keys():
             print("\t {}: {:8.4f}%".format(k, 100 * acc_dict[k]))
-        # Log mean test accuracy
-        if 'test' in list(acc_dict.keys())[0]:
-            acc_dict['test_mean_acc'] = np.mean(list(acc_dict.values()))
-            self.wandb.log(acc_dict, step=epoch_idx)
+        if self.log:
+            # Log mean test accuracy
+            if 'test' in list(acc_dict.keys())[0]:
+                self.wandb.log(acc_dict, step=epoch_idx)
