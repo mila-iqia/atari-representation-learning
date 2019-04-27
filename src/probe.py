@@ -7,7 +7,7 @@ from src.utils import calculate_multiclass_accuracy
 from copy import deepcopy
 import numpy as np
 from torch.utils.data import RandomSampler, BatchSampler
-
+from src.encoders import Flatten
 
 class LinearProbe(nn.Module):
     def __init__(self, input_dim, num_classes=255):
@@ -48,7 +48,7 @@ class ProbeTrainer(Trainer):
                  device=torch.device('cpu'),
                  epochs=100, lr=5e-4,
                  batch_size=64,
-                 patience=15, log=True):
+                 patience=15, log=True, feature_size=None):
         super().__init__(encoder, wandb, device)
         self.sample_label = sample_label
         self.num_classes = 256
@@ -57,7 +57,10 @@ class ProbeTrainer(Trainer):
         self.batch_size = batch_size
         self.patience = patience
         self.method = wandb.config["method"]
-        self.feature_size = 512 if self.method == "pretrained-rl-agent" else encoder.feature_size
+        if feature_size is None:
+            self.feature_size = 512 if self.method == "pretrained-rl-agent" else encoder.hidden_size
+        else:
+            self.feature_size = feature_size
         self.log = log
         if self.method == "supervised":
             self.probes = {k: FullySupervisedLinearProbe(encoder=self.encoder,
@@ -105,9 +108,12 @@ class ProbeTrainer(Trainer):
         [probe.to("cpu") for probe in self.probes.values()]
         probe = self.probes[k]
         probe.to(self.device)
-        if self.method == "supervised" or self.method == "pretrained-rl-agent": 
+        if self.method == "flat-pixels":
+            batch = Flatten()(batch)
+        if self.method in ["supervised", "pretrained-rl-agent", "flat-pixels"]:
             '''#if method is supervised batch is a batch of frames and probe is a full encoder + linear or nonlinear probe
-                if method is pretrained-rl-agent, then batch is a batch of feature vectors and probe is just a linear or nonlinear probe'''
+                if method is pretrained-rl-agent, then batch is a batch of feature vectors and probe is just a linear or nonlinear probe
+                if method is flat-pixel, then batch is a batch of flattened raw images and the linear probe is a really wide linear probe'''
             preds = probe(batch) 
 
         else:

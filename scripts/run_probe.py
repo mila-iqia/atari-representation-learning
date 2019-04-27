@@ -16,6 +16,78 @@ from src.atari_zoo import get_atari_zoo_episodes
 import wandb
 import sys
 
+
+def main():
+    parser = get_argparser()
+    parser.add_argument("--weights-path", type=str, default="None")
+    parser.add_argument("--train-encoder", action='store_true')
+    parser.add_argument('--probe-lr', type=float, default=5e-2)
+    parser.add_argument("--probe-collect-mode", type=str,choices=["random_agent","atari_zoo"], default="random_agent")
+    parser.add_argument('--zoo-algos', nargs='+',default=["a2c"])
+    parser.add_argument('--zoo-tags', nargs='+',default=["10HR"])
+    parser.add_argument('--num-runs',type=int,default=1)
+    args = parser.parse_args()
+    # dummy env
+    env = make_vec_envs(args.env_name, args.seed, 1, num_frame_stack=args.num_frame_stack,
+                        downsample=not args.no_downsample)
+    wandb.config.update(vars(args))
+
+    if args.train_encoder:
+        assert(args.method in ['appo', 'spatial-appo', 'cpc'])
+        print("Training encoder from scratch")
+        encoder = train_encoder(args)
+        encoder.probing = True
+        encoder.eval()
+
+    else:
+
+        if args.encoder_type == "Nature":
+            encoder = NatureCNN(env.observation_space.shape[0], args, probing=True)
+        elif args.encoder_type == "Impala":
+            encoder = ImpalaCNN(env.observation_space.shape[0], args, probing=True)
+        
+
+        if args.method == "random_cnn":
+            print("Random CNN, so not loading in encoder weights!")
+        elif args.method == "supervised":
+            print("Fully supervised, so starting from random encoder weights!")
+        elif args.method == "pretrained-rl-agent":
+            print("Representation from pretrained rl agent, so we don't need an encoder!")     
+        elif args.method == "flat-pixels":
+            print("Just using flattened pixels, so no need for encoder or weights for that matter!")
+        else:
+            if args.weights_path == "None":
+                sys.stderr.write("Probing without loading in encoder weights! Are sure you want to do that??")
+            else:
+                print("Print loading in encoder weights from probe of type {} from the following path: {}"
+                      .format(args.method, args.weights_path))
+                encoder.load_state_dict(torch.load(args.weights_path))
+                encoder.eval()
+
+    device = torch.device("cuda:" + str(args.cuda_id) if torch.cuda.is_available() else "cpu")
+
+
+    # encoder.to(device)
+    torch.set_num_threads(1)
+
+    
+    all_runs_test_acc = appendabledict()
+    for i, seed in enumerate(range(args.seed, args.seed + args.num_runs)):
+        print("Run number {} of {}".format(i+1,args.num_runs))
+        test_acc = run_probe(encoder, args, device, seed)
+        all_runs_test_acc.append_update(test_acc)
+    
+    mean_acc_dict = {"mean_"+k : np.mean(v) for k,v in all_runs_test_acc.items() }
+    stderr_acc_dict = {"stderr_"+k : np.std(v) / np.sqrt(len(v)) for k,v in all_runs_test_acc.items() }
+    print(mean_acc_dict)
+    print(stderr_acc_dict)
+    wandb.log(mean_acc_dict)
+    wandb.log(stderr_acc_dict)
+
+
+    
+    
+    
 def get_random_agent_episodes(args,device, seed):
     envs = make_vec_envs(args.env_name, seed, args.num_processes, num_frame_stack=args.num_frame_stack,
                      downsample=not args.no_downsample)
@@ -56,13 +128,12 @@ def get_random_agent_episodes(args,device, seed):
     return episodes, episode_labels
 
 
-def run_probe(args, device, seed):
+def run_probe(encoder, args, device, seed):
     if args.probe_collect_mode == "random_agent":
         episodes, episode_labels = get_random_agent_episodes(args,device,seed)
 
     else:
         episodes, episode_labels = get_atari_zoo_episodes(args.env_name,
-                                                          run_ids=[1,2],
                                                           num_frame_stack=args.num_frame_stack,
                                                           downsample= not args.no_downsample,
                                                           algos=args.zoo_algos,
@@ -85,79 +156,23 @@ def run_probe(args, device, seed):
 
     tr_eps, val_eps, test_eps = episodes[:val_split_ind], episodes[val_split_ind:te_split_ind], episodes[te_split_ind:]
     tr_labels, val_labels, test_labels = episode_labels[:val_split_ind], episode_labels[val_split_ind:te_split_ind], episode_labels[te_split_ind:]
-
-    trainer = ProbeTrainer(encoder, wandb, epochs=args.epochs, sample_label=tr_labels[0][0],
-                           lr=args.lr, batch_size=args.batch_size, 
-                           device=device, patience=args.patience, log=False)
+    
+    feature_size = np.prod(tr_eps[0][0].shape[1:]) if args.method == "flat-pixels" else None
+    trainer = ProbeTrainer(encoder, 
+                           wandb, 
+                           epochs=args.epochs,
+                           sample_label=tr_labels[0][0],
+                           lr=args.lr, 
+                           batch_size=args.batch_size, 
+                           device=device, 
+                           patience=args.patience, 
+                           log=False, 
+                           feature_size=feature_size)
 
     trainer.train(tr_eps, val_eps, tr_labels, val_labels)
     _, test_acc = trainer.evaluate(test_eps, test_labels)
     return test_acc
 
-
-def main():
-    parser = get_argparser()
-    parser.add_argument("--weights-path", type=str, default="None")
-    parser.add_argument("--train-encoder", action='store_true')
-    parser.add_argument('--probe-lr', type=float, default=5e-2)
-    parser.add_argument("--probe-collect-mode", type=str,choices=["random_agent","atari_zoo"], default="random_agent")
-    parser.add_argument('--zoo-algos', nargs='+',default=["a2c"])
-    parser.add_argument('--zoo-tags', nargs='+',default=["10HR"])
-    parser.add_argument('--num-runs',type=int,default=1)
-    args = parser.parse_args()
-
-    # dummy env
-    env = make_vec_envs(args.env_name, args.seed, 1, num_frame_stack=args.num_frame_stack,
-                        downsample=not args.no_downsample)
-    wandb.config.update(vars(args))
-
-    if args.train_encoder:
-        assert(args.method in ['appo', 'spatial-appo', 'cpc'])
-        print("Training encoder from scratch")
-        encoder = train_encoder(args)
-        encoder.probing = True
-        encoder.eval()
-
-    else:
-        if args.encoder_type == "Nature":
-            encoder = NatureCNN(env.observation_space.shape[0], args, probing=True)
-        elif args.encoder_type == "Impala":
-            encoder = ImpalaCNN(env.observation_space.shape[0], args, probing=True)
-
-        if args.method == "random_cnn":
-            print("Random CNN, so not loading in encoder weights!")
-        elif args.method == "supervised":
-            print("Fully supervised, so starting from random encoder weights!")
-        elif args.method == "pretrained-rl-agent":
-            print("Representation from pretrained rl agent, so we don't need an encoder!")           
-        else:
-            if args.weights_path == "None":
-                sys.stderr.write("Probing without loading in encoder weights! Are sure you want to do that??")
-            else:
-                print("Print loading in encoder weights from probe of type {} from the following path: {}"
-                      .format(args.method, args.weights_path))
-                encoder.load_state_dict(torch.load(args.weights_path))
-                encoder.eval()
-
-    device = torch.device("cuda:" + str(args.cuda_id) if torch.cuda.is_available() else "cpu")
-
-
-    # encoder.to(device)
-    torch.set_num_threads(1)
-
-    
-    all_runs_test_acc = appendabledict()
-    for i, seed in enumerate(range(args.seed, args.seed + args.num_runs)):
-        print("Run number {} of {}".format(i+1,args.num_runs))
-        test_acc = run_probe(args, device, seed)
-        all_runs_test_acc.append_update(test_acc)
-    
-    mean_acc_dict = {"mean_"+k : np.mean(v) for k,v in all_runs_test_acc.items() }
-    stderr_acc_dict = {"stderr_"+k : np.std(v) / np.sqrt(len(v)) for k,v in all_runs_test_acc.items() }
-    print(mean_acc_dict)
-    print(stderr_acc_dict)
-    wandb.log(mean_acc_dict)
-    wandb.log(stderr_acc_dict)
 
 
 if __name__ == "__main__":

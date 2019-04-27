@@ -18,9 +18,9 @@ def get_argparser():
     parser = argparse.ArgumentParser()
     parser.add_argument('--env-name', default='MontezumaRevengeNoFrameskip-v4',
                         help='environment to train on (default: MontezumaRevengeNoFrameskip-v4)')
-    parser.add_argument('--num-frame-stack', type=int, default=4,
+    parser.add_argument('--num-frame-stack', type=int, default=1,
                         help='Number of frames to stack for a state')
-    parser.add_argument('--no-downsample', action='store_true', default=False,
+    parser.add_argument('--no-downsample', action='store_true', default=True,
                         help='Whether to use a linear classifier')
     parser.add_argument('--pretraining-steps', type=int, default=100000,
                         help='Number of steps to pretrain representations (default: 100000)')
@@ -30,7 +30,7 @@ def get_argparser():
 #                         help='Number of steps to train probes (default: 15000 )')
     parser.add_argument('--num-processes', type=int, default=8,
                         help='Number of parallel environments to collect samples from (default: 8)')
-    parser.add_argument('--method', type=str, default='appo', choices=["appo", "cpc", "supervised", "random-cnn", "nonlinear", "spatial-appo", "pretrained-rl-agent"],
+    parser.add_argument('--method', type=str, default='appo', choices=["appo", "cpc", "supervised", "random-cnn", "nonlinear", "spatial-appo", "pretrained-rl-agent", "flat-pixels"],
                         help='Method to use for training representations (default: appo)')
     parser.add_argument('--mode', type=str, default='pcl',
                         help='Mode to use when using the Appo estimator [pcl | tcl | both] (default: pcl)')
