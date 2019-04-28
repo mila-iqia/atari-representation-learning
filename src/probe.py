@@ -9,6 +9,7 @@ import numpy as np
 from torch.utils.data import RandomSampler, BatchSampler
 from src.encoders import Flatten
 
+
 class LinearProbe(nn.Module):
     def __init__(self, input_dim, num_classes=255):
         super().__init__()
@@ -64,7 +65,8 @@ class ProbeTrainer(Trainer):
         self.log = log
         if self.method == "supervised":
             self.probes = {k: FullySupervisedLinearProbe(encoder=self.encoder,
-                                                         num_classes=self.num_classes).to(device) for k in sample_label.keys()}
+                                                         num_classes=self.num_classes).to(device) for k in
+                           sample_label.keys()}
         elif self.method == 'nonlinear':
             self.probes = {k: NonLinearProbe(input_dim=self.feature_size,
                                              num_classes=self.num_classes).to(device) for k in sample_label.keys()}
@@ -80,7 +82,8 @@ class ProbeTrainer(Trainer):
         self.optimizers = {k: torch.optim.Adam(list(self.probes[k].parameters()),
                                                eps=1e-5, lr=self.lr) for k in sample_label.keys()}
         self.schedulers = {k: torch.optim.lr_scheduler.ReduceLROnPlateau(
-            self.optimizers[k], patience=5, factor=0.2, verbose=True, mode='max') for k in sample_label.keys()}
+            self.optimizers[k], patience=5, factor=0.2, verbose=True, mode='max', min_lr=1e-5) for k in
+            sample_label.keys()}
         self.loss_fn = nn.CrossEntropyLoss()
 
     def generate_batch(self, episodes, episode_labels):
@@ -114,7 +117,7 @@ class ProbeTrainer(Trainer):
             '''#if method is supervised batch is a batch of frames and probe is a full encoder + linear or nonlinear probe
                 if method is pretrained-rl-agent, then batch is a batch of feature vectors and probe is just a linear or nonlinear probe
                 if method is flat-pixel, then batch is a batch of flattened raw images and the linear probe is a really wide linear probe'''
-            preds = probe(batch) 
+            preds = probe(batch)
 
         else:
             with torch.no_grad():
@@ -126,7 +129,8 @@ class ProbeTrainer(Trainer):
     def do_one_epoch(self, episodes, label_dicts):
         epoch_loss, accuracy = {k + "_loss": [] for k in self.sample_label.keys() if
                                 not self.early_stoppers[k].early_stop}, \
-                               {k + "_acc": [] for k in self.sample_label.keys() if not self.early_stoppers[k].early_stop}
+                               {k + "_acc": [] for k in self.sample_label.keys() if
+                                not self.early_stoppers[k].early_stop}
 
         data_generator = self.generate_batch(episodes, label_dicts)
         for step, (x, labels_batch) in enumerate(data_generator):
@@ -145,17 +149,16 @@ class ProbeTrainer(Trainer):
                 if self.probes[k].training:
                     loss.backward()
                     optim.step()
-   
-        epoch_loss = { k: np.mean(loss) for k, loss in epoch_loss.items() }
-        accuracy = {k: np.mean(acc)  for k, acc in accuracy.items() }
 
-        
+        epoch_loss = {k: np.mean(loss) for k, loss in epoch_loss.items()}
+        accuracy = {k: np.mean(acc) for k, acc in accuracy.items()}
+
         return epoch_loss, accuracy
 
     def train(self, tr_eps, val_eps, tr_labels, val_labels):
         e = 0
         all_probes_stopped = np.all([early_stopper.early_stop for early_stopper in self.early_stoppers.values()])
-        while not all_probes_stopped:
+        while (not all_probes_stopped) and e < 100:
             epoch_loss, accuracy = self.do_one_epoch(tr_eps, tr_labels)
             self.log_results(e, epoch_loss, accuracy)
 
@@ -168,7 +171,7 @@ class ProbeTrainer(Trainer):
             for k, scheduler in self.schedulers.items():
                 if not self.early_stoppers[k].early_stop:
                     scheduler.step(val_accuracy['val_' + k + '_acc'])
-            e +=1
+            e += 1
             all_probes_stopped = np.all([early_stopper.early_stop for early_stopper in self.early_stoppers.values()])
         print("All probes early stopped!")
 
