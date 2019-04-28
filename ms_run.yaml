@@ -1,28 +1,42 @@
 description: CURL-ATRI
 
 auth:
-  cluster: rr2
+  cluster: eu1
   vc: msrlabs
   docker:
-    image: ankeshanand/curl-atari:latest
-    registry: index.docker.io
+    image: philly/jobs/custom/generic-docker:py36
+    registry: phillyregistry.azurecr.io
 
+# azure storage configuration
 storage:
   _default:
-    use_phillyfs: True
+    # Replace with the name of the Azure Storage Account you created.
+    #   If you followed the tutorial, this should be your_username
+    storage_account_name: ankesh
+    # Specify a name of the container on your blob (ex. phillytools),
+    #   to store data, results and code. It will be created if it does not exist.
+    container_name: curlcontainer
 
 # data
 #   data upload is not required for this example
 
 search:
   job_template:
-    name: oredered_memory_logic
+    name: curl_atari_supervised
     sku: G1
     command:
-    - python -m scripts.run_probe --train-encoder --probe-lr 5e-2 --env-name {env_name} --patience 20 --epochs 50 --method spatial-appo
+      - conda install -y pytorch torchvision cudatoolkit=9.0 -c pytorch
+      - pip install https://github.com/openai/baselines/archive/master.zip
+      - pip install https://github.com/ikostrikov/pytorch-a2c-ppo-acktr-gail/archive/master.zip
+      - pip install 'gym[atari]' --upgrade
+      - pip install matplotlib wandb wget opencv-python
+      - export LC_ALL=C.UTF-8
+      - export LANG=C.UTF-8
+      - wandb login fa235c4236ea0bd894bc3f26e87054a6ed6af293
+      - python -m scripts.run_probe --no-downsample --num-frame-stack 1 --probe-lr 3e-4 --env-name {env_name} --patience 20 --num-runs 5 --method supervised
   type: grid
-  max_trials: 23
+  max_trials: 22
   params:
     - name: env_name
       spec: discrete
-      values: ['AsteroidsNoFrameskip-v4', 'BerzerkNoFrameskip-v4', 'BoxingNoFrameskip-v4', 'BreakoutNoFrameskip-v4', 'DefenderNoFrameskip-v4', 'DemonAttackNoFrameskip-v4', 'EnduroNoFrameskip-v4', 'FreewayNoFrameskip-v4', 'FrostbiteNoFrameskip-v4', 'HeroNoFrameskip-v4', 'MontezumaRevengeNoFrameskip-v4', 'MsPacmanNoFrameskip-v4', 'PitfallNoFrameskip-v4', 'PongNoFrameskip-v4', 'PrivateEyeNoFrameskip-v4', 'QbertNoFrameskip-v4', 'RiverraidNoFrameskip-v4', 'SeaquestNoFrameskip-v4', 'SolarisNoFrameskip-v4', 'SpaceInvadersNoFrameskip-v4', 'VentureNoFrameskip-v4', 'VideoPinballNoFrameskip-v4', 'YarsRevengeNoFrameskip-v4']
+      values: ['AsteroidsNoFrameskip-v4', 'BerzerkNoFrameskip-v4', 'BoxingNoFrameskip-v4', 'BreakoutNoFrameskip-v4', 'DefenderNoFrameskip-v4', 'DemonAttackNoFrameskip-v4', 'EnduroNoFrameskip-v4', 'FreewayNoFrameskip-v4', 'FrostbiteNoFrameskip-v4', 'HeroNoFrameskip-v4', 'MontezumaRevengeNoFrameskip-v4', 'MsPacmanNoFrameskip-v4', 'PitfallNoFrameskip-v4', 'PongNoFrameskip-v4', 'PrivateEyeNoFrameskip-v4', 'QbertNoFrameskip-v4', 'RiverraidNoFrameskip-v4', 'SeaquestNoFrameskip-v4', 'SolarisNoFrameskip-v4', 'SpaceInvadersNoFrameskip-v4', 'VentureNoFrameskip-v4', 'YarsRevengeNoFrameskip-v4']
