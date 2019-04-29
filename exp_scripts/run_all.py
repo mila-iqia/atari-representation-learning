@@ -1,13 +1,16 @@
 import subprocess
-
+import sys
 base_cmd = "sbatch"
-ss= "exp_scripts/run_gpu.sl"
+ss= "exp_scripts/run_gpu_azure.sl"
 module = "scripts.run_probe"
 args = [base_cmd, ss, module]
-args.append("--method pretrained-rl-agent")
-args.append("--probe-collect-mode atari-zoo")
-args.append('--zoo-algos apex')
-args.append('--zoo-tags 1B 400M final 10HR')
+args.append("--method {}".format(sys.argv[1]))
+args.append("--probe-collect-mode atari_zoo")
+args.append('--zoo-algos apex es a2c dqn rainbow')
+args.append('--zoo-tags final 1B 400M')
+args.append('--no-downsample')
+args.append('--num-frame-stack 1')
+args.append('--num-runs 5')
 
 envs =  ['asteroids', 'berzerk', 'boxing',
         'demon_attack', 'enduro', 'freeway', 'frostbite', 'hero', 
@@ -26,5 +29,5 @@ for i,env in enumerate(envs):
     
     sargs.append(name + suffix) 
     
-    
+    print(sargs) 
     subprocess.run(sargs)

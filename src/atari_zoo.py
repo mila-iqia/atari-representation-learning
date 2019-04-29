@@ -39,7 +39,8 @@ def get_atari_zoo_episodes(env, run_ids="all", num_frame_stack=4, downsample=Tru
     for algo in algos:
         for tag in tags:
             if (algo == "dqn" or algo == "rainbow") and tag != "final":
-                assert False, "DQN and Rainbow only work with the tag \"final\" not the one you put: \"{}\"".format(tag)
+                sys.stderr.write("DQN and Rainbow only work with the tag \"final\" not the one you put: \"{}\"".format(tag))
+                continue
 
             if run_ids == "all":
                 if algo in ["apex", "dqn", "rainbow"]:
