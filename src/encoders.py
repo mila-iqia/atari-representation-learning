@@ -41,22 +41,15 @@ class ResidualBlock(nn.Module):
 
 
 class ImpalaCNN(nn.Module):
-    def __init__(self, input_channels, downsample=True, hidden_size=512, spatial_features=False):
+    def __init__(self, input_channels, args):
         super(ImpalaCNN, self).__init__()
-        self.hidden_size = hidden_size
-        self.depths = [16, 32, 32, 32]
-        self.downsample = downsample
-        self.spatial_features = spatial_features
-        if downsample:
-            self.final_conv_size = self.depths[2] * 9 * 9
-        else:
-            self.final_conv_size = self.depths[2] * 9 * 12
+        self.hidden_size = args.feature_size
+        self.depths = [32, 64, 128, 256]
+        self.downsample = not args.no_downsample
         self.layer1 = self._make_layer(input_channels, self.depths[0])
         self.layer2 = self._make_layer(self.depths[0], self.depths[1])
         self.layer3 = self._make_layer(self.depths[1], self.depths[2])
         self.layer4 = self._make_layer(self.depths[2], self.depths[3])
-        self.flatten = Flatten()
-        self.final_linear = nn.Linear(self.final_conv_size, hidden_size)
         self.train()
 
     def _make_layer(self, in_channels, depth):
@@ -75,29 +68,19 @@ class ImpalaCNN(nn.Module):
             out = self.layer3(self.layer2(self.layer1(out)))
         else:
             out = self.layer4(self.layer3(self.layer2(self.layer1(out))))
-        if self.spatial_features:
-            return out.permute(0, 2, 3, 1)
-        out = F.relu(self.final_linear(self.flatten(out)))
-        return out
+        return F.avg_pool2d(out, out.size()[2:], stride=1).squeeze()
 
 
 class NatureCNN(nn.Module):
-    def __init__(self, input_channels, args, probing=False):
+    def __init__(self, input_channels, args):
         super().__init__()
         self.feature_size = args.feature_size
         self.hidden_size = self.feature_size # redundant
         self.downsample = not args.no_downsample
-        self.spatial_features = 'spatial' in args.method
-        self.probing = probing
-        if self.downsample:
-            self.final_conv_size = 32 * 7 * 7
-        else:
-            self.final_conv_size = 32 * 6 * 9
         init_ = lambda m: init(m,
                                nn.init.orthogonal_,
                                lambda x: nn.init.constant_(x, 0),
                                nn.init.calculate_gain('relu'))
-        self.pool = nn.AvgPool2d((6, 3), 1)
         self.flatten = Flatten()
 
         if self.downsample:
@@ -108,9 +91,6 @@ class NatureCNN(nn.Module):
                 nn.ReLU(),
                 init_(nn.Conv2d(64, 32, 3, stride=1)),
                 nn.ReLU(),
-                Flatten(),
-                init_(nn.Linear(self.final_conv_size, self.feature_size)),
-                nn.ReLU()
             )
         else:
             self.main = nn.Sequential(
@@ -118,23 +98,13 @@ class NatureCNN(nn.Module):
                 nn.ReLU(),
                 init_(nn.Conv2d(32, 64, 4, stride=2)),
                 nn.ReLU(),
-                init_(nn.Conv2d(64, 64, 4, stride=2)),
+                init_(nn.Conv2d(64, 128, 4, stride=2)),
                 nn.ReLU(),
-                init_(nn.Conv2d(64, 32, 3, stride=1)),
+                init_(nn.Conv2d(128, 256, 3, stride=1)),
                 nn.ReLU(),
-                Flatten(),
-                init_(nn.Linear(self.final_conv_size, self.feature_size)),
-                nn.ReLU()
             )
         self.train()
 
     def forward(self, inputs):
-        # TODO: fix hidden size for downsampled images when using spatial features
-        if self.spatial_features:
-            final_index = 6
-            if not self.downsample:
-                final_index = 8
-            if self.probing:
-                return self.flatten(self.pool(self.main[:final_index](inputs)))
-            return self.main[:final_index](inputs).permute(0, 2, 3, 1)
-        return self.main(inputs)
+        out = self.main(inputs)
+        return F.avg_pool2d(out, out.size()[2:], stride=1).squeeze()

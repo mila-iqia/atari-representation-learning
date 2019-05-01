@@ -1,3 +1,5 @@
+import random
+
 import torch
 import os
 import torch
@@ -7,6 +9,8 @@ from torch.utils.data import RandomSampler, BatchSampler
 from .utils import calculate_accuracy
 from .trainer import Trainer
 from src.utils import EarlyStopping
+from torchvision import transforms
+import torchvision.transforms.functional as TF
 
 
 class Classifier(nn.Module):
@@ -30,7 +34,7 @@ class SpatioTemporalTrainer(Trainer):
             'both': self.encoder.hidden_size * 2 + 1
         }
         self.patience = self.config["patience"]
-        self.classifier = Classifier(32, linear=config['linear']).to(device) # n_channels = 32
+        self.classifier = Classifier(self.encoder.hidden_size, linear=config['linear']).to(device)  # n_channels = 32
         self.epochs = config['epochs']
         self.batch_size = config['batch_size']
         self.device = device
@@ -38,6 +42,8 @@ class SpatioTemporalTrainer(Trainer):
                                           lr=config['lr'], eps=1e-5)
         self.loss_fn = nn.BCEWithLogitsLoss()
         self.early_stopper = EarlyStopping(patience=self.patience, verbose=False, wandb=self.wandb, name="encoder")
+        self.transform = transforms.Compose(
+            [transforms.ToPILImage(), transforms.RandomCrop((105, 80)), transforms.ToTensor()])
 
     def generate_batch(self, episodes):
         total_steps = sum([len(e) for e in episodes])
@@ -55,15 +61,20 @@ class SpatioTemporalTrainer(Trainer):
                 t, t_hat = 0, 0
                 t, t_hat = np.random.randint(0, len(episode)), np.random.randint(0, len(episode))
                 x_t.append(episode[t])
-                x_tprev.append(episode[t - 1])
-                if self.mode == 'both':
-                    x_that.append(episode[t_hat - 1])
-                else:
-                    x_that.append(episode[t_hat])
+
+                # Apply the same transform to x_{t-1} and x_{t_hat}
+                # https://github.com/pytorch/vision/issues/9#issuecomment-383110707
+                seed = random.randint(0, 2 ** 32)
+                random.seed(seed)
+                x_tprev.append(self.transform(episode[t - 1]))
+                random.seed(seed)
+                x_that.append(self.transform(episode[t_hat]))
+
                 ts.append([t])
                 thats.append([t_hat])
-            yield torch.stack(x_t).to(self.device) / 255., torch.stack(x_tprev).to(self.device) / 255., torch.stack(x_that).to(self.device) / 255., \
-                  torch.Tensor(ts).to(self.device), torch.Tensor(thats).to(self.device)
+            yield torch.stack(x_t).to(self.device) / 255., torch.stack(x_tprev).to(self.device) / 255., \
+                  torch.stack(x_that).to(self.device) / 255., torch.Tensor(ts).to(self.device), \
+                  torch.Tensor(thats).to(self.device)
 
     def do_one_epoch(self, epoch, episodes):
         mode = "train" if self.encoder.training and self.classifier.training else "val"
@@ -73,8 +84,8 @@ class SpatioTemporalTrainer(Trainer):
             f_t, f_t_prev = self.encoder(x_t), self.encoder(x_tprev)
             f_t_2, f_t_hat = self.encoder(x_t), self.encoder(x_that)
 
-            target = torch.cat((torch.ones_like(f_t[:,:,:,0]),
-                                torch.zeros_like(f_t[:,:,:,0])), dim=0).to(self.device)
+            target = torch.cat((torch.ones_like(f_t[:, 0]),
+                                torch.zeros_like(f_t[:, 0])), dim=0).to(self.device)
 
             x1, x2 = torch.cat([f_t, f_t_2], dim=0), torch.cat([f_t_prev, f_t_hat], dim=0)
             shuffled_idxs = torch.randperm(len(target))
@@ -90,7 +101,7 @@ class SpatioTemporalTrainer(Trainer):
             preds = torch.sigmoid(self.classifier(x1, x2).squeeze())
             accuracy += calculate_accuracy(preds, target)
             steps += 1
-        self.log_results(epoch, epoch_loss / steps, accuracy / steps, prefix=mode )
+        self.log_results(epoch, epoch_loss / steps, accuracy / steps, prefix=mode)
         if mode == "val":
             self.early_stopper(accuracy, self.encoder)
 
@@ -105,8 +116,9 @@ class SpatioTemporalTrainer(Trainer):
 
             if self.early_stopper.early_stop:
                 break
-        torch.save(self.encoder.state_dict(), os.path.join(self.wandb.run.dir,  self.config['env_name'] + '.pt'))
+        torch.save(self.encoder.state_dict(), os.path.join(self.wandb.run.dir, self.config['env_name'] + '.pt'))
 
     def log_results(self, epoch_idx, epoch_loss, accuracy, prefix=""):
-        print("{} Epoch: {}, Epoch Loss: {}, {} Accuracy: {}".format(prefix.capitalize(), epoch_idx, epoch_loss, prefix.capitalize(), accuracy))
+        print("{} Epoch: {}, Epoch Loss: {}, {} Accuracy: {}".format(prefix.capitalize(), epoch_idx, epoch_loss,
+                                                                     prefix.capitalize(), accuracy))
         self.wandb.log({prefix + '_loss': epoch_loss, prefix + '_accuracy': accuracy})
