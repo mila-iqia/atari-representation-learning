@@ -63,10 +63,11 @@ class SpatioTemporalTrainer(Trainer):
 
                 # Apply the same transform to x_{t-1} and x_{t_hat}
                 # https://github.com/pytorch/vision/issues/9#issuecomment-383110707
+                # Use numpy's random seed because Cutout uses np
                 seed = random.randint(0, 2 ** 32)
-                random.seed(seed)
+                np.random.seed(seed)
                 x_tprev.append(self.transform(episode[t - 1]))
-                random.seed(seed)
+                np.random.seed(seed)
                 x_that.append(self.transform(episode[t_hat]))
 
                 ts.append([t])
