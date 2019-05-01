@@ -90,7 +90,6 @@ class NatureCNN(nn.Module):
                 init_(nn.Conv2d(32, 64, 4, stride=2)),
                 nn.ReLU(),
                 init_(nn.Conv2d(64, 32, 3, stride=1)),
-                nn.ReLU(),
             )
         else:
             self.main = nn.Sequential(
@@ -101,10 +100,9 @@ class NatureCNN(nn.Module):
                 init_(nn.Conv2d(64, 128, 4, stride=2)),
                 nn.ReLU(),
                 init_(nn.Conv2d(128, 256, 3, stride=1)),
-                nn.ReLU(),
             )
         self.train()
 
     def forward(self, inputs):
         out = self.main(inputs)
-        return F.avg_pool2d(out, out.size()[2:], stride=1).squeeze()
+        return F.relu(F.avg_pool2d(out, out.size()[2:], stride=1)).squeeze()
