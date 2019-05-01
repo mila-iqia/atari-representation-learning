@@ -117,5 +117,10 @@ class NatureCNN(nn.Module):
             )
         self.train()
 
-    def forward(self, inputs):
+    def forward(self, inputs, fmaps=False):
+        final_conv_index = 8
+        if self.downsample:
+            final_conv_index = 6
+        if fmaps:
+            return self.main[:final_conv_index](inputs).permute(0, 2, 3, 1)
         return self.main(inputs)

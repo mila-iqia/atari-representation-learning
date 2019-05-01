@@ -14,9 +14,9 @@ import torchvision.transforms.functional as TF
 
 
 class Classifier(nn.Module):
-    def __init__(self, num_inputs, hidden_size=256, linear=False):
+    def __init__(self, num_inputs1, num_inputs2):
         super().__init__()
-        self.network = nn.Bilinear(num_inputs, num_inputs, 1)
+        self.network = nn.Bilinear(num_inputs1, num_inputs2, 1)
 
     def forward(self, x1, x2):
         return self.network(x1, x2)
@@ -28,13 +28,8 @@ class SpatioTemporalTrainer(Trainer):
         super().__init__(encoder, wandb, device)
         self.config = config
         self.mode = config['mode']
-        self.feature_sizes = {
-            'pcl': self.encoder.hidden_size * 2,
-            'tcl': self.encoder.hidden_size + 1,
-            'both': self.encoder.hidden_size * 2 + 1
-        }
         self.patience = self.config["patience"]
-        self.classifier = Classifier(self.encoder.hidden_size, linear=config['linear']).to(device)  # n_channels = 32
+        self.classifier = Classifier(self.encoder.hidden_size, 32).to(device)  # x1 = global, x2=patch, n_channels = 32
         self.epochs = config['epochs']
         self.batch_size = config['batch_size']
         self.device = device
@@ -64,11 +59,11 @@ class SpatioTemporalTrainer(Trainer):
                 # Apply the same transform to x_{t-1} and x_{t_hat}
                 # https://github.com/pytorch/vision/issues/9#issuecomment-383110707
                 # Use numpy's random seed because Cutout uses np
-                seed = random.randint(0, 2 ** 32)
-                np.random.seed(seed)
-                x_tprev.append(self.transform(episode[t - 1]))
-                np.random.seed(seed)
-                x_that.append(self.transform(episode[t_hat]))
+                # seed = random.randint(0, 2 ** 32)
+                # np.random.seed(seed)
+                x_tprev.append(episode[t - 1])
+                # np.random.seed(seed)
+                x_that.append(episode[t_hat])
 
                 ts.append([t])
                 thats.append([t_hat])
@@ -81,11 +76,13 @@ class SpatioTemporalTrainer(Trainer):
         epoch_loss, accuracy, steps = 0., 0., 0
         data_generator = self.generate_batch(episodes)
         for x_t, x_tprev, x_that, ts, thats in data_generator:
-            f_t, f_t_prev = self.encoder(x_t), self.encoder(x_tprev)
-            f_t_2, f_t_hat = self.encoder(x_t), self.encoder(x_that)
+            f_t, f_t_prev = self.encoder(x_t), self.encoder(x_tprev, fmaps=True)
+            f_t_2, f_t_hat = self.encoder(x_t), self.encoder(x_that, fmaps=True)
+            f_t = f_t.unsqueeze(1).unsqueeze(1).expand(-1, f_t_prev.size(1), f_t_prev.size(2), self.encoder.hidden_size)
+            f_t_2 = f_t_2.unsqueeze(1).unsqueeze(1).expand(-1, f_t_hat.size(1), f_t_hat.size(2), self.encoder.hidden_size)
 
-            target = torch.cat((torch.ones_like(f_t[:, 0]),
-                                torch.zeros_like(f_t[:, 0])), dim=0).to(self.device)
+            target = torch.cat((torch.ones_like(f_t[:, :, :, 0]),
+                                torch.zeros_like(f_t[:, :, :, 0])), dim=0).to(self.device)
 
             x1, x2 = torch.cat([f_t, f_t_2], dim=0), torch.cat([f_t_prev, f_t_hat], dim=0)
             shuffled_idxs = torch.randperm(len(target))
