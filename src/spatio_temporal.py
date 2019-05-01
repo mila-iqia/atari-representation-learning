@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 import numpy as np
 from torch.utils.data import RandomSampler, BatchSampler
-from .utils import calculate_accuracy
+from .utils import calculate_accuracy, Cutout
 from .trainer import Trainer
 from src.utils import EarlyStopping
 from torchvision import transforms
@@ -42,8 +42,7 @@ class SpatioTemporalTrainer(Trainer):
                                           lr=config['lr'], eps=1e-5)
         self.loss_fn = nn.BCEWithLogitsLoss()
         self.early_stopper = EarlyStopping(patience=self.patience, verbose=False, wandb=self.wandb, name="encoder")
-        self.transform = transforms.Compose(
-            [transforms.ToPILImage(), transforms.RandomCrop((105, 80)), transforms.ToTensor()])
+        self.transform = transforms.Compose([Cutout(n_holes=1, length=80)])
 
     def generate_batch(self, episodes):
         total_steps = sum([len(e) for e in episodes])

@@ -44,12 +44,18 @@ class ImpalaCNN(nn.Module):
     def __init__(self, input_channels, args):
         super(ImpalaCNN, self).__init__()
         self.hidden_size = args.feature_size
-        self.depths = [32, 64, 128, 256]
+        self.depths = [16, 32, 32, 32]
         self.downsample = not args.no_downsample
         self.layer1 = self._make_layer(input_channels, self.depths[0])
         self.layer2 = self._make_layer(self.depths[0], self.depths[1])
         self.layer3 = self._make_layer(self.depths[1], self.depths[2])
         self.layer4 = self._make_layer(self.depths[2], self.depths[3])
+        if self.downsample:
+            self.final_conv_size = 32 * 9 * 9
+        else:
+            self.final_conv_size = 32 * 12 * 9
+        self.final_linear = nn.Linear(self.final_conv_size, self.hidden_size)
+        self.flatten = Flatten()
         self.train()
 
     def _make_layer(self, in_channels, depth):
@@ -68,7 +74,7 @@ class ImpalaCNN(nn.Module):
             out = self.layer3(self.layer2(self.layer1(out)))
         else:
             out = self.layer4(self.layer3(self.layer2(self.layer1(out))))
-        return F.avg_pool2d(out, out.size()[2:], stride=1).squeeze()
+        return F.relu(self.final_linear(self.flatten(out)))
 
 
 class NatureCNN(nn.Module):
@@ -90,6 +96,10 @@ class NatureCNN(nn.Module):
                 init_(nn.Conv2d(32, 64, 4, stride=2)),
                 nn.ReLU(),
                 init_(nn.Conv2d(64, 32, 3, stride=1)),
+                nn.ReLU(),
+                Flatten(),
+                init_(nn.Linear(32 * 7 * 7, self.hidden_size)),
+                nn.ReLU()
             )
         else:
             self.main = nn.Sequential(
@@ -97,12 +107,15 @@ class NatureCNN(nn.Module):
                 nn.ReLU(),
                 init_(nn.Conv2d(32, 64, 4, stride=2)),
                 nn.ReLU(),
-                init_(nn.Conv2d(64, 128, 4, stride=2)),
+                init_(nn.Conv2d(64, 64, 4, stride=2)),
                 nn.ReLU(),
-                init_(nn.Conv2d(128, 256, 3, stride=1)),
+                init_(nn.Conv2d(64, 32, 3, stride=1)),
+                nn.ReLU(),
+                Flatten(),
+                init_(nn.Linear(32 * 9 * 6, self.hidden_size)),
+                nn.ReLU()
             )
         self.train()
 
     def forward(self, inputs):
-        out = self.main(inputs)
-        return F.relu(F.avg_pool2d(out, out.size()[2:], stride=1)).squeeze()
+        return self.main(inputs)
