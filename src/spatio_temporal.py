@@ -29,7 +29,7 @@ class SpatioTemporalTrainer(Trainer):
         self.config = config
         self.mode = config['mode']
         self.patience = self.config["patience"]
-        self.classifier = Classifier(self.encoder.hidden_size, 32).to(device)  # x1 = global, x2=patch, n_channels = 32
+        self.classifier = Classifier(self.encoder.hidden_size, 128).to(device)  # x1 = global, x2=patch, n_channels = 32
         self.epochs = config['epochs']
         self.batch_size = config['batch_size']
         self.device = device
@@ -77,14 +77,13 @@ class SpatioTemporalTrainer(Trainer):
         data_generator = self.generate_batch(episodes)
         for x_t, x_tprev, x_that, ts, thats in data_generator:
             f_t, f_t_prev = self.encoder(x_t), self.encoder(x_tprev, fmaps=True)
-            f_t_2, f_t_hat = self.encoder(x_t), self.encoder(x_that, fmaps=True)
+            f_t_hat = self.encoder(x_that, fmaps=True)
             f_t = f_t.unsqueeze(1).unsqueeze(1).expand(-1, f_t_prev.size(1), f_t_prev.size(2), self.encoder.hidden_size)
-            f_t_2 = f_t_2.unsqueeze(1).unsqueeze(1).expand(-1, f_t_hat.size(1), f_t_hat.size(2), self.encoder.hidden_size)
 
             target = torch.cat((torch.ones_like(f_t[:, :, :, 0]),
                                 torch.zeros_like(f_t[:, :, :, 0])), dim=0).to(self.device)
 
-            x1, x2 = torch.cat([f_t, f_t_2], dim=0), torch.cat([f_t_prev, f_t_hat], dim=0)
+            x1, x2 = torch.cat([f_t, f_t], dim=0), torch.cat([f_t_prev, f_t_hat], dim=0)
             shuffled_idxs = torch.randperm(len(target))
             x1, x2, target = x1[shuffled_idxs], x2[shuffled_idxs], target[shuffled_idxs]
             self.optimizer.zero_grad()

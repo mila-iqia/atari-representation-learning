@@ -107,18 +107,18 @@ class NatureCNN(nn.Module):
                 nn.ReLU(),
                 init_(nn.Conv2d(32, 64, 4, stride=2)),
                 nn.ReLU(),
-                init_(nn.Conv2d(64, 64, 4, stride=2)),
+                init_(nn.Conv2d(64, 128, 4, stride=2)),
                 nn.ReLU(),
-                init_(nn.Conv2d(64, 32, 3, stride=1)),
+                init_(nn.Conv2d(128, 64, 3, stride=1)),
                 nn.ReLU(),
                 Flatten(),
-                init_(nn.Linear(32 * 9 * 6, self.hidden_size)),
+                init_(nn.Linear(64 * 9 * 6, self.hidden_size)),
                 nn.ReLU()
             )
         self.train()
 
     def forward(self, inputs, fmaps=False):
-        final_conv_index = 8
+        final_conv_index = 6
         if self.downsample:
             final_conv_index = 6
         if fmaps:
