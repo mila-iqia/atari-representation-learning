@@ -33,7 +33,7 @@ def main():
     wandb.config.update(vars(args))
 
     if args.train_encoder:
-        assert(args.method in ['appo', 'spatial-appo', 'cpc'])
+        assert(args.method in ['appo', 'spatial-appo', 'cpc', 'vae'])
         print("Training encoder from scratch")
         encoder = train_encoder(args)
         encoder.probing = True
