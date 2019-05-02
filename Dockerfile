@@ -1,4 +1,6 @@
 FROM phillyregistry.azurecr.io/philly/jobs/custom/generic-docker:py36
+COPY toolkit-execute /home/job/toolkit-execute
+RUN chmod u+x /home/job/toolkit-execute
 
 ENV PATH /opt/conda/bin:$PATH
 
