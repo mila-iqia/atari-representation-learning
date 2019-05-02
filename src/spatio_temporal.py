@@ -31,11 +31,12 @@ class SpatioTemporalTrainer(Trainer):
         self.patience = self.config["patience"]
         self.classifier1 = Classifier(self.encoder.hidden_size, 128).to(device)  # x1 = global, x2=patch, n_channels = 32
         self.classifier2 = Classifier(128, 128).to(device)
+        self.classifier3 = Classifier(self.encoder.hidden_size, 64).to(device)
         self.epochs = config['epochs']
         self.batch_size = config['batch_size']
         self.device = device
         self.optimizer = torch.optim.Adam(list(self.classifier1.parameters()) + list(self.encoder.parameters()) +
-                                          list(self.classifier2.parameters()),
+                                          list(self.classifier2.parameters()) + list(self.classifier3.parameters()),
                                           lr=config['lr'], eps=1e-5)
         self.loss_fn = nn.BCEWithLogitsLoss()
         self.early_stopper = EarlyStopping(patience=self.patience, verbose=False, wandb=self.wandb, name="encoder")
@@ -76,7 +77,7 @@ class SpatioTemporalTrainer(Trainer):
     def do_one_epoch(self, epoch, episodes):
         mode = "train" if self.encoder.training and self.classifier1.training else "val"
         epoch_loss, accuracy, steps = 0., 0., 0
-        accuracy1, accuracy2 = 0., 0.
+        accuracy1, accuracy2, accuracy3 = 0., 0., 0.
         data_generator = self.generate_batch(episodes)
         for x_t, x_tprev, x_that, ts, thats in data_generator:
             f_t_maps, f_t_prev_maps = self.encoder(x_t, fmaps=True), self.encoder(x_tprev, fmaps=True)
@@ -102,7 +103,17 @@ class SpatioTemporalTrainer(Trainer):
             x1_p, x2_p = x1_p[shuffled_idxs], x2_p[shuffled_idxs]
             loss2 = self.loss_fn(self.classifier2(x1_p, x2_p).squeeze(), target)
 
-            loss = loss1 + loss2
+            # Loss 3: Global at time t, f7 patches at time t-1
+            f_t = f_t_maps['out']
+            f_t_prev, f_t_hat = f_t_prev_maps['f7'], f_t_hat_maps['f7']
+            f_t = f_t.unsqueeze(1).unsqueeze(1).expand(-1, f_t_prev.size(1), f_t_prev.size(2), self.encoder.hidden_size)
+            target3 = torch.cat((torch.ones_like(f_t[:, :, :, 0]),
+                                torch.zeros_like(f_t[:, :, :, 0])), dim=0).to(self.device)
+            x1_3, x2_3 = torch.cat([f_t, f_t], dim=0), torch.cat([f_t_prev, f_t_hat], dim=0)
+            x1_3, x2_3, target = x1_3[shuffled_idxs], x2_3[shuffled_idxs], target[shuffled_idxs]
+            loss3 = self.loss_fn(self.classifier3(x1_3, x2_3).squeeze(), target3)
+
+            loss = loss1 + loss2 + loss3
             if mode == "train":
                 loss.backward()
                 self.optimizer.step()
@@ -112,7 +123,9 @@ class SpatioTemporalTrainer(Trainer):
             accuracy1 += calculate_accuracy(preds1, target)
             preds2 = torch.sigmoid(self.classifier2(x1_p, x2_p).squeeze())
             accuracy2 += calculate_accuracy(preds2, target)
-            accuracy = (accuracy1 + accuracy2) / 2.
+            preds3 = torch.sigmoid(self.classifier3(x1_3, x2_3).squeeze())
+            accuracy3 += calculate_accuracy(preds3, target3)
+            accuracy = (accuracy1 + accuracy2 + accuracy3) / 3.
             steps += 1
         self.log_results(epoch, epoch_loss / steps, accuracy / steps, prefix=mode)
         if mode == "val":
@@ -121,10 +134,10 @@ class SpatioTemporalTrainer(Trainer):
     def train(self, tr_eps, val_eps):
         # TODO: Make it work for all modes, right now only it defaults to pcl.
         for e in range(self.epochs):
-            self.encoder.train(), self.classifier1.train(), self.classifier2.train()
+            self.encoder.train(), self.classifier1.train(), self.classifier2.train(), self.classifier3.train()
             self.do_one_epoch(e, tr_eps)
 
-            self.encoder.eval(), self.classifier1.eval(), self.classifier2.eval()
+            self.encoder.eval(), self.classifier1.eval(), self.classifier2.eval(), self.classifier3.eval()
             self.do_one_epoch(e, val_eps)
 
             if self.early_stopper.early_stop:
