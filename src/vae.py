@@ -163,8 +163,8 @@ class VAETrainer(Trainer):
         self.log_results(epoch, epoch_loss / steps, prefix=mode )
         if mode == "val":
             self.early_stopper(epoch_loss / steps, self.encoder)
-            xim = x_hat.detach().numpy()[0].transpose(1,2,0)
-            self.wandb.log({"example_reconstruction": [self.wandb.Image(xim, caption="")]})
+#             xim = x_hat.detach().cpu().numpy()[0].transpose(1,2,0)
+#             self.wandb.log({"example_reconstruction": [self.wandb.Image(xim, caption="")]})
         
     def train(self, tr_eps, val_eps):
         for e in range(self.epochs):
