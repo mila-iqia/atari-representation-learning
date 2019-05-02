@@ -52,7 +52,7 @@ def get_argparser():
                         help='Size of features')
     parser.add_argument('--spatial', action='store_true', default=False)
     parser.add_argument("--patience", type=int, default=10)
-
+    parser.add_argument("--time_window",nargs=2, default=[-1,0])
     # CPC-specific arguments
     parser.add_argument('--sequence_length', type=int, default=100,
                         help='Sequence length.')
