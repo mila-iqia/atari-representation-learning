@@ -89,9 +89,12 @@ class NatureCNN(nn.Module):
         self.downsample = not args.no_downsample
         self.spatial_features = 'spatial' in args.method
         self.probing = probing
+        self.input_channels = input_channels
         if self.downsample:
+            self.final_conv_shape = (32,7,7)
             self.final_conv_size = 32 * 7 * 7
         else:
+            self.final_conv_shape = (32, 9, 6)
             self.final_conv_size = 32 * 6 * 9
         init_ = lambda m: init(m,
                                nn.init.orthogonal_,
