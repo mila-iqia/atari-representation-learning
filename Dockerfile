@@ -9,10 +9,14 @@ RUN conda install -y tensorflow \
  && conda clean -ya
 
 # Baselines for Atari preprocessing
-RUN pip install https://github.com/openai/baselines/archive/master.zip
+RUN git clone https://github.com/openai/baselines.git \
+ && cd baselines \
+ && pip install -e .
 
 # pytorch-a2c-ppo-acktr for RL utils
-RUN pip install https://github.com/ikostrikov/pytorch-a2c-ppo-acktr-gail/archive/master.zip
+RUN git clone https://github.com/ikostrikov/pytorch-a2c-ppo-acktr-gail.git \
+ && cd pytorch-a2c-ppo-acktr-gail \
+ && pip install -e .
 
 # Install additional requirements
 RUN pip install 'gym[atari]' matplotlib wandb wget
