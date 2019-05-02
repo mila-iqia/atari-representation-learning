@@ -26,11 +26,13 @@ def get_argparser():
                         help='Number of steps to pretrain representations (default: 100000)')
     parser.add_argument('--probe-steps', type=int, default=50000,
                         help='Number of steps to train probes (default: 30000 )')
-#     parser.add_argument('--probe-test-steps', type=int, default=15000,
-#                         help='Number of steps to train probes (default: 15000 )')
+    #     parser.add_argument('--probe-test-steps', type=int, default=15000,
+    #                         help='Number of steps to train probes (default: 15000 )')
     parser.add_argument('--num-processes', type=int, default=8,
                         help='Number of parallel environments to collect samples from (default: 8)')
-    parser.add_argument('--method', type=str, default='appo', choices=["appo", "cpc", "supervised", "random-cnn", "nonlinear", "spatial-appo", "pretrained-rl-agent", "flat-pixels", "vae"],
+    parser.add_argument('--method', type=str, default='appo',
+                        choices=["appo", "cpc", "supervised", "random-cnn", "nonlinear", "spatial-appo",
+                                 "pretrained-rl-agent", "flat-pixels", "vae"],
                         help='Method to use for training representations (default: appo)')
     parser.add_argument('--mode', type=str, default='pcl',
                         help='Mode to use when using the Appo estimator [pcl | tcl | both] (default: pcl)')
@@ -52,8 +54,7 @@ def get_argparser():
                         help='Size of features')
     parser.add_argument('--spatial', action='store_true', default=False)
     parser.add_argument("--patience", type=int, default=10)
-
-    
+    parser.add_argument("--time_window", nargs=2, default=[-1, 0])
     parser.add_argument("--beta", type=float, default=1.0)
     # CPC-specific arguments
     parser.add_argument('--sequence_length', type=int, default=100,
@@ -68,7 +69,7 @@ def get_argparser():
                         help='Hidden size of the GRU layers.')
     parser.add_argument('--gru_layers', type=int, default=2,
                         help='Number of GRU layers.')
-    parser.add_argument("--collect-mode", type=str,choices=["random_agent","atari_zoo"], default="random_agent")
+    parser.add_argument("--collect-mode", type=str, choices=["random_agent", "atari_zoo"], default="random_agent")
     return parser
 
 
@@ -307,6 +308,7 @@ class Cutout(object):
         n_holes (int): Number of patches to cut out of each image.
         length (int): The length (in pixels) of each square patch.
     """
+
     def __init__(self, n_holes, length):
         self.n_holes = n_holes
         self.length = length
