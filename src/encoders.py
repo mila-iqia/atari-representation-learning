@@ -102,6 +102,7 @@ class NatureCNN(nn.Module):
                 nn.ReLU()
             )
         else:
+            self.final_conv_size = 64 * 9 * 6
             self.main = nn.Sequential(
                 init_(nn.Conv2d(input_channels, 32, 8, stride=4)),
                 nn.ReLU(),
