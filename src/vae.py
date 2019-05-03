@@ -43,9 +43,9 @@ class Decoder(nn.Module):
                 nn.ReLU(),
                 Unflatten(self.final_conv_shape),
 
-                init_(nn.ConvTranspose2d(in_channels=32, out_channels=64, kernel_size=3, stride=1, padding=0)),
+                init_(nn.ConvTranspose2d(in_channels=64, out_channels=128, kernel_size=3, stride=1, padding=0)),
                 nn.ReLU(),
-                init_(nn.ConvTranspose2d(in_channels=64, out_channels=64, kernel_size=4, stride=2, padding=0)),
+                init_(nn.ConvTranspose2d(in_channels=128, out_channels=64, kernel_size=4, stride=2, padding=0)),
                 nn.ReLU(),
                 init_(nn.ConvTranspose2d(in_channels=64, out_channels=32, kernel_size=4, stride=2, padding=0,
                                          output_padding=1)),

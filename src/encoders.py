@@ -83,6 +83,7 @@ class NatureCNN(nn.Module):
         self.feature_size = args.feature_size
         self.hidden_size = self.feature_size # redundant
         self.downsample = not args.no_downsample
+        self.input_channels = input_channels
         init_ = lambda m: init(m,
                                nn.init.orthogonal_,
                                lambda x: nn.init.constant_(x, 0),
@@ -103,6 +104,7 @@ class NatureCNN(nn.Module):
             )
         else:
             self.final_conv_size = 64 * 9 * 6
+            self.final_conv_shape = (64, 9, 6)
             self.main = nn.Sequential(
                 init_(nn.Conv2d(input_channels, 32, 8, stride=4)),
                 nn.ReLU(),
