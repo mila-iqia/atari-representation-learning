@@ -376,7 +376,7 @@ count_keys=count_keys,
 meter_keys=meter_keys,
 existence_keys=existence_keys,
 agent_localization_keys=agent_localization_keys,
-small_object_localization_keys=small_object_localization_keys)
+small_object_localization_keys=small_object_localization_keys, speed_keys=speed_keys)
 
 
 
