@@ -336,7 +336,7 @@ remaining_keys = deepcopy(all_keys)
 
 count_keys = [k for k in remaining_keys if "lives" in k.lower() or "lifes" in k or "num" in k.lower() or "robots" in k or "remaining" in k or "tasks_completed" in k]
 
-status_keys = [k for k in remaining_keys if "level" in k or "fuel" in k]
+
 
 [remaining_keys.remove(k) for k in count_keys + direction_keys if k in remaining_keys];
 
@@ -364,6 +364,19 @@ enemy_localization_keys = [k for k in localization_keys if any(enemy_name in k.l
 small_object_names = ["shot", "ball", "missile"]
 
 small_object_localization_keys = [k for k in localization_keys if any(small_object_name in k.lower() for small_object_name in small_object_names) ]
+
+summary_key_dict = dict(localization_keys=localization_keys,
+direction_keys=direction_keys,
+relative_positions_configurations=relative_positions_configurations,
+enemy_localization_keys=enemy_localization_keys,
+score_keys=score_keys,
+clock_keys=clock_keys,
+level_room_keys=level_room_keys,
+count_keys=count_keys,
+meter_keys=meter_keys,
+existence_keys=existence_keys,
+agent_localization_keys=agent_localization_keys,
+small_object_localization_keys=small_object_localization_keys)
 
 
 
