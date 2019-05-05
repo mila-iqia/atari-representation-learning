@@ -183,8 +183,8 @@ atari_dict = {"asteroids": dict(asteroids_y=range(3,21), # 224 means end of list
                     jump_trajectory_pos= 103),# 0-32
                               
                               
-    "pong": dict(player= 51,
-                 enemy= 50,
+    "pong": dict(player_y= 51,
+                 enemy_y= 50,
                  ball_x=49,
                  ball_y=54,
                  enemy_score=13,
