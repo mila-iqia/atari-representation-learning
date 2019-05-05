@@ -199,9 +199,8 @@ atari_dict = {"asteroids": dict(asteroids_y=range(3,21), # 224 means end of list
                     EnemySection3_x = 57, 
                     EnemySection4_x = 58, 
                     EnemySection5_x = 59, 
-                    EnemySection6_x = 60, 
-                    colEnemy1 = 41, 
-                    colEnemy2 = 42),
+                    EnemySection6_x = 60,
+                    score=[23,24,25]),
                               
                               
                                                                                                                                                                                                                                                                                                                 
