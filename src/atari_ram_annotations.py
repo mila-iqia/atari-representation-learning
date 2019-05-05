@@ -138,7 +138,10 @@ atari_dict = {"asteroids": dict(asteroids_y=range(3,21), # 224 means end of list
                               skull_x=47,
                               skull_y=46,
                               key_monster_x=44,
-                              key_monster_y=45),
+                              key_monster_y=45,level=57,
+                              lives_count=58,
+                              items_possessed=61,
+                              room_state=62),
                               
     "mspacman": dict(sue_x =  6,
                         inky_x=  7,
