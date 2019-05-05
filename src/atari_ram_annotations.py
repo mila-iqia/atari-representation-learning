@@ -89,10 +89,10 @@ atari_dict = {"asteroids": dict(asteroids_y=range(3,21), # 224 means end of list
                         shot_speed = 110),
               
               
-              "enduro" : dict(speed= 22,
-                            cars_remaining= [43,44],
-                            odometer= range(40,43),
-                            colOpponents = range(27,34)),
+#               "enduro" : dict(speed= 22,
+#                             cars_remaining= [43,44],
+#                             odometer= range(40,43),
+#                             colOpponents = range(27,34)),
                               
             "freeway": dict(player1_y=14,
                             player2_y=15,
@@ -108,19 +108,14 @@ atari_dict = {"asteroids": dict(asteroids_y=range(3,21), # 224 means end of list
                             second_row_enemy_x = 41,
                             third_row_enemy_x = 40,
                             fourth_row_enemy_x = 39,
-                            top_row_iceflow_col = 46,
-                            second_row_iceflow_col = 45,
-                            third_row_iceflow_col = 44,
-                            fourth_row_iceflow_col = 43,
-                            bear_col = 61,
                             bear_x = 104,
                             igloo_entrance_x = 62,   
                             num_lives= 76,   
                             num_igloo_blocks= 77, #255 is none and 15 is all "
                             hPosEnemies            =   range(84,88),   #   84  bottom row -   87  top row
-                            enemyNusiz              =   88,
                             player_x=   102, 
-                            player_y=   100),
+                            player_y=   100,
+                            score = [72,73,74]),
                               
                               
     "hero" :dict(player_x = 27, 
@@ -270,7 +265,7 @@ atari_dict = {"asteroids": dict(asteroids_y=range(3,21), # 224 means end of list
                     LastPlayerDirection = 69,
                     livesCounter = 70,        
                     score_1_2 = 71, 
-                    score_3_4 = 72)  
+                    score_3_4 = 72), 
                               
     "videopinball" : dict(ball_x= 67,
                            ball_y= 68,
