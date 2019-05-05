@@ -58,8 +58,7 @@ atari_dict = {"asteroids": dict(asteroids_y=range(3,21), # 224 means end of list
                                 score= 84), #5 for each hit	
               
               "defender": dict(radar1_y=42,    # vertical position of radar dot
-                               radar2_y=44,    # vertical position of radar dot
-                               enemyWave=82),# Current wave of enemies"
+                               radar2_y=44),    # vertical position of radar dot
               
 			 "demonattack":	dict(level= 62,
                       CurrentEnemy_y   = 68,
@@ -83,7 +82,6 @@ atari_dict = {"asteroids": dict(asteroids_y=range(3,21), # 224 means end of list
                         enemy_right2_y               = 70, # vertical position ENEMY2 (enemy right side)
                         enemy_right3_y = 71, # vertical position ENEMY3 (enemy right side)
                         numberOfLives   = 114,
-                        TypeofShot = 118,
                         shot_speed = 110),
               
               
