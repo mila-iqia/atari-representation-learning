@@ -303,4 +303,68 @@ for k in atari_dict.keys():
     atari_dict[k].update(update_dict[k])
     for rk in remove_dict[k]:
         atari_dict[k].pop(rk)
+        
+        
+from copy import deepcopy
+
+list_of_keys = [list(v.keys()) for v in atari_dict.values()]
+
+all_keys = []
+
+for a in list_of_keys:
+    all_keys.extend(a)
+
+nonlocalization_pos = ['player_leg_position','jump_trajectory_pos','agent_head_pos','enemy_head_pos', 'left_paddle_pos','right_paddle_pos']
+
+localization_keys = [k for k in all_keys if "speed" not in k.lower() and  "direction" not in k.lower() and k not in nonlocalization_pos and ("agent_lanecollide" in k.lower() or "_x" in k.lower() or "_y" in k.lower() or "_z" in k.lower() or "pos" in k.lower() or  k[-1] in ["X","Y","Z"] or k.lower()[0] in ["x","y","z"])]
+
+direction_keys = [k for k in all_keys if "dir" in k.lower() or "_status" in k.lower()]
+
+speed_keys = [k for k in all_keys if "speed" in k.lower() or "_status" in k.lower()]
+
+non_localization_keys = [k for k in all_keys if k not in localization_keys and k not in direction_keys]
+
+score_keys = [k for k in non_localization_keys if "score" in k.lower()]
+
+clock_keys = [k for k in all_keys if "clock" in k]
+
+level_room_keys = [k for k in non_localization_keys if ("level" in k.lower() or "room" in k.lower() or 'gameBoardStatus' in k or "game_state" in k) and "oxygen" not in k]
+
+remaining_keys = deepcopy(all_keys)
+
+[remaining_keys.remove(k)  for k in localization_keys + speed_keys  + score_keys + clock_keys + level_room_keys if k in remaining_keys];
+
+count_keys = [k for k in remaining_keys if "lives" in k.lower() or "lifes" in k or "num" in k.lower() or "robots" in k or "remaining" in k or "tasks_completed" in k]
+
+status_keys = [k for k in remaining_keys if "level" in k or "fuel" in k]
+
+[remaining_keys.remove(k) for k in count_keys + direction_keys if k in remaining_keys];
+
+meter_keys = [k for k in remaining_keys if "meter" in k or "energizer" in k or "level" in k or "fuel" in k]
+
+existence_keys = [k for k in remaining_keys if "bit_map" in k or "inventory" in k or "rope" in k ]
+
+[remaining_keys.remove(k) for k in meter_keys + existence_keys if k in remaining_keys];
+
+relative_positions_configurations = [k for k in remaining_keys if k in nonlocalization_pos or "arm" in k]
+
+[remaining_keys.remove(k) for k in relative_positions_configurations if k in remaining_keys];
+
+unused_keys = deepcopy(remaining_keys)
+
+agent_names = ["agent", "player", "paddle", "ship", "msPac", "yar"]
+
+agent_localization_keys = [k for k in localization_keys if any(agent_name in k.lower() for agent_name in agent_names) ]
+
+enemy_names = ["enemy", "qotile", "zorlon",
+               "torpedo", "logs", "scorpion", "inky", "sue","skull", "bear","car","demon","robot","evilotto","asteroid", "ufo"]
+
+enemy_localization_keys = [k for k in localization_keys if any(enemy_name in k.lower() for enemy_name in enemy_names) and "missile" not in k.lower() ]
+
+small_object_names = ["shot", "ball", "missile"]
+
+small_object_localization_keys = [k for k in localization_keys if any(small_object_name in k.lower() for small_object_name in small_object_names) ]
+
+
+
     
