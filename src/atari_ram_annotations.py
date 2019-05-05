@@ -152,8 +152,6 @@ atari_dict = {"asteroids": dict(asteroids_y=range(3,21), # 224 means end of list
                         blinky_x =  9,
                         msPac_x  = 10,
                         fruit_x  = 11,
-                        object_y  =12 , 
-                        ghost_y = 12,
                         sue_y  = 12,
                         inky_y = 13,
                         pinky_y = 14,
