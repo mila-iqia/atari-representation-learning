@@ -97,9 +97,7 @@ atari_dict = {"asteroids": dict(asteroids_y=range(3,21), # 224 means end of list
             "freeway": dict(player1_y=14,
                             player2_y=15,
                             carx_dir= 22,
-                            car_motions= range(43,53),
                             automobile_x_coords= range(108,118),
-                            temp_x_coord = 118,
                             agent_laneCollide=16), # which lane the car collided with agent
         "frostbite" : dict(                   
                             top_row_iceflow_x = 34,
