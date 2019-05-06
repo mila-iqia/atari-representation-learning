@@ -352,18 +352,19 @@ small_object_localization_keys = [k for k in localization_keys if any(small_obje
 for k in unused_keys:
     all_keys.remove(k)
 
-summary_key_dict = dict(localization=localization_keys,
-                        direction=direction_keys,
-                        relative_position=relative_position_keys,
+summary_key_dict = dict(overall=all_keys,
+                        localization=localization_keys,
+                        small_object_localization=small_object_localization_keys,
+                        agent_localization=agent_localization_keys,
                         enemy_localization=enemy_localization_keys,
+                        relative_position=relative_position_keys,
+                        direction=direction_keys,
                         score=score_keys,
                         level_room=level_room_keys,
                         count_display = count_display_keys,
                         existence=existence_keys,
-                        agent_localization=agent_localization_keys,
-                        small_object_localization=small_object_localization_keys,
-                        speed=speed_keys,
-                        all_keys=all_keys)      
+                        speed=speed_keys
+                        )      
 
 
 
