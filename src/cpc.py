@@ -24,7 +24,8 @@ class CPCTrainer(Trainer):
         params = list(self.encoder.parameters())
         for disc in self.discriminators.values():
           params += disc.parameters()
-        self.optimizer = torch.optim.Adam(params, lr=config['lr'], eps=2e-4)
+        self.optimizer = torch.optim.Adam(params, lr=config['lr'])
+        self.early_stopper = EarlyStopping(patience=self.patience, verbose=False, wandb=self.wandb, name="encoder")
 
     def generate_batch(self, episodes):
         episodes = [episode for episode in episodes if len(episode) >= self.sequence_length]
@@ -80,18 +81,22 @@ class CPCTrainer(Trainer):
         epoch_losses = {i: np.mean(step_losses[i]) for i in step_losses}
         epoch_accuracies = {i: np.mean(step_accuracies[i]) for i in step_accuracies}
         self.log_results(epoch, epoch_losses, epoch_accuracies, prefix=mode)
-        
+        if mode == "val":
+            self.early_stopper(accuracy, self.encoder)
+
     def train(self, tr_eps, val_eps):
         for e in range(self.epochs):
             self.encoder.train(), self.gru.train()
             for k, disc in self.discriminators.items():
                 disc.train()
             self.do_one_epoch(e, tr_eps)
-            
+
             self.encoder.eval(), self.gru.eval()
             for k, disc in self.discriminators.items():
                 disc.eval()
             self.do_one_epoch(e, val_eps)
+            if self.early_stopper.early_stop:
+                break
         torch.save(self.encoder.state_dict(), os.path.join(self.wandb.run.dir,  self.config['env_name'] + '.pt'))
 
     def log_results(self, epoch_idx, epoch_losses, epoch_accuracies, prefix=""):
