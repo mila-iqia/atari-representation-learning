@@ -6,7 +6,7 @@ import numpy as np
 from torch.utils.data import RandomSampler, BatchSampler
 from .utils import calculate_accuracy
 from .trainer import Trainer
-
+from src.utils import EarlyStopping
 
 class CPCTrainer(Trainer):
     # TODO: Make it work for all modes, right now only it defaults to pcl.
@@ -82,7 +82,7 @@ class CPCTrainer(Trainer):
         epoch_accuracies = {i: np.mean(step_accuracies[i]) for i in step_accuracies}
         self.log_results(epoch, epoch_losses, epoch_accuracies, prefix=mode)
         if mode == "val":
-            self.early_stopper(accuracy, self.encoder)
+            self.early_stopper(np.mean(list(epoch_accuracies.values())), self.encoder)
 
     def train(self, tr_eps, val_eps):
         for e in range(self.epochs):
