@@ -329,6 +329,7 @@ level_room_keys = [k for k in non_localization_keys if ("level" in k.lower() or 
 remaining_keys = deepcopy(all_keys)
 [remaining_keys.remove(k)  for k in localization_keys + speed_keys  + score_keys + clock_keys + level_room_keys if k in remaining_keys];
 count_keys = [k for k in remaining_keys if "lives" in k.lower() or "lifes" in k or "inventory" in k or "num" in k.lower() or "robots" in k or "remaining" in k or "tasks_completed" in k]
+lives_keys = [k for k in remaining_keys if "lives" in k.lower() or "lifes" in k ]
 [remaining_keys.remove(k) for k in count_keys + direction_keys if k in remaining_keys];
 meter_keys = [k for k in remaining_keys if "meter" in k or "energizer" in k or "level" in k or "fuel" in k]
 
@@ -349,8 +350,8 @@ enemy_localization_keys = [k for k in localization_keys if any(enemy_name in k.l
 small_object_names = ["shot", "ball", "missile"]
 small_object_localization_keys = [k for k in localization_keys if any(small_object_name in k.lower() for small_object_name in small_object_names) ]
 
-for k in unused_keys:
-    all_keys.remove(k)
+# for k in unused_keys:
+#     all_keys.remove(k)
 
 summary_key_dict = dict(overall=all_keys,
                         localization=localization_keys,
@@ -360,6 +361,7 @@ summary_key_dict = dict(overall=all_keys,
                         relative_position=relative_position_keys,
                         direction=direction_keys,
                         score=score_keys,
+                        score_lives=score_keys + lives_keys,
                         level_room=level_room_keys,
                         count_display = count_display_keys,
                         existence=existence_keys,
