@@ -158,7 +158,7 @@ class VAETrainer(Trainer):
             steps += 1
         self.log_results(epoch, epoch_loss / steps, prefix=mode)
         if mode == "val":
-            self.early_stopper(epoch_loss / steps, self.encoder)
+            self.early_stopper(-epoch_loss / steps, self.encoder)
 
     #             xim = x_hat.detach().cpu().numpy()[0].transpose(1,2,0)
     #             self.wandb.log({"example_reconstruction": [self.wandb.Image(xim, caption="")]})

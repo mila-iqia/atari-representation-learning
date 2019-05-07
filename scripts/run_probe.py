@@ -16,7 +16,6 @@ from src.atari_zoo import get_atari_zoo_episodes
 import wandb
 import sys
 
-
 def main():
     parser = get_argparser()
     parser.add_argument("--weights-path", type=str, default="None")
@@ -79,7 +78,6 @@ def main():
     wandb.log(mean_acc_dict)
     wandb.log(stderr_acc_dict)
 
-
 def get_random_agent_episodes(args, device, seed):
     envs = make_vec_envs(args.env_name, seed, args.num_processes, num_frame_stack=args.num_frame_stack,
                          downsample=not args.no_downsample)
@@ -125,7 +123,7 @@ def run_probe(encoder, args, device, seed):
         episodes, episode_labels = get_random_agent_episodes(args, device, seed)
 
     else:
-        episodes, episode_labels = get_atari_zoo_episodes(args.env_name,
+        episodes, episode_labels, episode_rewards = get_atari_zoo_episodes(args.env_name,
                                                           num_frame_stack=args.num_frame_stack,
                                                           downsample=not args.no_downsample,
                                                           algos=args.zoo_algos,
@@ -137,9 +135,10 @@ def run_probe(encoder, args, device, seed):
 
         if len(episodes[0].shape) > 2:
             episodes = [ep.permute(0, 3, 1, 2) for ep in episodes]
-
-    episodes = [x for x in episodes if len(x) > args.batch_size]
-    episode_labels = [x for x in episode_labels if len(x) > args.batch_size]
+    
+    ep_inds = [i for i in range(len(episodes)) if len(episodes[i]) > args.batch_size]
+    episodes = [episodes[i] for i in ep_inds]
+    episode_labels = [episode_labels[i] for i in ep_inds]
 
     inds = np.arange(len(episodes))
     rng = np.random.RandomState(seed=seed)
@@ -150,6 +149,13 @@ def run_probe(encoder, args, device, seed):
     tr_labels, val_labels, test_labels = episode_labels[:val_split_ind], episode_labels[
                                                                          val_split_ind:te_split_ind], episode_labels[
                                                                                                       te_split_ind:]
+    
+    if args.probe_collect_mode == "atari_zoo":
+        episode_rewards = [episode_rewards[i] for i in ep_inds]
+        tr_rew, val_rew, test_rew = episode_rewards[:val_split_ind],\
+                                    episode_rewards[val_split_ind:te_split_ind],\
+                                    episode_rewards[te_split_ind:]
+        wandb.log({"test_mean_reward_per_episode":np.mean(test_rew)})
 
     feature_size = np.prod(tr_eps[0][0].shape[1:]) if args.method == "flat-pixels" else None
     trainer = ProbeTrainer(encoder,
@@ -169,6 +175,7 @@ def run_probe(encoder, args, device, seed):
 
 
 if __name__ == "__main__":
+
     tags = ['probe']
     wandb.init(project="curl-atari-2", entity="curl-atari", tags=tags)
     main()
