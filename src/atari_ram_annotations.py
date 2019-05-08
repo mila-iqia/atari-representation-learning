@@ -102,17 +102,13 @@ atari_dict = {"asteroids": dict(asteroids_y=range(3,21), # 224 means end of list
                             second_row_iceflow_x = 33,
                             third_row_iceflow_x = 32,
                             fourth_row_iceflow_x = 31,
-                            top_row_enemy_x = 42,
-                            second_row_enemy_x = 41,
-                            third_row_enemy_x = 40,
-                            fourth_row_enemy_x = 39,
-                            bear_x = 104,
-                            igloo_entrance_x = 62,   
+                            bear_x = 104, 
                             num_lives= 76,   
                             num_igloo_blocks= 77, #255 is none and 15 is all "
-                            hPosEnemies            =   range(84,88),   #   84  bottom row -   87  top row
+                            enemy_x           =   range(84,88),   #   84  bottom row -   87  top row
                             player_x=   102, 
                             player_y=   100,
+                            player_dir = 4,
                             score = [72,73,74]),
                               
                               
@@ -150,12 +146,8 @@ atari_dict = {"asteroids": dict(asteroids_y=range(3,21), # 224 means end of list
                         blinky_y  = 15,
                         msPac_y = 16,
                         fruit_y = 17,
-                        numberOfGhosts = 19,
-                        playerHorizPosValues= range(28,29),
-                        msPacmanCurrectDir=58,
-                        energizerStatus = 116,
-                        energizerValue = 117,
-                        gameBoardStatus = 118,
+                        numberOfGhosts = 19,                     
+                        msPacmanCurrectDir=56,
                         numDotsEaten = 119,
                         playerScore = 120, 
                         numberOfLives = 123),
@@ -232,7 +224,7 @@ atari_dict = {"asteroids": dict(asteroids_y=range(3,21), # 224 means end of list
     "spaceinvaders" : dict(num_invaders_left=17, 
                             Score=   102, 
                             Lives =  125, 
-                            PlayerX=   75, 
+                            player_x=   28, 
                             ShipPos=  72 ),
     
     "venture": dict(sprite0_Ypos        = 20,  
