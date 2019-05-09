@@ -72,7 +72,7 @@ class MultiStepSTDIM(Trainer):
             loss = 0.
             for i in self.steps_gen:
                 anchor_idx, neg_idx = 0, i
-                while neg_idx != anchor_idx + i:
+                while neg_idx == anchor_idx + i:
                     anchor_idx, neg_idx = np.random.randint(0, self.sequence_length - i), np.random.randint(0, self.sequence_length)
                 pos_idx = anchor_idx + i
 
