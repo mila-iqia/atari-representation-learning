@@ -23,7 +23,6 @@ class Classifier(nn.Module):
 
 
 class MultiStepSTDIM(Trainer):
-    # TODO: Make it work for all modes, right now only it defaults to pcl.
     def __init__(self, encoder, config, device=torch.device('cpu'), wandb=None):
         super().__init__(encoder, wandb, device)
         self.config = config
@@ -113,7 +112,6 @@ class MultiStepSTDIM(Trainer):
             self.early_stopper(accuracy / steps, self.encoder)
 
     def train(self, tr_eps, val_eps):
-        # TODO: Make it work for all modes, right now only it defaults to pcl.
         for e in range(self.epochs):
             self.encoder.train()
             self.do_one_epoch(e, tr_eps)
