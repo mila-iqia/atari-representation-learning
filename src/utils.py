@@ -57,13 +57,13 @@ def get_argparser():
     parser.add_argument("--time-window", nargs=2, default=[-1, 0], type=int)
     parser.add_argument("--beta", type=float, default=1.0)
     # CPC-specific arguments
-    parser.add_argument('--sequence_length', type=int, default=50,
+    parser.add_argument('--sequence_length', type=int, default=100,
                         help='Sequence length.')
     parser.add_argument('--steps_start', type=int, default=0,
                         help='Number of immediate future steps to ignore.')
-    parser.add_argument('--steps_end', type=int, default=49,
+    parser.add_argument('--steps_end', type=int, default=99,
                         help='Number of future steps to predict.')
-    parser.add_argument('--steps_step', type=int, default=2,
+    parser.add_argument('--steps_step', type=int, default=4,
                         help='Number of future steps to predict.')
     parser.add_argument('--gru_size', type=int, default=512,
                         help='Hidden size of the GRU layers.')

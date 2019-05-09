@@ -59,28 +59,24 @@ class MultiStepSTDIM(Trainer):
         mode = "train" if self.encoder.training else "val"
         epoch_loss, accuracy, steps = 0., 0., 0
         accuracy1, accuracy2 = 0., 0.
-        step_losses = {i: [] for i in self.steps_gen()}
+        step_losses = {i: [] for i in self.steps_gen}
         step_accuracies = {i: [] for i in self.steps_gen}
         data_generator = self.generate_batch(episodes)
         for sequence_batch in data_generator:
-            w, h = self.config['obs_space'][-2], self.config['obs_space'][-1]
-            flat_sequence = sequence_batch.view(-1, self.num_frame_stack, w, h)
-            flat_latents = self.encoder(flat_sequence, fmaps=True)
-            flat_latents_g, flat_latents_f5 = flat_latents['out'], flat_latents['f5']
-            w_f5, h_f5 = flat_latents_f5[0].size(-3), flat_latents_f5[0].size(-2),
-            latents_g = flat_latents_g.view(self.batch_size, self.sequence_length, self.encoder.hidden_size)
-            latents_f5 = flat_latents_f5.view(self.batch_size, self.sequence_length, w_f5, h_f5, 128)
             loss = 0.
             for i in self.steps_gen:
-                self.optimizer.zero_grad()
                 anchor_idx, neg_idx = 0, i
                 while neg_idx == anchor_idx + i:
                     anchor_idx, neg_idx = np.random.randint(0, self.sequence_length - i), np.random.randint(0, self.sequence_length)
                 pos_idx = anchor_idx + i
 
+                f_t_maps= self.encoder(sequence_batch[:, anchor_idx, :], fmaps=True)
+                f_t_i_maps = self.encoder(sequence_batch[:, pos_idx, :], fmaps=True)
+                f_t_hat_maps = self.encoder(sequence_batch[:, neg_idx, :], fmaps=True)
+
                 # Loss 1: Global at time t, f5 patches at time t+i
-                f_t = latents_g[:, anchor_idx, :]
-                f_t_i, f_t_hat = latents_f5[:, pos_idx, :], latents_f5[:, neg_idx, :]
+                f_t = f_t_maps['out']
+                f_t_i, f_t_hat = f_t_i_maps['f5'], f_t_hat_maps['f5']
                 f_t = f_t.unsqueeze(1).unsqueeze(1).expand(-1, f_t_i.size(1), f_t_i.size(2),
                                                            self.encoder.hidden_size)
                 x1, x2 = torch.cat([f_t, f_t], dim=0), torch.cat([f_t_i, f_t_hat], dim=0)
@@ -89,15 +85,14 @@ class MultiStepSTDIM(Trainer):
                 loss1 = self.loss_fn(self.classifiers_gl[i](x1, x2).squeeze(), target)
 
                 # Loss 2: f5 patches at time t, with f5 patches at time t+i
-                f_t = latents_f5[:, anchor_idx, :]
-                f_t_i, f_t_hat = latents_f5[:, pos_idx, :], latents_f5[:, neg_idx, :]
+                f_t = f_t_maps['f5']
                 x1_p, x2_p = torch.cat([f_t, f_t], dim=0), torch.cat([f_t_i, f_t_hat], dim=0)
                 loss2 = self.loss_fn(self.classifiers_ll[i](x1_p, x2_p).squeeze(), target)
 
                 loss = loss1 + loss2
-
                 if mode == "train":
-                    loss.backward(retain_graph=True)
+                    self.optimizer.zero_grad()
+                    loss.backward()
                     self.optimizer.step()
 
                 step_losses[i].append(loss.detach().item())
