@@ -92,24 +92,26 @@ class MultiStepSTDIM(Trainer):
                 x1_p, x2_p = torch.cat([f_t, f_t], dim=0), torch.cat([f_t_i, f_t_hat], dim=0)
                 loss2 = self.loss_fn(self.classifiers_ll[i](x1_p, x2_p).squeeze(), target)
 
-                self.optimizer.zero_grad()
                 loss += loss1 + loss2
 
                 epoch_loss += (loss1 + loss2).detach().item()
                 preds1 = torch.sigmoid(self.classifiers_gl[i](x1, x2).squeeze())
-                accuracy1 += calculate_accuracy(preds1, target)
+                accuracy1 = calculate_accuracy(preds1, target)
                 preds2 = torch.sigmoid(self.classifiers_ll[i](x1_p, x2_p).squeeze())
-                accuracy2 += calculate_accuracy(preds2, target)
+                accuracy2 = calculate_accuracy(preds2, target)
                 accuracy = (accuracy1 + accuracy2) / 2.
                 step_accuracies[i].append(accuracy.detach().item())
                 steps += 1
 
             if mode == "train":
+                self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
-        self.log_results(epoch, step_accuracies, prefix=mode)
+
+        epoch_accuracies = {i: np.mean(step_accuracies[i]) for i in step_accuracies}
+        self.log_results(epoch, epoch_accuracies, prefix=mode)
         if mode == "val":
-            self.early_stopper(accuracy / steps, self.encoder)
+            self.early_stopper(np.mean(list(epoch_accuracies.values())), self.encoder)
 
     def train(self, tr_eps, val_eps):
         for e in range(self.epochs):
