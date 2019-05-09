@@ -59,6 +59,7 @@ class MultiStepSTDIM(Trainer):
         mode = "train" if self.encoder.training else "val"
         epoch_loss, accuracy, steps = 0., 0., 0
         accuracy1, accuracy2 = 0., 0.
+        step_losses = {i: [] for i in self.steps_gen()}
         step_accuracies = {i: [] for i in self.steps_gen}
         data_generator = self.generate_batch(episodes)
         for sequence_batch in data_generator:
@@ -71,6 +72,7 @@ class MultiStepSTDIM(Trainer):
             latents_f5 = flat_latents_f5.view(self.batch_size, self.sequence_length, w_f5, h_f5, 128)
             loss = 0.
             for i in self.steps_gen:
+                self.optimizer.zero_grad()
                 anchor_idx, neg_idx = 0, i
                 while neg_idx == anchor_idx + i:
                     anchor_idx, neg_idx = np.random.randint(0, self.sequence_length - i), np.random.randint(0, self.sequence_length)
@@ -92,9 +94,13 @@ class MultiStepSTDIM(Trainer):
                 x1_p, x2_p = torch.cat([f_t, f_t], dim=0), torch.cat([f_t_i, f_t_hat], dim=0)
                 loss2 = self.loss_fn(self.classifiers_ll[i](x1_p, x2_p).squeeze(), target)
 
-                loss += loss1 + loss2
+                loss = loss1 + loss2
 
-                epoch_loss += (loss1 + loss2).detach().item()
+                if mode == "train":
+                    loss.backward(retain_graph=True)
+                    self.optimizer.step()
+
+                step_losses[i].append(loss.detach().item())
                 preds1 = torch.sigmoid(self.classifiers_gl[i](x1, x2).squeeze())
                 accuracy1 = calculate_accuracy(preds1, target)
                 preds2 = torch.sigmoid(self.classifiers_ll[i](x1_p, x2_p).squeeze())
@@ -103,13 +109,9 @@ class MultiStepSTDIM(Trainer):
                 step_accuracies[i].append(accuracy.detach().item())
                 steps += 1
 
-            if mode == "train":
-                self.optimizer.zero_grad()
-                loss.backward()
-                self.optimizer.step()
-
+        epoch_losses = {i: np.mean(step_losses[i]) for i in step_losses}
         epoch_accuracies = {i: np.mean(step_accuracies[i]) for i in step_accuracies}
-        self.log_results(epoch, epoch_accuracies, prefix=mode)
+        self.log_results(epoch, epoch_losses, epoch_accuracies, prefix=mode)
         if mode == "val":
             self.early_stopper(np.mean(list(epoch_accuracies.values())), self.encoder)
 
@@ -125,11 +127,14 @@ class MultiStepSTDIM(Trainer):
                 break
         torch.save(self.encoder.state_dict(), os.path.join(self.wandb.run.dir, self.config['env_name'] + '.pt'))
 
-    def log_results(self, epoch_idx, epoch_accuracies, prefix=""):
+    def log_results(self, epoch_idx, epoch_losses, epoch_accuracies, prefix=""):
         print("Epoch: {}".format(epoch_idx))
-        print("Step Accuracies[{}: {}: {}]: {}".format(self.steps_start, self.steps_end, self.steps_step,
+        print("Step Losses[{}: {}: {}]: {}".format(self.steps_start+1, self.steps_end+1, self.steps_step,
+                                                   ", ".join(map(str, epoch_losses.values()))))
+        print("Step Accuracies[{}: {}: {}]: {}".format(self.steps_start+1, self.steps_end+1, self.steps_step,
                                                        ", ".join(map(str, epoch_accuracies.values()))))
         log_results = {}
         for i in self.steps_gen:
-            log_results[prefix + '_step_accuracy_{}'.format(i + 1)] = epoch_accuracies[i]
-        self.wandb.log(log_results)
+            log_results[prefix + '_step_loss_{}'.format(i + 1)] = epoch_losses[i]
+            log_results[prefix + '_step_accuracy_{}'.format(i)] = epoch_accuracies[i]
+        self.wandb.log(log_results, step=epoch_idx)
