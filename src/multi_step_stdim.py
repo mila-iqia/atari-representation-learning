@@ -28,7 +28,7 @@ class MultiStepSTDIM(Trainer):
         self.config = config
         for k, v in config.items():
             setattr(self, k, v)
-        self.steps_gen = range(self.steps_start, self.steps_end, self.steps_step)
+        self.steps_gen = range(self.steps_start+1, self.steps_end+1, self.steps_step)
         self.classifiers_gl = {i: Classifier(self.encoder.hidden_size, 128).to(device) for i in self.steps_gen}  # x1 = global, x2=patch, n_channels = 32
         self.classifiers_ll = {i: Classifier(128, 128).to(device) for i in self.steps_gen}
         params = list(self.encoder.parameters())
