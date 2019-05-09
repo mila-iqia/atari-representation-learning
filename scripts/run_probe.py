@@ -31,7 +31,7 @@ def main():
                         downsample=not args.no_downsample)
     wandb.config.update(vars(args))
 
-    if args.train_encoder and args.method in ['appo', 'spatial-appo', 'cpc', 'vae']:
+    if args.train_encoder and args.method in ['appo', 'spatial-appo', 'cpc', 'vae', 'ms-dim']:
         print("Training encoder from scratch")
         encoder = train_encoder(args)
         encoder.probing = True

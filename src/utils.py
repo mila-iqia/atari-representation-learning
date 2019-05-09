@@ -32,7 +32,7 @@ def get_argparser():
                         help='Number of parallel environments to collect samples from (default: 8)')
     parser.add_argument('--method', type=str, default='appo',
                         choices=["appo", "cpc", "supervised", "random-cnn", "nonlinear", "spatial-appo",
-                                 "pretrained-rl-agent", "flat-pixels", "vae"],
+                                 "pretrained-rl-agent", "flat-pixels", "vae", "ms-dim"],
                         help='Method to use for training representations (default: appo)')
     parser.add_argument('--mode', type=str, default='pcl',
                         help='Mode to use when using the Appo estimator [pcl | tcl | both] (default: pcl)')
