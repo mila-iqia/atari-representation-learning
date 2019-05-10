@@ -74,7 +74,7 @@ def get_argparser():
                         help='Number of future steps to predict.')
     parser.add_argument('--steps_step', type=int, default=4,
                         help='Number of future steps to predict.')
-    parser.add_argument('--gru_size', type=int, default=512,
+    parser.add_argument('--gru_size', type=int, default=256,
                         help='Hidden size of the GRU layers.')
     parser.add_argument('--gru_layers', type=int, default=2,
                         help='Number of GRU layers.')
