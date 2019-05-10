@@ -33,9 +33,9 @@ search:
       - export LC_ALL=C.UTF-8
       - export LANG=C.UTF-8
       - wandb login fa235c4236ea0bd894bc3f26e87054a6ed6af293
-      - python -m scripts.run_probe --no-downsample --num-frame-stack 1 --probe-lr 3e-4 --env-name {env_name} --patience 20 --num-runs 5 --method supervised
+      - python -m scripts.run_probe --no-downsample --num-frame-stack 1 --env-name {env_name} --method bert
   type: grid
-  max_trials: 22
+  max_trials: 5
   params:
     - name: env_name
       spec: discrete
