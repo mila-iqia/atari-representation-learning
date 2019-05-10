@@ -175,9 +175,6 @@ def run_probe(encoder, args, device, seed):
 
 
 if __name__ == "__main__":
-    # Add the current Git commit hash to wandb tags
-    import subprocess
-    label = subprocess.check_output(["git", "describe", "--always"]).strip()
-    tags = ['probe', str(label, 'utf-8')]
+    tags = ['probe']
     wandb.init(project="curl-atari-2", entity="curl-atari", tags=tags)
     main()
