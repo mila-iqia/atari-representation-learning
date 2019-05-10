@@ -41,52 +41,60 @@ class MultiStepSTDIM(Trainer):
 
     def generate_batch(self, episodes):
         episodes = [episode for episode in episodes if len(episode) >= self.sequence_length]
+        total_steps = sum([len(e) for e in episodes])
         # Episode sampler
         # Sample `num_samples` episodes then batchify them with `self.batch_size` episodes per batch
         sampler = BatchSampler(RandomSampler(range(len(episodes)),
-                                             replacement=True, num_samples=len(episodes) * self.sequence_length),
+                                             replacement=True, num_samples=total_steps),
                                self.batch_size, drop_last=True)
         for indices in sampler:
             episodes_batch = [episodes[x] for x in indices]
-            sequences = []
+            x_t, x_tpos, x_that = {i: [] for i in self.steps_gen}, {i: [] for i in self.steps_gen},\
+                                   {i: [] for i in self.steps_gen}
             for episode in episodes_batch:
-                start_index = np.random.randint(0, len(episode) - self.sequence_length + 1)
-                seq = episode[start_index: start_index + self.sequence_length]
-                sequences.append(seq)
-            yield torch.stack(sequences).to(self.device) / 255.
+                for i in self.steps_gen:
+                    t, t_hat = np.random.randint(0, len(episode) - i), np.random.randint(0, len(episode))
+                    x_t[i].append(episode[t])
+                    x_tpos[i].append(episode[t + i])
+                    x_that[i].append(episode[t_hat])
+
+            for i in self.steps_gen:
+                x_t[i] = torch.stack(x_t[i]).to(self.device) / 255.
+                x_tpos[i] = torch.stack(x_tpos[i]).to(self.device) / 255.
+                x_that[i] = torch.stack(x_that[i]).to(self.device) / 255.
+
+            yield x_t, x_tpos, x_that
 
     def do_one_epoch(self, epoch, episodes):
         mode = "train" if self.encoder.training else "val"
-        epoch_loss, accuracy, steps = 0., 0., 0
-        accuracy1, accuracy2 = 0., 0.
         step_losses = {i: [] for i in self.steps_gen}
         step_accuracies = {i: [] for i in self.steps_gen}
         data_generator = self.generate_batch(episodes)
-        for sequence_batch in data_generator:
-            loss = 0.
+        for x_t_dict, x_tpos_dict, x_that_dict in data_generator:
             for i in self.steps_gen:
-                anchor_idx, neg_idx = 0, i
-                while neg_idx == anchor_idx + i:
-                    anchor_idx, neg_idx = np.random.randint(0, self.sequence_length - i), np.random.randint(0, self.sequence_length)
-                pos_idx = anchor_idx + i
+                x_t, x_tpos, x_that = x_t_dict[i], x_tpos_dict[i], x_that_dict[i]
+                f_t_maps, f_t_pos_maps = self.encoder(x_t, fmaps=True), self.encoder(x_tpos, fmaps=True)
+                f_t_hat_maps = self.encoder(x_that, fmaps=True)
 
-                f_t_maps= self.encoder(sequence_batch[:, anchor_idx, :], fmaps=True)
-                f_t_i_maps = self.encoder(sequence_batch[:, pos_idx, :], fmaps=True)
-                f_t_hat_maps = self.encoder(sequence_batch[:, neg_idx, :], fmaps=True)
-
-                # Loss 1: Global at time t, f5 patches at time t+i
-                f_t = f_t_maps['out']
-                f_t_i, f_t_hat = f_t_i_maps['f5'], f_t_hat_maps['f5']
-                f_t = f_t.unsqueeze(1).unsqueeze(1).expand(-1, f_t_i.size(1), f_t_i.size(2),
+                # Loss 1: Global at time t, f5 patches at time t-1
+                f_t, f_t_pos = f_t_maps['out'], f_t_pos_maps['f5']
+                f_t_hat = f_t_hat_maps['f5']
+                f_t = f_t.unsqueeze(1).unsqueeze(1).expand(-1, f_t_pos.size(1), f_t_pos.size(2),
                                                            self.encoder.hidden_size)
-                x1, x2 = torch.cat([f_t, f_t], dim=0), torch.cat([f_t_i, f_t_hat], dim=0)
-                target = torch.cat((torch.ones_like(f_t_i[:, :, :, 0]),
-                                    torch.zeros_like(f_t_i[:, :, :, 0])), dim=0).to(self.device)
+
+                target = torch.cat((torch.ones_like(f_t[:, :, :, 0]),
+                                    torch.zeros_like(f_t[:, :, :, 0])), dim=0).to(self.device)
+
+                x1, x2 = torch.cat([f_t, f_t], dim=0), torch.cat([f_t_pos, f_t_hat], dim=0)
+                shuffled_idxs = torch.randperm(len(target))
+                x1, x2, target = x1[shuffled_idxs], x2[shuffled_idxs], target[shuffled_idxs]
+                self.optimizer.zero_grad()
                 loss1 = self.loss_fn(self.classifiers_gl[i](x1, x2).squeeze(), target)
 
-                # Loss 2: f5 patches at time t, with f5 patches at time t+i
+                # Loss 2: f5 patches at time t, with f5 patches at time t-1
                 f_t = f_t_maps['f5']
-                x1_p, x2_p = torch.cat([f_t, f_t], dim=0), torch.cat([f_t_i, f_t_hat], dim=0)
+                x1_p, x2_p = torch.cat([f_t, f_t], dim=0), torch.cat([f_t_pos, f_t_hat], dim=0)
+                x1_p, x2_p = x1_p[shuffled_idxs], x2_p[shuffled_idxs]
                 loss2 = self.loss_fn(self.classifiers_ll[i](x1_p, x2_p).squeeze(), target)
 
                 loss = loss1 + loss2
@@ -102,7 +110,6 @@ class MultiStepSTDIM(Trainer):
                 accuracy2 = calculate_accuracy(preds2, target)
                 accuracy = (accuracy1 + accuracy2) / 2.
                 step_accuracies[i].append(accuracy.detach().item())
-                steps += 1
 
         epoch_losses = {i: np.mean(step_losses[i]) for i in step_losses}
         epoch_accuracies = {i: np.mean(step_accuracies[i]) for i in step_accuracies}
