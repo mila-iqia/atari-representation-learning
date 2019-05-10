@@ -1,5 +1,0 @@
-gym[atari]
-matplotlib
-wandb
-wget
-opencv-python
