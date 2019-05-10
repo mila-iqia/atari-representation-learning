@@ -33,7 +33,6 @@ class SpatioTemporalTrainer(Trainer):
         self.classifier2 = Classifier(128, 128).to(device)
         self.epochs = config['epochs']
         self.batch_size = config['batch_size']
-        self.time_window = config["time_window"]
         self.device = device
         self.optimizer = torch.optim.Adam(list(self.classifier1.parameters()) + list(self.encoder.parameters()) +
                                           list(self.classifier2.parameters()),
@@ -53,23 +52,18 @@ class SpatioTemporalTrainer(Trainer):
         for indices in sampler:
             episodes_batch = [episodes[x] for x in indices]
             x_t, x_tprev, x_that, ts, thats = [], [], [], [], []
-            tw = np.asarray(self.time_window)
             for episode in episodes_batch:
                 # Get one sample from this episode
                 t, t_hat = 0, 0
-                lowerb,upperb  = np.abs(np.min([0, np.min(tw)])), np.max([0, np.max(tw)])
-                t, t_hat = np.random.randint(lowerb, len(episode)-upperb), np.random.randint(0, len(episode))
+                t, t_hat = np.random.randint(0, len(episode)), np.random.randint(0, len(episode))
                 x_t.append(episode[t])
 
                 # Apply the same transform to x_{t-1} and x_{t_hat}
                 # https://github.com/pytorch/vision/issues/9#issuecomment-383110707
                 # Use numpy's random seed because Cutout uses np
                 # seed = random.randint(0, 2 ** 32)
-                # np.random.seed(seed)             
-                offsets = np.arange(tw[0], tw[1]+1)
-                offsets = offsets[offsets.nonzero()]
-                offset = np.random.choice(offsets)
-                x_tprev.append(episode[t + offset])
+                # np.random.seed(seed)
+                x_tprev.append(episode[t - 1])
                 # np.random.seed(seed)
                 x_that.append(episode[t_hat])
 
