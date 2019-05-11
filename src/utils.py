@@ -32,7 +32,7 @@ def get_argparser():
                         help='Number of parallel environments to collect samples from (default: 8)')
     parser.add_argument('--method', type=str, default='appo',
                         choices=["appo", "cpc", "supervised", "random-cnn", "nonlinear", "spatial-appo",
-                                 "pretrained-rl-agent", "flat-pixels", "vae","bert"],
+                                 "pretrained-rl-agent", "flat-pixels", "vae", "ms-dim", "bert"],
                         help='Method to use for training representations (default: appo)')
     parser.add_argument('--mode', type=str, default='pcl',
                         help='Mode to use when using the Appo estimator [pcl | tcl | both] (default: pcl)')
@@ -55,7 +55,7 @@ def get_argparser():
     parser.add_argument('--spatial', action='store_true', default=False)
     parser.add_argument("--patience", type=int, default=10)
     parser.add_argument("--time-window", nargs=2, default=[-1, 0], type=int)
-    
+
     #bert specific arguments
     parser.add_argument("--num_transformer_layers", type=int, default=2)
     parser.add_argument("--num_lin_projections", type=int, default=8)
