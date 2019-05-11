@@ -32,7 +32,7 @@ def get_argparser():
                         help='Number of parallel environments to collect samples from (default: 8)')
     parser.add_argument('--method', type=str, default='appo',
                         choices=["appo", "cpc", "supervised", "random-cnn", "nonlinear", "spatial-appo",
-                                 "pretrained-rl-agent", "flat-pixels", "vae", "ms-dim", "bert"],
+                                 "pretrained-rl-agent", "flat-pixels", "vae", "ms-dim", "bert", "pixel-predictor"],
                         help='Method to use for training representations (default: appo)')
     parser.add_argument('--mode', type=str, default='pcl',
                         help='Mode to use when using the Appo estimator [pcl | tcl | both] (default: pcl)')
@@ -63,7 +63,6 @@ def get_argparser():
     parser.add_argument('--seq_len', type=int, default=10,
                         help='Sequence length.')
     parser.add_argument("--d_ff", type=int, default=512)
-    
     parser.add_argument("--beta", type=float, default=1.0)
     # CPC-specific arguments
     parser.add_argument('--sequence_length', type=int, default=100,
@@ -73,7 +72,7 @@ def get_argparser():
     parser.add_argument('--steps_end', type=int, default=99,
                         help='Number of future steps to predict.')
     parser.add_argument('--steps_step', type=int, default=4,
-                        help='Number of future steps to predict.')
+                        help='Skip every these many frames.')
     parser.add_argument('--gru_size', type=int, default=256,
                         help='Hidden size of the GRU layers.')
     parser.add_argument('--gru_layers', type=int, default=2,
@@ -244,7 +243,7 @@ class EarlyStopping(object):
         Args:
             patience (int): How long to wait after last time validation loss improved.
                             Default: 7
-            verbose (bool): If True, prints a message for each validation loss improvement. 
+            verbose (bool): If True, prints a message for each validation loss improvement.
                             Default: False
         """
         self.patience = patience
