@@ -25,7 +25,7 @@ def convert2grayscale(frame):
         return frame
 def get_atari_zoo_episodes(env, run_ids="all", num_frame_stack=4, downsample=True, algos = ["a2c","apex","ga","es"],
                            tags = ["initial","1HR","2HR", "6HR", "10HR","final", "400M", "1B"],
-                           use_representations_instead_of_frames=False):
+                           use_representations_instead_of_frames=False, get_ram=False):
     
     #using atari zoo (https://github.com/uber-research/atari-model-zoo) url. Thanks, Uber!
     base_url = "https://dgqeqexrlnkvd.cloudfront.net/zoo"
@@ -35,7 +35,7 @@ def get_atari_zoo_episodes(env, run_ids="all", num_frame_stack=4, downsample=Tru
     basepath.mkdir(parents=True,exist_ok=True)
    
 
-    episodes, episode_labels, episode_rewards = [],[],[]
+    episodes, episode_labels, episode_rewards, episode_rams = [],[],[], []
     
     for algo in algos:
         for tag in tags:
@@ -76,7 +76,7 @@ def get_atari_zoo_episodes(env, run_ids="all", num_frame_stack=4, downsample=Tru
                 
                 episode_labels.extend(label_eps)
                 episode_rewards.extend(ep_rewards)
-                
+                episode_rams.extend(separate_into_episodes(cur_rams, ep_inds))
                 
                 if use_representations_instead_of_frames:
                     try:
@@ -102,5 +102,7 @@ def get_atari_zoo_episodes(env, run_ids="all", num_frame_stack=4, downsample=Tru
 
                     episodes.extend(eps)
                 
-         
-    return episodes, episode_labels, episode_rewards
+    if get_ram:
+        return episodes, episode_rams, episode_labels, episode_rewards
+    else:
+        return episodes, episode_labels, episode_rewards
