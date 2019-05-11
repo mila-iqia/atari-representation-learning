@@ -93,9 +93,8 @@ atari_dict = {"asteroids": dict(asteroids_y=range(3,21), # 224 means end of list
 #                             colOpponents = range(27,34)),
                               
             "freeway": dict(player1_y=14,
-                            player2_y=15,
-                            carx_dir= 22,
-                            automobile_x_coords= range(108,118),
+                            score=103,
+                            car_x= range(108,118),
                             agent_laneCollide=16), # which lane the car collided with agent
         "frostbite" : dict(                   
                             top_row_iceflow_x = 34,
@@ -222,10 +221,12 @@ atari_dict = {"asteroids": dict(asteroids_y=range(3,21), # 224 means end of list
                               
                               
     "spaceinvaders" : dict(num_invaders_left=17, 
-                            Score=   102, 
+                            player_score=   104, 
                             Lives =  125, 
-                            player_x=   28, 
-                            ShipPos=  72 ),
+                            player_x=   28,
+                            enemies_x = 26,
+                            missles_y = 9,
+                            enemies_y = 24 ),
     
     "venture": dict(sprite0_Ypos        = 20,  
                     sprite1_Ypos        = 21,
