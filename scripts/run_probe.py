@@ -11,6 +11,7 @@ import gym
 from src.envs import make_vec_envs
 from src.utils import get_argparser, visualize_activation_maps, appendabledict
 from src.encoders import NatureCNN, ImpalaCNN
+from src.decoders import ImpalaCNNDecoder
 from src.appo import AppoTrainer
 from src.atari_zoo import get_atari_zoo_episodes
 import wandb
@@ -31,7 +32,7 @@ def main():
                         downsample=not args.no_downsample)
     wandb.config.update(vars(args))
 
-    if args.train_encoder and args.method in ['appo', 'spatial-appo', 'cpc', 'vae']:
+    if args.train_encoder and args.method in ['appo', 'spatial-appo', 'cpc', 'vae', 'pixel_predictor']:
         print("Training encoder from scratch")
         encoder = train_encoder(args)
         encoder.probing = True
@@ -135,7 +136,7 @@ def run_probe(encoder, args, device, seed):
 
         if len(episodes[0].shape) > 2:
             episodes = [ep.permute(0, 3, 1, 2) for ep in episodes]
-    
+
     ep_inds = [i for i in range(len(episodes)) if len(episodes[i]) > args.batch_size]
     episodes = [episodes[i] for i in ep_inds]
     episode_labels = [episode_labels[i] for i in ep_inds]
@@ -149,7 +150,7 @@ def run_probe(encoder, args, device, seed):
     tr_labels, val_labels, test_labels = episode_labels[:val_split_ind], episode_labels[
                                                                          val_split_ind:te_split_ind], episode_labels[
                                                                                                       te_split_ind:]
-    
+
     if args.probe_collect_mode == "atari_zoo":
         episode_rewards = [episode_rewards[i] for i in ep_inds]
         tr_rew, val_rew, test_rew = episode_rewards[:val_split_ind],\

@@ -9,7 +9,9 @@ from src.envs import make_vec_envs
 from src.spatio_temporal import SpatioTemporalTrainer
 from src.utils import get_argparser, visualize_activation_maps
 from src.encoders import NatureCNN, ImpalaCNN
+from src.decoders import ImpalaCNNDecoder
 from src.appo import AppoTrainer
+from src.pixel_predictor import PixelPredictorTrainer
 from src.cpc import CPCTrainer
 from src.vae import VAETrainer
 from src.atari_zoo import get_atari_zoo_episodes
@@ -40,6 +42,10 @@ def train_encoder(args):
         trainer = SpatioTemporalTrainer(encoder, config, device=device, wandb=wandb)
     if args.method == 'vae':
         trainer = VAETrainer(encoder, config, device=device, wandb=wandb)
+    if args.method == 'pixel-predictor':
+        assert args.encoder_type == "Impala"
+        decoder = ImpalaCNNDecoder(envs.observation_space.shape[0], args)
+        trainer = PixelPredictorTrainer(encoder, decoder, config, device=device, wandb=wandb)
 
     if args.collect_mode == "random_agent":
         obs = envs.reset()
