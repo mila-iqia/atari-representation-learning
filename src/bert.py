@@ -173,7 +173,7 @@ class BERTTrainer(Trainer):
                                               d_ff=self.d_ff,
                                               d_model=self.hidden_size,
                                               seq_len=self.seq_len,
-                                              dropout=self.dropout)
+                                              dropout=self.dropout).to(device)
 
       
         self.classifier = Classifier(self.hidden_size, self.hidden_size ).to(device)  # x1 = global, x2=patch, n_channels = 32

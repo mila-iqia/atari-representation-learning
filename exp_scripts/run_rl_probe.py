@@ -1,21 +1,20 @@
 import subprocess
 
 base_cmd = "sbatch"
-ss= "exp_scripts/run_gpu_azure.sl"
+ss= "exp_scripts/run_gpu_mila.sl"
 module = "scripts.run_probe"
 args = [base_cmd, ss, module]
 args.append("--method pretrained-rl-agent")
 args.append("--probe-collect-mode atari_zoo")
 args.append('--zoo-algos a2c')
-args.append('--zoo-tags 6HR 400M final 10HR')  #1B 400M final 10HR')
+args.append('--zoo-tags 10HR  400M final 6HR')  #1B 400M final 10HR')
 
-envs =  ["asteroids", "freeway", "montezuma_revenge"]
-"""envs =[ 'berzerk', 'boxing',
+envs =  ["asteroids", "freeway", "montezuma_revenge", 'berzerk',   # 'boxing',
         'demon_attack', 'enduro', 'freeway', 'frostbite', 'hero', 
         'ms_pacman', 'pong', 'private_eye', 'qbert', 'riverraid', 
         'seaquest', 'solaris', 'space_invaders', 'venture', 'video_pinball', 
         'yars_revenge','breakout','pitfall','montezuma_revenge'
-        ]"""
+        ]
 
 
 suffix = "NoFrameskip-v4"
