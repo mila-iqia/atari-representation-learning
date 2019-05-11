@@ -13,6 +13,7 @@ from src.encoders import NatureCNN, ImpalaCNN
 from src.appo import AppoTrainer
 from src.cpc import CPCTrainer
 from src.vae import VAETrainer
+from src.bert import BERTTrainer
 from src.atari_zoo import get_atari_zoo_episodes
 import wandb
 import sys
@@ -43,6 +44,8 @@ def train_encoder(args):
         trainer = VAETrainer(encoder, config, device=device, wandb=wandb)
     if args.method == 'ms-dim':
         trainer = MultiStepSTDIM(encoder, config, device=device, wandb=wandb)
+    if args.method == 'bert':
+        trainer = BERTTrainer(encoder, config, device=device, wandb=wandb)
 
     if args.collect_mode == "random_agent":
         obs = envs.reset()

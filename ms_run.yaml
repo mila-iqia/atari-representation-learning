@@ -35,7 +35,7 @@ search:
       - wandb login fa235c4236ea0bd894bc3f26e87054a6ed6af293
       - python -m scripts.run_probe --train-encoder --no-downsample --num-frame-stack 1 --probe-lr 5e-2 --env-name {env_name} --epochs 200 --method ms-dim --lr 5e-4
   type: grid
-  max_trials: 22
+  max_trials: 5
   params:
     - name: env_name
       spec: discrete
