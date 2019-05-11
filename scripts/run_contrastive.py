@@ -6,6 +6,7 @@ import numpy as np
 import torch
 
 from src.envs import make_vec_envs
+from src.multi_step_stdim import MultiStepSTDIM
 from src.spatio_temporal import SpatioTemporalTrainer
 from src.utils import get_argparser, visualize_activation_maps
 from src.encoders import NatureCNN, ImpalaCNN
@@ -41,6 +42,8 @@ def train_encoder(args):
         trainer = SpatioTemporalTrainer(encoder, config, device=device, wandb=wandb)
     if args.method == 'vae':
         trainer = VAETrainer(encoder, config, device=device, wandb=wandb)
+    if args.method == 'ms-dim':
+        trainer = MultiStepSTDIM(encoder, config, device=device, wandb=wandb)
     if args.method == 'bert':
         trainer = BERTTrainer(encoder, config, device=device, wandb=wandb)
 
