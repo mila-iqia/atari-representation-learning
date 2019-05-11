@@ -32,7 +32,7 @@ def main():
                         downsample=not args.no_downsample)
     wandb.config.update(vars(args))
 
-    if args.train_encoder and args.method in ['appo', 'spatial-appo', 'cpc', 'vae', 'pixel_predictor']:
+    if args.train_encoder and args.method in ['appo', 'spatial-appo', 'cpc', 'vae', 'bert', 'ms-dim', 'pixel_predictor']:
         print("Training encoder from scratch")
         encoder = train_encoder(args)
         encoder.probing = True
@@ -176,7 +176,6 @@ def run_probe(encoder, args, device, seed):
 
 
 if __name__ == "__main__":
-
     tags = ['probe']
     wandb.init(project="curl-atari-2", entity="curl-atari", tags=tags)
     main()

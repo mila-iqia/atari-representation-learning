@@ -6,6 +6,7 @@ import numpy as np
 import torch
 
 from src.envs import make_vec_envs
+from src.multi_step_stdim import MultiStepSTDIM
 from src.spatio_temporal import SpatioTemporalTrainer
 from src.utils import get_argparser, visualize_activation_maps
 from src.encoders import NatureCNN, ImpalaCNN
@@ -14,6 +15,7 @@ from src.appo import AppoTrainer
 from src.pixel_predictor import PixelPredictorTrainer
 from src.cpc import CPCTrainer
 from src.vae import VAETrainer
+from src.bert import BERTTrainer
 from src.atari_zoo import get_atari_zoo_episodes
 import wandb
 import sys
@@ -46,6 +48,10 @@ def train_encoder(args):
         assert args.encoder_type == "Impala"
         decoder = ImpalaCNNDecoder(envs.observation_space.shape[0], args)
         trainer = PixelPredictorTrainer(encoder, decoder, config, device=device, wandb=wandb)
+    if args.method == 'ms-dim':
+        trainer = MultiStepSTDIM(encoder, config, device=device, wandb=wandb)
+    if args.method == 'bert':
+        trainer = BERTTrainer(encoder, config, device=device, wandb=wandb)
 
     if args.collect_mode == "random_agent":
         obs = envs.reset()

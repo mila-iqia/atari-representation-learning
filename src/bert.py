@@ -79,48 +79,73 @@ class MultiHeadedAttention(nn.Module):
              .view(nbatches, -1, self.h * self.d_k)
         return self.fc_final(x)
 
+class PositionalEncoding(nn.Module):
+    "Implement the PE function."
+    def __init__(self, d_model, dropout, max_len=5000):
+        super(PositionalEncoding, self).__init__()
+        self.dropout = nn.Dropout(p=dropout)
+        
+        # Compute the positional encodings once in log space.
+        pe = torch.zeros(max_len, d_model)
+        position = torch.arange(0, max_len).unsqueeze(1).float()
+        div_term = torch.exp(torch.arange(0, d_model, 2).float() * (-np.log(10000.0) / d_model))
+        pe[:, 0::2] = torch.sin(position * div_term)
+        pe[:, 1::2] = torch.cos(position * div_term)
+        pe = pe.unsqueeze(0)
+        self.register_buffer('pe', pe)
+        
+    def forward(self, x):
+        x = x + self.pe[:, :x.size(1)]
+        return self.dropout(x)
+
 class TransformerUnit(nn.Module):
     "Encoder is made up of self-attn and feed forward (defined below)"
-    def __init__(self, h, d_model, dropout):
+    def __init__(self, h, d_model, d_ff, dropout):
         super().__init__()
         self.mha = MultiHeadedAttention(h,d_model)
-        self.fc = nn.Linear(d_model,d_model)
+        self.poswise_fc = nn.Sequential(nn.Linear(d_model,d_ff),
+                                        nn.ReLU(),
+                                        nn.Dropout(dropout),
+                                        nn.Linear(d_ff,d_model))
         self.norm = nn.LayerNorm(d_model)
         self.dropout = nn.Dropout(dropout)
 
     def forward(self, x, mask):
         v = self.norm(x + self.dropout(self.mha(x,x,x,mask)))
-        output = self.norm(v + self.dropout(self.fc(v)))
+        output = self.norm(v + self.dropout(self.poswise_fc(v)))
         return output
+    
 
-class Transformer(nn.Module):
+   
+class TransformerEncoder(nn.Module):
     "Core encoder is a stack of N layers"
-    def __init__(self,N=1, h=8, d_model=256, seq_len=10, dropout=0.1):
-        super().__init__()
-        tu =  TransformerUnit(h, d_model, dropout)
-        self.layers = clones(tu, N)
+    def __init__(self,N=1, h=8, d_model=256, d_ff=512, seq_len=10, dropout=0.1):
+        super().__init__() 
+        self.transformer = TransformerUnit(h, d_model,d_ff, dropout)
         self.norm = nn.LayerNorm(d_model)
         self.fc = nn.Linear(d_model, d_model)
+        self.pos_enc = PositionalEncoding(d_model=d_model, dropout=dropout, max_len=seq_len)
         
     def forward(self, x, mask):
         """Mask should be batch_size, seq_len"""
         batch_size, seq_len = x.shape[0], x.shape[1]
 
         mask = mask.repeat((1,seq_len)).reshape(batch_size,seq_len,seq_len)
+        
+        #position encode x
+        x = self.pos_enc(x)
         "Pass the input (and mask) through each layer in turn."
-        for layer in self.layers:
-            x = layer(x, mask)
-        x = self.norm(x)
+        x_tf = self.norm(self.transformer(x, mask))
         
         #converts the encoded sequence tensor of shape
         # [batch_size, seq_length, hidden_size] to a tensor of shape
         # [batch_size, hidden_size] by simply taking the hidden state corresponding
         # to the first token.
-        f = x[:,0,:]
+        f = x_tf[:,0,:]
         #f = self.fc(f)
         return f
         
-        
+
 class Classifier(nn.Module):
     def __init__(self, num_inputs1, num_inputs2):
         super().__init__()
@@ -129,7 +154,6 @@ class Classifier(nn.Module):
     def forward(self, x1, x2):
         return self.network(x1, x2)
     
-
 
 class BERTTrainer(Trainer):
     # TODO: Make it work for all modes, right now only it defaults to pcl.
@@ -142,12 +166,14 @@ class BERTTrainer(Trainer):
         self.hidden_size = self.encoder.hidden_size
         self.N =  self.config["num_transformer_layers"]
         self.h = self.config["num_lin_projections"]
+        self.d_ff = self.config["d_ff"]
         self.dropout=self.config["dropout"]
 
-        self.transformer = Transformer(N=self.N,h=self.h,
-                                       d_model=self.hidden_size,
-                                       seq_len=self.seq_len,
-                                       dropout=self.dropout)
+        self.transformer = TransformerEncoder(N=self.N,h=self.h,
+                                              d_ff=self.d_ff,
+                                              d_model=self.hidden_size,
+                                              seq_len=self.seq_len,
+                                              dropout=self.dropout).to(device)
 
       
         self.classifier = Classifier(self.hidden_size, self.hidden_size ).to(device)  # x1 = global, x2=patch, n_channels = 32
@@ -205,7 +231,6 @@ class BERTTrainer(Trainer):
             x_seq_batch = x_seq.reshape(self.batch_size * self.seq_len, *x_pos.shape[1:])
             f_seq = self.encoder(x_seq_batch).reshape(self.batch_size, self.seq_len, -1)
             f_pos, f_neg = self.encoder(x_pos), self.encoder(x_neg)
-            print(masks.shape)
             f_tf = self.transformer(f_seq, masks)
             
             target = torch.cat((torch.ones(self.batch_size, 1),
