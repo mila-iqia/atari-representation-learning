@@ -60,7 +60,7 @@ def get_argparser():
     parser.add_argument("--num_transformer_layers", type=int, default=2)
     parser.add_argument("--num_lin_projections", type=int, default=8)
     parser.add_argument("--dropout", type=float, default=0.1)
-    parser.add_argument('--seq_len', type=int, default=10,
+    parser.add_argument('--seq_len', type=int, default=5,
                         help='Sequence length.')
     parser.add_argument("--d_ff", type=int, default=512)
     parser.add_argument("--beta", type=float, default=1.0)
