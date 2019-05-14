@@ -55,28 +55,16 @@ atari_dict = {"asteroids": dict(enemy_asteroids_y=range(3,21), # 224 means end o
               
               
 			 "demonattack":	dict(level= 62,
-                      current_enemy_y   = 68,
-                      enemy_small_demon_y = 72,
-                      enemy_demon_x= 111,	
-                        #"1st level Only?
-                        enemy_left_x        = 13,  # horizontal position ENEMY1 (enemy left side)
-                        enemy_left_x2        = 14, # horizontal position ENEMY2 (enemy left side)
-                        enemy_left_x3        = 15, # horizontal position ENEMY3 (enemy left side)
+                                player_x = 22,  
+                                enemy_x1 = 17, 
+                                enemy_x2 = 18,  
+                                enemy_x3 = 19, 
+                                missile_y = 21,  
+                                enemy_y1= 69,
+                                enemy_y2 = 70, 
+                                enemy_y3 = 71, 
+                                num_lives = 114),
 
-                        player_x                       = 16,  # horizontal position PLAYER'S SHIP
-                        enemy_right_x        = 17, # horizontal position ENEMY1 (enemy right side)
-                        enemy_right_x2        = 18,  # horizontal position ENEMY2 (enemy right side)
-                        enemy_right_x3        = 19, # horizontal position ENEMY3 (enemy right side)
-
-                        enemy_small_demon_other_y       = 20, # horizontal position SINGLE SMALL ATTACKING DEMON
-                        missile_y   = 21,  # shot vertical position (BALL)"	
-
-
-                        enemy_right1_y               = 69, # vertical position ENEMY1 (enemy right side)
-                        enemy_right2_y               = 70, # vertical position ENEMY2 (enemy right side)
-                        enemy_right3_y = 71, # vertical position ENEMY3 (enemy right side)
-                        num_lives   = 114),
-              
               
 #               "enduro" : dict(speed= 22,
 #                             cars_remaining= [43,44],
