@@ -199,6 +199,15 @@ atari_dict = {"asteroids": dict(enemy_asteroids_y=range(3,21), # 224 means end o
                             enemies_x = 26,
                             missiles_y = 9,
                             enemies_y = 24 ),
+              
+    "tennis": dict(enemy_x = 27,
+                   enemy_y=25,
+                   enemy_score=70,
+                   ball_x =16, 
+                   ball_y=17,
+                   player_x = 26, 
+                   player_y = 24, 
+                   player_score = 69),	
     
     "venture": dict(sprite0_y        = 20,  
                     sprite1_y        = 21,
