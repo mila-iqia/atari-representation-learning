@@ -129,8 +129,7 @@ class TransformerEncoder(nn.Module):
     def forward(self, x, mask):
         """Mask should be batch_size, seq_len"""
         batch_size, seq_len = x.shape[0], x.shape[1]
-
-        mask = mask.repeat((1,seq_len)).reshape(batch_size,seq_len,seq_len)
+        mask = mask.repeat((1,seq_len)).reshape(batch_size, seq_len, seq_len)
         
         #position encode x
         x = self.pos_enc(x)
@@ -141,7 +140,7 @@ class TransformerEncoder(nn.Module):
         # [batch_size, seq_length, hidden_size] to a tensor of shape
         # [batch_size, hidden_size] by simply taking the hidden state corresponding
         # to the first token.
-        f = x_tf[:,0,:]
+        f = x_tf.mean(dim=1) #[:,0,:]
         #f = self.fc(f)
         return f
         
@@ -199,6 +198,7 @@ class BERTTrainer(Trainer):
         sampler = BatchSampler(RandomSampler(range(len(episodes)),
                                              replacement=True, num_samples=total_steps),
                                self.batch_size, drop_last=True)
+        bern = torch.distributions.Bernoulli(probs=0.5)
         for indices in sampler:
             episodes_batch = [episodes[x] for x in indices]
             x_seq, x_neg, x_pos, masks = [], [], [], []
@@ -206,43 +206,57 @@ class BERTTrainer(Trainer):
             for episode in episodes_batch:
                 # Get one sample from this episode
                 t, t_neg = np.random.randint(0, len(episode)-self.seq_len), np.random.randint(0, len(episode))
-                t_pos = np.random.randint(t,t+self.seq_len,size=(1,1))
+                
                 x_seq.append(episode[t:t+self.seq_len])
                 x_neg.append(episode[t_neg])
-                x_pos.append(episode[int(t_pos)])
-                mask_ind = torch.from_numpy(t_pos % self.seq_len)
-                base_mask = torch.zeros((1, self.seq_len))
-                mask = base_mask.scatter_(1,mask_ind,1).squeeze()
+
+                mask = bern.sample(sample_shape=torch.tensor([self.seq_len,]))
+                
+#               t_pos = np.random.randint(t,t+self.seq_len,size=(1,1))
+#               mask_ind = torch.from_numpy(t_pos % self.seq_len)
+#               base_mask = torch.zeros((1, self.seq_len))
+#               mask = base_mask.scatter_(1,mask_ind,1).squeeze()
+
                 masks.append(mask)
+                #x_pos.append(episode[int(t_pos)])
              
 
             yield torch.stack(x_seq).to(self.device) / 255.,\
                   torch.stack(x_neg).to(self.device) / 255.,\
-                  torch.stack(x_pos).to(self.device) / 255.,\
                   torch.stack(masks).to(self.device)
+                  #torch.stack(x_pos).to(self.device) / 255.,\
+
 
     def do_one_epoch(self, epoch, episodes):
         mode = "train" if self.encoder.training and self.classifier.training and self.transformer.training else "val"
         epoch_loss, accuracy, steps = 0., 0., 0
         data_generator = self.generate_batch(episodes)
-        for x_seq, x_neg, x_pos, masks in data_generator:
+        for x_seq, x_neg, masks in data_generator:
             # flatten [batch_size,seq_len,n_ch,x,y] into [batch_size*seq_len,n_ch,x,y]
             # so we it fits nicely into encoder, then reshape it back to sequence
-            x_seq_batch = x_seq.reshape(self.batch_size * self.seq_len, *x_pos.shape[1:])
+            x_seq_batch = x_seq.reshape(self.batch_size * self.seq_len, *x_neg.shape[1:])
             f_seq = self.encoder(x_seq_batch).reshape(self.batch_size, self.seq_len, -1)
-            f_pos, f_neg = self.encoder(x_pos), self.encoder(x_neg)
+            f_neg = self.encoder(x_neg)
             f_tf = self.transformer(f_seq, masks)
             
             target = torch.cat((torch.ones(self.batch_size, 1),
                                 torch.zeros(self.batch_size, 1)), dim=0).to(self.device)
 
-            x1, x2 = torch.cat([f_tf,f_tf], dim=0), torch.cat([f_pos, f_neg], dim=0)
-            shuffled_idxs = torch.randperm(len(target))
-            x1, x2, target = x1[shuffled_idxs], x2[shuffled_idxs], target[shuffled_idxs]
-            self.optimizer.zero_grad()
-            loss = self.loss_fn(self.classifier(x1, x2), target)
+            losses = []
+            for i in range(self.seq_len):
+                f_pos = f_seq[:,i,:]
+                x1, x2 = torch.cat([f_tf,f_tf], dim=0), torch.cat([f_pos, f_neg], dim=0)
+                shuffled_idxs = torch.randperm(len(target))
+                x1, x2, target = x1[shuffled_idxs], x2[shuffled_idxs], target[shuffled_idxs]
+                loss = self.loss_fn(self.classifier(x1, x2), target)
+                losses.append(loss)
+
+            loss = torch.mean(torch.stack(losses)) #self-prediction and predicting the masked out
+            
+            
             
             if mode == "train":
+                self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
 
