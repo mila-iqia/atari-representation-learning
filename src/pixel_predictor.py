@@ -7,14 +7,26 @@ from torch.utils.data import RandomSampler, BatchSampler
 from .utils import calculate_accuracy
 from .trainer import Trainer
 from src.utils import EarlyStopping
+from src.vae import Decoder
 
 class PixelPredictorTrainer(Trainer):
-    def __init__(self, encoder, decoder, config, device=torch.device('cpu'), wandb=None):
+    def __init__(self, encoder, config, device=torch.device('cpu'), wandb=None):
         super().__init__(encoder, wandb, device)
         self.config = config
         for k, v in config.items():
             setattr(self, k, v)
-        self.decoder = decoder.to(device)
+
+        self.feature_size = self.encoder.feature_size
+        self.final_conv_size = self.encoder.final_conv_size
+        self.final_conv_shape = self.encoder.final_conv_shape
+        self.input_channels = self.encoder.input_channels
+
+        self.decoder = Decoder(mu_size=self.feature_size,
+                               final_conv_size=self.final_conv_size,
+                               final_conv_shape=self.final_conv_shape,
+                               num_input_channels=self.input_channels)
+
+        self.decoder = self.decoder.to(device)
 
         self.device = device
         self.steps_gen = lambda: range(self.steps_start, self.steps_end, self.steps_step)

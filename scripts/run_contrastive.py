@@ -10,7 +10,6 @@ from src.multi_step_stdim import MultiStepSTDIM
 from src.spatio_temporal import SpatioTemporalTrainer
 from src.utils import get_argparser, visualize_activation_maps
 from src.encoders import NatureCNN, ImpalaCNN
-from src.decoders import ImpalaCNNDecoder
 from src.appo import AppoTrainer
 from src.pixel_predictor import PixelPredictorTrainer
 from src.cpc import CPCTrainer
@@ -45,9 +44,7 @@ def train_encoder(args):
     if args.method == 'vae':
         trainer = VAETrainer(encoder, config, device=device, wandb=wandb)
     if args.method == 'pixel-predictor':
-        assert args.encoder_type == "Impala"
-        decoder = ImpalaCNNDecoder(envs.observation_space.shape[0], args)
-        trainer = PixelPredictorTrainer(encoder, decoder, config, device=device, wandb=wandb)
+        trainer = PixelPredictorTrainer(encoder, config, device=device, wandb=wandb)
     if args.method == 'ms-dim':
         trainer = MultiStepSTDIM(encoder, config, device=device, wandb=wandb)
     if args.method == 'bert':
