@@ -53,8 +53,8 @@ class CPCTrainer(Trainer):
         for sequence in data_generator:
             sequence = sequence.to(self.device)
             sequence = sequence / 255.
-            w, h = self.config['obs_space'][-2], self.config['obs_space'][-1]
-            flat_sequence = sequence.view(-1, self.num_frame_stack, w, h)
+            channels, w, h = self.config['obs_space'][-3:]
+            flat_sequence = sequence.view(-1, channels, w, h)
             flat_latents = self.encoder(flat_sequence)
             latents = flat_latents.view(
                 self.batch_size, self.sequence_length, self.encoder.hidden_size)

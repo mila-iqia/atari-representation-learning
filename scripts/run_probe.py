@@ -80,8 +80,7 @@ def main():
     parser.add_argument('--num-runs', type=int, default=1)
     args = parser.parse_args()
     # dummy env
-    env = make_vec_envs(args.env_name, args.seed, 1, num_frame_stack=args.num_frame_stack,
-                        downsample=not args.no_downsample)
+    env = make_vec_envs(args.env_name, 1)
     wandb.config.update(vars(args))
 
     if args.train_encoder and args.method in ['appo', 'spatial-appo', 'cpc', 'vae', 'bert', 'ms-dim', 'pixel_predictor']:
@@ -134,9 +133,8 @@ def main():
     wandb.log(stderr_acc_dict)
 
 
-def get_random_agent_episodes(args, device, seed):
-    envs = make_vec_envs(args.env_name, seed, args.num_processes, num_frame_stack=args.num_frame_stack,
-                         downsample=not args.no_downsample)
+def get_random_agent_episodes(args, device):
+    envs = make_vec_envs(args, args.num_processes)
     obs = envs.reset()
     episode_rewards = deque(maxlen=10)
     start = time.time()
@@ -176,7 +174,7 @@ def get_random_agent_episodes(args, device, seed):
 
 def run_probe(encoder, args, device, seed):
     if args.probe_collect_mode == "random_agent":
-        episodes, episode_labels = get_random_agent_episodes(args, device, seed)
+        episodes, episode_labels = get_random_agent_episodes(args, device)
 
     else:
         episodes, episode_labels, episode_rewards = get_atari_zoo_episodes(args.env_name,

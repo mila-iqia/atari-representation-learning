@@ -16,7 +16,7 @@ else:
 args.append("--train-encoder")
 args.append('--no-downsample')
 args.append('--num-frame-stack 1')
-args.append('--num-runs 3')
+args.append('--num-runs 1')
 
 envs1 =  ['asteroids', 'berzerk', 'boxing',
         'demon_attack', 'enduro', 'freeway', 'frostbite']
@@ -25,7 +25,7 @@ envs2 = ['hero', 'ms_pacman', 'pong', 'private_eye','qbert', 'riverraid', 'seaqu
 
 envs3 = ['solaris', 'space_invaders', 'venture', 'video_pinball', 'yars_revenge','breakout','pitfall','montezuma_revenge']
 
-tune_envs = ["boxing","pong","pitfall",'montezuma_revenge']
+tune_envs = ["boxing","pong","pitfall",'montezuma_revenge','ms_pacman','breakout']
 all_envs = envs1 + envs2 + envs3
 
 envs = tune_envs
@@ -38,5 +38,5 @@ for i,env in enumerate(envs):
     
     sargs.append(name + suffix) 
     
-    print(sargs) 
+    print(" ".join(sargs))
     subprocess.run(sargs)
