@@ -16,7 +16,7 @@ from baselines.common.atari_wrappers import make_atari, EpisodicLifeEnv, FireRes
 from src.atari import AtariWrapper
 
 
-def make_env(env_id, seed, rank, log_dir, allow_early_resets, downsample=True):
+def make_env(env_id, seed, rank, log_dir, downsample=True, color=False):
     def _thunk():
         if env_id.startswith("dm"):
             _, domain, task = env_id.split('.')
@@ -41,11 +41,11 @@ def make_env(env_id, seed, rank, log_dir, allow_early_resets, downsample=True):
             env = bench.Monitor(
                 env,
                 os.path.join(log_dir, str(rank)),
-                allow_early_resets=allow_early_resets)
+                allow_early_resets=False)
 
         if is_atari:
             if len(env.observation_space.shape) == 3:
-                env = wrap_deepmind(env, downsample)
+                env = wrap_deepmind(env, downsample=downsample, color=color)
         elif len(env.observation_space.shape) == 3:
             raise NotImplementedError(
                 "CNN models work only for atari,\n"
@@ -62,10 +62,9 @@ def make_env(env_id, seed, rank, log_dir, allow_early_resets, downsample=True):
     return _thunk
 
 
-def make_vec_envs(env_name, seed, num_processes, gamma=0.99, log_dir='./tmp/',
-                  device=torch.device('cpu'), num_frame_stack=1, allow_early_resets=False, downsample=True):
+def make_vec_envs(args, num_processes, gamma=0.99, log_dir='./tmp/', device=torch.device('cpu')):
     Path(log_dir).mkdir(parents=True, exist_ok=True)
-    envs = [make_env(env_name, seed, i, log_dir, allow_early_resets, downsample)
+    envs = [make_env(args.env_name, args.seed, i, log_dir, not args.no_downsample, args.color)
             for i in range(num_processes)]
 
     if len(envs) > 1:
@@ -81,8 +80,8 @@ def make_vec_envs(env_name, seed, num_processes, gamma=0.99, log_dir='./tmp/',
 
     envs = VecPyTorch(envs, device)
 
-    if num_frame_stack > 1:
-        envs = VecPyTorchFrameStack(envs, num_frame_stack, device)
+    if args.num_frame_stack > 1:
+        envs = VecPyTorchFrameStack(envs, args.num_frame_stack, device)
 
     return envs
 
@@ -100,7 +99,7 @@ class GrayscaleWrapper(gym.ObservationWrapper):
         return frame
 
 
-def wrap_deepmind(env, downsample=True, episode_life=True, clip_rewards=True, frame_stack=False, scale=False):
+def wrap_deepmind(env, downsample=True, episode_life=True, clip_rewards=True, frame_stack=False, scale=False, color=False):
     """Configure environment for DeepMind-style Atari.
     """
     if episode_life:
@@ -108,8 +107,8 @@ def wrap_deepmind(env, downsample=True, episode_life=True, clip_rewards=True, fr
     if 'FIRE' in env.unwrapped.get_action_meanings():
         env = FireResetEnv(env)
     if downsample:
-        env = WarpFrame(env)
-    else:
+        env = WarpFrame(env, grayscale=False)
+    if not color:
         env = GrayscaleWrapper(env)
     if scale:
         env = ScaledFloatFrame(env)
