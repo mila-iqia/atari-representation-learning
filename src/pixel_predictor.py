@@ -21,7 +21,7 @@ class PixelPredictorTrainer(Trainer):
         self.final_conv_shape = self.encoder.final_conv_shape
         self.input_channels = self.encoder.input_channels
 
-        self.decoder = Decoder(mu_size=self.feature_size,
+        self.decoder = Decoder(feature_size=self.feature_size,
                                final_conv_size=self.final_conv_size,
                                final_conv_shape=self.final_conv_shape,
                                num_input_channels=self.input_channels)
@@ -76,9 +76,12 @@ class PixelPredictorTrainer(Trainer):
             for i in self.steps_gen():
               latent_predictions = self.discriminators[i](contexts[:, :-(i+1)])
               pixel_predictions = self.decoder(latent_predictions)
-              pixel_targets = sequence[:, i+1:]
 
-              step_loss = F.mse_loss(pixel_predictions, pixel_targets)
+              flat_pixel_targets = sequence[:, i+1:].contiguous().view(-1, self.num_frame_stack, w, h)
+              # print(flat_pixel_targets.size())
+              # print(pixel_predictions.size())
+
+              step_loss = F.mse_loss(pixel_predictions, flat_pixel_targets)
               step_losses[i].append(step_loss.detach().item())
               loss += step_loss
 

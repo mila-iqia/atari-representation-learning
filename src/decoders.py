@@ -3,8 +3,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from a2c_ppo_acktr.utils import init
 
-from vae import Decoder as NatureCNNDecoder
-
 class Flatten(nn.Module):
     def forward(self, x):
         return x.view(x.size(0), -1)
