@@ -18,7 +18,7 @@ import wandb
 import sys
 
 
-def remove_low_entropy_labels(episode_labels):
+def remove_low_entropy_labels(episode_labels, entropy_threshold=0.3):
     flat_label_list = list(chain.from_iterable(episode_labels))
     counts = {}
 
@@ -32,7 +32,7 @@ def remove_low_entropy_labels(episode_labels):
     for k in counts:
         entropy = torch.distributions.Categorical(
             torch.tensor([x / len(flat_label_list) for x in counts[k].values()])).entropy()
-        if entropy < 0.3:
+        if entropy < entropy_threshold:
             low_entropy_labels.append(k)
 
     for e in episode_labels:
@@ -196,7 +196,7 @@ def run_probe(encoder, args, device, seed):
     ep_inds = [i for i in range(len(episodes)) if len(episodes[i]) > args.batch_size]
     episodes = [episodes[i] for i in ep_inds]
     episode_labels = [episode_labels[i] for i in ep_inds]
-    episode_labels = remove_low_entropy_labels(episode_labels)
+    episode_labels = remove_low_entropy_labels(episode_labels, entropy_threshold=args.entropy_threshold)
 
     inds = np.arange(len(episodes))
     rng = np.random.RandomState(seed=seed)
