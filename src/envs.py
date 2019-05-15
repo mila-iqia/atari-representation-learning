@@ -109,8 +109,8 @@ def wrap_deepmind(env, downsample=True, episode_life=True, clip_rewards=True, fr
         env = FireResetEnv(env)
     if downsample:
         env = WarpFrame(env)
-#     else:
-#         env = GrayscaleWrapper(env)
+    else:
+        env = GrayscaleWrapper(env)
     if scale:
         env = ScaledFloatFrame(env)
     if clip_rewards:
