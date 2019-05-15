@@ -43,6 +43,33 @@ def remove_low_entropy_labels(episode_labels):
     return episode_labels
 
 
+def majority_baseline(tr_labels, test_labels, wandb):
+    tr_labels = list(chain.from_iterable(tr_labels))
+    test_labels = list(chain.from_iterable(test_labels))
+    counts, maj_dict, test_counts = {}, {}, {}
+
+    for label_dict in tr_labels:
+        for k in label_dict:
+            counts[k] = counts.get(k, {})
+            v = label_dict[k]
+            counts[k][v] = counts[k].get(v, 0) + 1
+
+    # Get keys with maximum value
+    for label in counts:
+        maj_dict[label] = max(counts[label], key=counts[label].get)
+
+    test_counts = {}
+    for label_dict in test_labels:
+        for k in label_dict:
+            if label_dict[k] == maj_dict[k]:
+                test_counts[k] = test_counts.get(k, 0) + 1
+
+    test_accuracy = {'test_' + k: test_counts[k] / len(test_labels) for k in test_counts}
+    test_accuracy['test_mean_acc'] = np.mean(list(test_accuracy.values()))
+    wandb.log(test_accuracy, step=0)
+    return test_accuracy
+
+
 def main():
     parser = get_argparser()
     parser.add_argument("--weights-path", type=str, default="None")
@@ -72,6 +99,8 @@ def main():
 
         if args.method == "random_cnn":
             print("Random CNN, so not loading in encoder weights!")
+        if args.method == "majority":
+            print("Majority baseline!")
         elif args.method == "supervised":
             print("Fully supervised, so starting from random encoder weights!")
         elif args.method == "pretrained-rl-agent":
@@ -104,6 +133,7 @@ def main():
     print(stderr_acc_dict)
     wandb.log(mean_acc_dict)
     wandb.log(stderr_acc_dict)
+
 
 def get_random_agent_episodes(args, device, seed):
     envs = make_vec_envs(args.env_name, seed, args.num_processes, num_frame_stack=args.num_frame_stack,
@@ -186,6 +216,10 @@ def run_probe(encoder, args, device, seed):
         wandb.log({"test_mean_reward_per_episode":np.mean(test_rew)})
 
     feature_size = np.prod(tr_eps[0][0].shape[1:]) if args.method == "flat-pixels" else None
+
+    if args.method == 'majority':
+        return majority_baseline(tr_labels, test_labels, wandb)
+
     trainer = ProbeTrainer(encoder,
                            wandb,
                            epochs=args.epochs,
