@@ -25,9 +25,9 @@ class Unflatten(nn.Module):
 
 
 class Decoder(nn.Module):
-    def __init__(self, mu_size, final_conv_size, final_conv_shape, num_input_channels, encoder_type="Nature"):
+    def __init__(self, feature_size, final_conv_size, final_conv_shape, num_input_channels, encoder_type="Nature"):
         super().__init__()
-        self.mu_shape = mu_size
+        self.feature_size = feature_size
         self.final_conv_size = final_conv_size
         self.final_conv_shape = final_conv_shape
         self.num_input_channels = num_input_channels
@@ -38,7 +38,7 @@ class Decoder(nn.Module):
                                nn.init.calculate_gain('relu'))
         if encoder_type == "Nature":
             self.main = nn.Sequential(
-                nn.Linear(in_features=self.mu_shape,
+                nn.Linear(in_features=self.feature_size,
                           out_features=self.final_conv_size),
                 nn.ReLU(),
                 Unflatten(self.final_conv_shape),
@@ -71,7 +71,7 @@ class VAE(nn.Module):
         self.logvar_fc = nn.Linear(in_features=self.final_conv_size,
                                    out_features=self.feature_size)
 
-        self.decoder = Decoder(mu_size=self.feature_size,
+        self.decoder = Decoder(feature_size=self.feature_size,
                                final_conv_size=self.final_conv_size,
                                final_conv_shape=self.final_conv_shape,
                                num_input_channels=self.input_channels)
