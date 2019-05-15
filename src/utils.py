@@ -65,6 +65,12 @@ def get_argparser():
                         help='Sequence length.')
     parser.add_argument("--d_ff", type=int, default=512)
     parser.add_argument("--beta", type=float, default=1.0)
+    
+    #naff-specific arguments
+    parser.add_argument("--naff_fc_size", type=int, default=2048, 
+                        help="fully connected layer width for naff")
+    parser.add_argument("--pred_offset", type=int, default=1,
+                        help="how many steps in future to predict")
     # CPC-specific arguments
     parser.add_argument('--sequence_length', type=int, default=100,
                         help='Sequence length.')

@@ -94,7 +94,7 @@ def get_atari_zoo_episodes(env, run_ids="all", num_frame_stack=4, downsample=Tru
                             eps = separate_into_episodes(cur_obs, ep_inds)
 
                     elif downsample==False and  num_frame_stack == 1:
-                            #cur_frames = [convert2grayscale(frame) for frame in cur_frames]
+                            cur_frames = [convert2grayscale(frame) for frame in cur_frames]
                             eps = separate_into_episodes(cur_frames, ep_inds)
                             eps = [np.asarray(ep) for ep in eps]
                     else:
