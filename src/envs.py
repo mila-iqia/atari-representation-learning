@@ -44,7 +44,7 @@ def make_env(env_id, seed, rank, log_dir, downsample=True, color=False):
                 allow_early_resets=False)
 
         if is_atari:
-            if len(env.observation_space.shape) == 3:
+            if len(env.observation_space.shape) == 3:                
                 env = wrap_deepmind(env, downsample=downsample, color=color)
         elif len(env.observation_space.shape) == 3:
             raise NotImplementedError(
@@ -102,6 +102,8 @@ class GrayscaleWrapper(gym.ObservationWrapper):
 def wrap_deepmind(env, downsample=True, episode_life=True, clip_rewards=True, frame_stack=False, scale=False, color=False):
     """Configure environment for DeepMind-style Atari.
     """
+    if "videopinball" in str(env.spec.id).lower():
+        env = WarpFrame(env, width=160, height=210, grayscale=False)      
     if episode_life:
         env = EpisodicLifeEnv(env)
     if 'FIRE' in env.unwrapped.get_action_meanings():

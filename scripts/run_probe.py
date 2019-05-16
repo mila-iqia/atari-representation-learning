@@ -32,11 +32,13 @@ def remove_low_entropy_labels(episode_labels, entropy_threshold=0.3):
         entropy = torch.distributions.Categorical(
             torch.tensor([x / len(flat_label_list) for x in counts[k].values()])).entropy()
         if entropy < entropy_threshold:
+            print("Deleting {} for being too low in entropy! Sorry, dood!".format(k))
             low_entropy_labels.append(k)
 
     for e in episode_labels:
         for obs in e:
             for key in low_entropy_labels:
+                
                 del obs[key]
 
     return episode_labels
@@ -67,70 +69,6 @@ def majority_baseline(tr_labels, test_labels, wandb):
     test_accuracy['test_mean_acc'] = np.mean(list(test_accuracy.values()))
     wandb.log(test_accuracy, step=0)
     return test_accuracy
-
-
-def main():
-    parser = get_argparser()
-    parser.add_argument("--weights-path", type=str, default="None")
-    parser.add_argument("--train-encoder", action='store_true')
-    parser.add_argument('--probe-lr', type=float, default=5e-2)
-    parser.add_argument("--probe-collect-mode", type=str, choices=["random_agent", "atari_zoo"], default="random_agent")
-    parser.add_argument('--zoo-algos', nargs='+', default=["a2c"])
-    parser.add_argument('--zoo-tags', nargs='+', default=["10HR"])
-    parser.add_argument('--num-runs', type=int, default=1)
-    args = parser.parse_args()
-    # dummy env
-    env = make_vec_envs(args, 1)
-    wandb.config.update(vars(args))
-
-    if args.train_encoder and args.method in ['appo', 'spatial-appo', 'cpc', 'vae', 'bert', 'ms-dim', 'pixel_predictor']:
-        print("Training encoder from scratch")
-        encoder = train_encoder(args)
-        encoder.probing = True
-        encoder.eval()
-
-    else:
-        if args.encoder_type == "Nature":
-            encoder = NatureCNN(env.observation_space.shape[0], args)
-        elif args.encoder_type == "Impala":
-            encoder = ImpalaCNN(env.observation_space.shape[0], args)
-
-        if args.method == "random_cnn":
-            print("Random CNN, so not loading in encoder weights!")
-        if args.method == "majority":
-            print("Majority baseline!")
-        elif args.method == "supervised":
-            print("Fully supervised, so starting from random encoder weights!")
-        elif args.method == "pretrained-rl-agent":
-            print("Representation from pretrained rl agent, so we don't need an encoder!")
-        elif args.method == "flat-pixels":
-            print("Just using flattened pixels, so no need for encoder or weights for that matter!")
-        else:
-            if args.weights_path == "None":
-                sys.stderr.write("Probing without loading in encoder weights! Are sure you want to do that??")
-            else:
-                print("Print loading in encoder weights from probe of type {} from the following path: {}"
-                      .format(args.method, args.weights_path))
-                encoder.load_state_dict(torch.load(args.weights_path))
-                encoder.eval()
-
-    device = torch.device("cuda:" + str(args.cuda_id) if torch.cuda.is_available() else "cpu")
-
-    # encoder.to(device)
-    torch.set_num_threads(1)
-
-    all_runs_test_acc = appendabledict()
-    for i, seed in enumerate(range(args.seed, args.seed + args.num_runs)):
-        print("Run number {} of {}".format(i + 1, args.num_runs))
-        test_acc = run_probe(encoder, args, device, seed)
-        all_runs_test_acc.append_update(test_acc)
-
-    mean_acc_dict = {"mean_" + k: np.mean(v) for k, v in all_runs_test_acc.items()}
-    stderr_acc_dict = {"stderr_" + k: np.std(v) / np.sqrt(len(v)) for k, v in all_runs_test_acc.items()}
-    print(mean_acc_dict)
-    print(stderr_acc_dict)
-    wandb.log(mean_acc_dict)
-    wandb.log(stderr_acc_dict)
 
 
 def get_random_agent_episodes(args, device):
@@ -233,7 +171,65 @@ def run_probe(encoder, args, device, seed):
     return test_acc
 
 
+
+def main(args):
+    # dummy env
+    env = make_vec_envs(args, 1)
+    wandb.config.update(vars(args))
+
+    if args.train_encoder and args.method in ['appo', 'spatial-appo', 'cpc', 'vae', 'bert', 'ms-dim', 'pixel_predictor',"naff"]:
+        print("Training encoder from scratch")
+        encoder = train_encoder(args)
+        encoder.probing = True
+        encoder.eval()
+
+    else:
+        if args.encoder_type == "Nature":
+            encoder = NatureCNN(env.observation_space.shape[0], args)
+        elif args.encoder_type == "Impala":
+            encoder = ImpalaCNN(env.observation_space.shape[0], args)
+
+        if args.method == "random_cnn":
+            print("Random CNN, so not loading in encoder weights!")
+        if args.method == "majority":
+            print("Majority baseline!")
+        elif args.method == "supervised":
+            print("Fully supervised, so starting from random encoder weights!")
+        elif args.method == "pretrained-rl-agent":
+            print("Representation from pretrained rl agent, so we don't need an encoder!")
+        elif args.method == "flat-pixels":
+            print("Just using flattened pixels, so no need for encoder or weights for that matter!")
+        else:
+            if args.weights_path == "None":
+                sys.stderr.write("Probing without loading in encoder weights! Are sure you want to do that??")
+            else:
+                print("Print loading in encoder weights from probe of type {} from the following path: {}"
+                      .format(args.method, args.weights_path))
+                encoder.load_state_dict(torch.load(args.weights_path))
+                encoder.eval()
+
+    device = torch.device("cuda:" + str(args.cuda_id) if torch.cuda.is_available() else "cpu")
+
+    # encoder.to(device)
+    torch.set_num_threads(1)
+
+    all_runs_test_acc = appendabledict()
+    for i, seed in enumerate(range(args.seed, args.seed + args.num_runs)):
+        print("Run number {} of {}".format(i + 1, args.num_runs))
+        test_acc = run_probe(encoder, args, device, seed)
+        all_runs_test_acc.append_update(test_acc)
+
+    mean_acc_dict = {"mean_" + k: np.mean(v) for k, v in all_runs_test_acc.items()}
+    var_acc_dict = {"var_" + k: np.var(v) for k, v in all_runs_test_acc.items()}
+    print(mean_acc_dict)
+    print(var_acc_dict)
+    wandb.log(mean_acc_dict)
+    wandb.log(var_acc_dict)
+
+
 if __name__ == "__main__":
+    parser = get_argparser()
+    args = parser.parse_args()
     tags = ['probe']
-    wandb.init(project="curl-atari-2", entity="curl-atari", tags=tags)
-    main()
+    wandb.init(project="curl-atari-2", entity="curl-atari", tags=tags)  
+    main(args)
