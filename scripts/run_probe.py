@@ -11,7 +11,6 @@ import gym
 from src.envs import make_vec_envs
 from src.utils import get_argparser, visualize_activation_maps, appendabledict
 from src.encoders import NatureCNN, ImpalaCNN
-from src.decoders import ImpalaCNNDecoder
 from src.appo import AppoTrainer
 from src.atari_zoo import get_atari_zoo_episodes
 import wandb
