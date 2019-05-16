@@ -81,7 +81,7 @@ def main():
     parser.add_argument('--num-runs', type=int, default=1)
     args = parser.parse_args()
     # dummy env
-    env = make_vec_envs(args.env_name, 1)
+    env = make_vec_envs(args, 1)
     wandb.config.update(vars(args))
 
     if args.train_encoder and args.method in ['appo', 'spatial-appo', 'cpc', 'vae', 'bert', 'ms-dim', 'pixel_predictor']:
