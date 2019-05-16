@@ -3,7 +3,6 @@ import torch.nn as nn
 import torch.nn.functional as F
 from a2c_ppo_acktr.utils import init
 
-
 class Flatten(nn.Module):
     def forward(self, x):
         return x.view(x.size(0), -1)
@@ -91,59 +90,3 @@ class ImpalaCNNDecoder(nn.Module):
         print(out.size())
         return out
 
-"""
-class NatureCNNDecoder(nn.Module):
-    def __init__(self, input_channels, args):
-        super().__init__()
-        self.feature_size = args.feature_size
-        self.hidden_size = self.feature_size # redundant
-        self.downsample = not args.no_downsample
-        self.input_channels = input_channels
-        init_ = lambda m: init(m,
-                               nn.init.orthogonal_,
-                               lambda x: nn.init.constant_(x, 0),
-                               nn.init.calculate_gain('relu'))
-        self.flatten = Flatten()
-
-        if self.downsample:
-            self.main = nn.Sequential(
-                init_(nn.Conv2d(input_channels, 32, 8, stride=4)),
-                nn.ReLU(),
-                init_(nn.Conv2d(32, 64, 4, stride=2)),
-                nn.ReLU(),
-                init_(nn.Conv2d(64, 32, 3, stride=1)),
-                nn.ReLU(),
-                Flatten(),
-                init_(nn.Linear(32 * 7 * 7, self.hidden_size)),
-                nn.ReLU()
-            )
-        else:
-            self.final_conv_size = 64 * 9 * 6
-            self.final_conv_shape = (64, 9, 6)
-            self.main = nn.Sequential(
-                init_(nn.Conv2d(input_channels, 32, 8, stride=4)),
-                nn.ReLU(),
-                init_(nn.Conv2d(32, 64, 4, stride=2)),
-                nn.ReLU(),
-                init_(nn.Conv2d(64, 128, 4, stride=2)),
-                nn.ReLU(),
-                init_(nn.Conv2d(128, 64, 3, stride=1)),
-                nn.ReLU(),
-                Flatten(),
-                init_(nn.Linear(64 * 9 * 6, self.hidden_size)),
-                nn.ReLU()
-            )
-        self.train()
-
-    def forward(self, inputs, fmaps=False):
-        f5 = self.main[:6](inputs)
-        f7 = self.main[6:8](f5)
-        out = self.main[8:](f7)
-        if fmaps:
-            return {
-                'f5': f5.permute(0, 2, 3, 1),
-                'f7': f7.permute(0, 2, 3, 1),
-                'out': out
-            }
-        return out
-"""
