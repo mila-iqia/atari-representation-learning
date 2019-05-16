@@ -86,6 +86,16 @@ def get_argparser():
     parser.add_argument('--gru_layers', type=int, default=2,
                         help='Number of GRU layers.')
     parser.add_argument("--collect-mode", type=str, choices=["random_agent", "atari_zoo"], default="random_agent")
+    
+    
+    #probe arguments
+    parser.add_argument("--weights-path", type=str, default="None")
+    parser.add_argument("--train-encoder", action='store_true')
+    parser.add_argument('--probe-lr', type=float, default=5e-2)
+    parser.add_argument("--probe-collect-mode", type=str, choices=["random_agent", "atari_zoo"], default="random_agent")
+    parser.add_argument('--zoo-algos', nargs='+', default=["a2c"])
+    parser.add_argument('--zoo-tags', nargs='+', default=["10HR"])
+    parser.add_argument('--num-runs', type=int, default=1)
     return parser
 
 
