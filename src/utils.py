@@ -55,7 +55,7 @@ def get_argparser():
     parser.add_argument('--spatial', action='store_true', default=False)
     parser.add_argument("--patience", type=int, default=10)
     parser.add_argument("--time-window", nargs=2, default=[-1, 0], type=int)
-    parser.add_argument("--entropy-threshold", type=float, default=0.3)
+    parser.add_argument("--entropy-threshold", type=float, default=0.5)
     parser.add_argument("--color", action='store_true', default=False)
 
     #bert specific arguments
