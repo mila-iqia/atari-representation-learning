@@ -136,7 +136,7 @@ def run_probe(encoder, args, device, seed):
     inds = np.arange(len(episodes))
     rng = np.random.RandomState(seed=seed)
     rng.shuffle(inds)
-    val_split_ind, te_split_ind = int(0.7 * len(inds)), int(0.85 * len(inds))
+    val_split_ind, te_split_ind = int(0.7 * len(inds)), int(0.8 * len(inds))
 
     tr_eps, val_eps, test_eps = episodes[:val_split_ind], episodes[val_split_ind:te_split_ind], episodes[te_split_ind:]
     tr_labels, val_labels, test_labels = episode_labels[:val_split_ind], episode_labels[
