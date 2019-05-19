@@ -51,7 +51,8 @@ class Decoder(nn.Module):
                                          output_padding=1)),
                 nn.ReLU(),
                 init_(nn.ConvTranspose2d(in_channels=32, out_channels=num_input_channels,
-                                         kernel_size=8, stride=4, output_padding=(2, 0)))
+                                         kernel_size=8, stride=4, output_padding=(2, 0))),
+                nn.Sigmoid()
             )
 
     def forward(self, f):
@@ -68,7 +69,10 @@ class VAE(nn.Module):
         self.final_conv_shape = self.encoder.final_conv_shape
         self.input_channels = self.encoder.input_channels
 
-        self.logvar_fc = nn.Linear(in_features=self.final_conv_size,
+        self.mu_fc = nn.Linear(in_features=self.feature_size,
+                                   out_features=self.feature_size)
+        
+        self.logvar_fc = nn.Linear(in_features=self.feature_size,
                                    out_features=self.feature_size)
 
         self.decoder = Decoder(feature_size=self.feature_size,
@@ -86,8 +90,9 @@ class VAE(nn.Module):
         return z
 
     def forward(self, x):
-        mu = self.encoder(x)
-        logvar = self.logvar_fc(self.encoder.main[:9](x))
+        h = self.encoder(x)
+        mu = self.mu_fc(h)
+        logvar = self.logvar_fc(h)
         z = self.reparametrize(mu, logvar)
         x_hat = self.decoder(z)
         return x_hat, mu, logvar
@@ -99,12 +104,12 @@ class VAELoss(object):
 
     def __call__(self, x, x_hat, mu, logvar):
         num_pixels = int(np.prod(x.size()[1:]))
-        kldiv = -0.5 * torch.sum(1 + logvar - mu ** 2 - torch.exp(logvar), dim=1) / num_pixels
-        rec = torch.sum((x_hat - x) ** 2, dim=(1, 2, 3)) / num_pixels
+        kldiv = -0.5 * torch.sum(1 + logvar - mu ** 2 - torch.exp(logvar), dim=1) # / num_pixels
+        rec = torch.sum((x_hat - x) ** 2, dim=(1, 2, 3))# / num_pixels
 
-        loss = rec + self.beta * kldiv
+        loss = (rec + self.beta * kldiv) / num_pixels
 
-        return loss.mean()
+        return loss.sum() #sum over batch
 
 
 class VAETrainer(Trainer):
