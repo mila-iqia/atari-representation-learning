@@ -81,9 +81,9 @@ class NatureCNN(nn.Module):
     def __init__(self, input_channels, args):
         super().__init__()
         self.feature_size = args.feature_size
-        self.hidden_size = self.feature_size # redundant
         self.downsample = not args.no_downsample
         self.input_channels = input_channels
+        self.end_with_relu = args.end_with_relu
         init_ = lambda m: init(m,
                                nn.init.orthogonal_,
                                lambda x: nn.init.constant_(x, 0),
@@ -91,6 +91,8 @@ class NatureCNN(nn.Module):
         self.flatten = Flatten()
 
         if self.downsample:
+            self.final_conv_size = 32 * 7 * 7
+            self.final_conv_shape = (32, 7, 7)
             self.main = nn.Sequential(
                 init_(nn.Conv2d(input_channels, 32, 8, stride=4)),
                 nn.ReLU(),
@@ -99,8 +101,8 @@ class NatureCNN(nn.Module):
                 init_(nn.Conv2d(64, 32, 3, stride=1)),
                 nn.ReLU(),
                 Flatten(),
-                init_(nn.Linear(32 * 7 * 7, self.hidden_size)),
-                nn.ReLU()
+                init_(nn.Linear(self.final_conv_size, self.feature_size)),
+                #nn.ReLU()
             )
         else:
             self.final_conv_size = 64 * 9 * 6
@@ -115,8 +117,8 @@ class NatureCNN(nn.Module):
                 init_(nn.Conv2d(128, 64, 3, stride=1)),
                 nn.ReLU(),
                 Flatten(),
-                init_(nn.Linear(64 * 9 * 6, self.hidden_size)),
-                nn.ReLU()
+                init_(nn.Linear(self.final_conv_size, self.feature_size)),
+                #nn.ReLU()
             )
         self.train()
 
@@ -124,6 +126,9 @@ class NatureCNN(nn.Module):
         f5 = self.main[:6](inputs)
         f7 = self.main[6:8](f5)
         out = self.main[8:](f7)
+        if self.end_with_relu:
+            assert args.method != "vae", "can't end with relu and use vae!"
+            out = F.relu(out)
         if fmaps:
             return {
                 'f5': f5.permute(0, 2, 3, 1),
