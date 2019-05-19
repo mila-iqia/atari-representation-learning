@@ -57,7 +57,7 @@ def get_argparser():
     parser.add_argument("--time-window", nargs=2, default=[-1, 0], type=int)
     parser.add_argument("--entropy-threshold", type=float, default=0.5)
     parser.add_argument("--color", action='store_true', default=False)
-
+    parser.add_argument("--end-with-relu", action='store_true',default=False)
     #bert specific arguments
     parser.add_argument("--num_transformer_layers", type=int, default=2)
     parser.add_argument("--num_lin_projections", type=int, default=8)

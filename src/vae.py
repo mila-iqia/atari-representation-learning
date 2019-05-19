@@ -69,10 +69,10 @@ class VAE(nn.Module):
         self.final_conv_shape = self.encoder.final_conv_shape
         self.input_channels = self.encoder.input_channels
 
-        self.mu_fc = nn.Linear(in_features=self.feature_size,
-                                   out_features=self.feature_size)
+#         self.mu_fc = nn.Linear(in_features=self.feature_size,
+#                                    out_features=self.feature_size)
         
-        self.logvar_fc = nn.Linear(in_features=self.feature_size,
+        self.logvar_fc = nn.Linear(in_features=self.final_conv_size,
                                    out_features=self.feature_size)
 
         self.decoder = Decoder(feature_size=self.feature_size,
@@ -90,9 +90,8 @@ class VAE(nn.Module):
         return z
 
     def forward(self, x):
-        h = self.encoder(x)
-        mu = self.mu_fc(h)
-        logvar = self.logvar_fc(h)
+        mu = self.encoder(x)
+        logvar = self.logvar_fc(self.encoder.main[:-1](x))
         z = self.reparametrize(mu, logvar)
         x_hat = self.decoder(z)
         return x_hat, mu, logvar
