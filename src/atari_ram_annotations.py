@@ -140,11 +140,16 @@ atari_dict = {"asteroids": dict(enemy_asteroids_y = [3,4,5,6,7,8,9,12,13,14,15,1
                  enemy_score=13,
                  player_score= 14),
                               
-    "privateeye": dict(player_x=63,
-                        player_y= 86,
-                        room_number= 92,
-                        inventory_count= 60,
-                        tasks_count = 93),
+    "privateeye": dict(agent_x= 63,
+                      agent_y= 86,
+                      room_number= 92,
+                      clock=[67,69],
+                      player_direction=58,
+                      score=[73,74],
+                      dove_x=48,
+                      dove_y=39),
+              
+
                               
                               
     "qbert" :  dict( player_x=43, 
