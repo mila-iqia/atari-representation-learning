@@ -126,13 +126,13 @@ class NatureCNN(nn.Module):
         f5 = self.main[:6](inputs)
         f7 = self.main[6:8](f5)
         out = self.main[8:](f7)
+        if self.end_with_relu:
+            assert args.method != "vae", "can't end with relu and use vae!"
+            out = F.relu(out)
         if fmaps:
             return {
                 'f5': f5.permute(0, 2, 3, 1),
                 'f7': f7.permute(0, 2, 3, 1),
                 'out': out
             }
-        if self.end_with_relu:
-            assert args.method != "vae", "can't end with relu and use vae!"
-            out = nn.ReLU()(out)
         return out
