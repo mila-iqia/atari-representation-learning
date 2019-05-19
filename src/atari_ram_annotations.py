@@ -1,42 +1,36 @@
 from copy import deepcopy
 
-atari_dict = {"asteroids": dict(enemy_asteroids_y=range(3,21), # 224 means end of list
-                            enemy_asteroids_x= range(21,39),#$e0 means end of list, stored as hmove/delay/LR (mmmmdddl)
-                            #asteroids flags= range(39,56),
-                            player_x=73, # stored as HMove/Delay
-                            player_y=74,	
-                            num_lives_direction= 60, #msb are lives, lsb is direction -> LLLLDDDD
-                            player_score_high=61,
-                            player_score_low=62,                
-                            enemy_ufo_x        = 81,
-                            enemy_ufo_y        = 82,	
-                            player_missile_x1     = 83,
-                            player_missile_x2     = 84,
-                            ufo_missile_x     = 85,
-                            player_missile_y1      = 86,
-                            player_missile_y2      = 87,
-                            ufo_missile_y    = 88,
-                            player_missile1_direction    = 89,
-                            player_missile2_direction    = 90,
-                            ufo_missile_direction  = 91),
+atari_dict = {"asteroids": dict(enemy_asteroids_y = [3,4,5,6,7,8,9,12,13,14,15,16,17,18,19],
+                                enemy_asteroids_x = [21,22,23,24,25,26,27,30,31,32,33,34,35,36,37],
+                                player_x = 73,
+                                player_y = 74,	
+                                num_lives_direction= 60,
+                                player_score_high = 61,
+                                player_score_low = 62,                
+                                player_missile_x1 = 83,
+                                player_missile_x2 = 84,
+                                player_missile_y1 = 86,
+                                player_missile_y2 = 87,
+                                player_missile1_direction = 89,
+                                player_missile2_direction = 90),
 
-                "berzerk" : dict(player_x=19, 
-                                player_y =11,
-                                player_direction= 14 ,
-                                player_missile_x=22,
-                                player_missile_y=23  ,
-                                player_missile_direction= 21 ,
-                                robot_missile_direction= 26 ,
-                                robot_missile_x=29,
-                                robot_missile_y=30  ,
-                                num_lives= 90 ,
-                                robots_killed_count = 91 ,
-                                game_level= 92 ,
-                                enemy_evilOtto_x= 46 ,
-                                enemy_evilOtto_y= 89 ,
-                                enemy_robots_x= range(65,73),
-                                enemy_robots_y=range(56,65), 
-                                player_score=range(93,96)),
+                "berzerk" : dict(player_x = 19, 
+                                player_y = 11,
+                                player_direction = 14,
+                                player_missile_x = 22,
+                                player_missile_y = 23,
+                                player_missile_direction = 21,
+                                robot_missile_direction = 26,
+                                robot_missile_x = 29,
+                                robot_missile_y = 30,
+                                num_lives = 90,
+                                robots_killed_count = 91,
+                                game_level = 92,
+                                enemy_evilOtto_x = 46,
+                                enemy_evilOtto_y = 89,
+                                enemy_robots_x = range(65,73),
+                                enemy_robots_y = range(56,65), 
+                                player_score = range(93,96)),
               
               "boxing" : dict(player_x = 32, 
                               player_y=34, 
@@ -153,15 +147,11 @@ atari_dict = {"asteroids": dict(enemy_asteroids_y=range(3,21), # 224 means end o
                         tasks_count = 93),
                               
                               
-    "qbert" :  dict(num_lives = 26, 
-                    player_x = 54,
-                    enemy_section1_x = 55, 
-                    enemy_section2_x = 56, 
-                    enemy_section3_x = 57, 
-                    enemy_section4_x = 58, 
-                    enemy_section5_x = 59, 
-                    enemy_section6_x = 60,
-                    score=[23,24,25]),
+    "qbert" :  dict( player_x=43, 
+                    player_y = 67, 
+                    player_column=35,
+                    red_enemy_column=69,
+                    green_enemy_column=105),
                               
                               
                                                                                                                                                                                                                                                                                                                 
@@ -173,23 +163,25 @@ atari_dict = {"asteroids": dict(enemy_asteroids_y=range(3,21), # 224 means end o
                                         ),
                               
                               
-    "seaquest" : dict(obstacles_x=range(31,35),
+    "seaquest" : dict(enemy_obstacle_x=range(30,34),
                       player_x= 70, 
                       player_y= 97,
-                      torpedo_or_diver_x= range(71,75),
+                      diver_x= range(71,75),
                       player_direction=86,
                       missile_direction= 87,
                       oxygen_meter_value= 102,
                       missile_x= 103,
-                      enemy_sub_x= 118),
+                      score=[57,58],
+                      num_lives=59,
+                      divers_collected_count=62),
     
-    "solaris" : dict(player_x= range(42,45),
-                     player_y= range(51,54),
-                     photon_z= range(60,62),
-                     game_state= 88,
-                     num_lives= 89,
-                     fuel_meter=91,
-                     score= range(92,95)), 
+#     "solaris" : dict(player_x= range(42,45),
+#                      player_y= range(51,54),
+#                      photon_z= range(60,62),
+#                      game_state= 88,
+#                      num_lives= 89,
+#                      fuel_meter=91,
+#                      score= range(92,95)), 
                               
                               
     "spaceinvaders" : dict(invaders_left_count=17, 
@@ -272,7 +264,7 @@ for a in list_of_keys:
 
 small_object_names = [ "ball", "missile"]
 agent_names = ["agent", "player"]
-localization_keys = [k for k in all_keys if any(coord in k for coord in ["_x","_y","_z"])]
+localization_keys = [k for k in all_keys if any(coord in k for coord in ["_x","_y","_z","_column"])]
 agent_localization_keys = [k for k in localization_keys if any(agent_name in k for agent_name in agent_names) and not any(small_object_name in k for small_object_name in small_object_names)]
 small_object_localization_keys = [k for k in localization_keys if any(small_object_name in k for small_object_name in small_object_names) ]
 other_localization_keys = [k for k in localization_keys if k not in agent_localization_keys + small_object_localization_keys]
