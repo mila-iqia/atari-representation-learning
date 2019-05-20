@@ -87,7 +87,9 @@ atari_dict = {"asteroids": dict(enemy_asteroids_y = [3,4,5,6,7,8,9,12,13,14,15,1
                 player_y = 31, 
                 power_meter = 43, 
                 room_number = 28, 
-                level_number = 117),
+                level_number = 117,
+                 dynamite_count=50, 
+                 score=[56,57]),
                                                                                                                                                                                                               
     "montezumarevenge": dict(room_number=3,
                               player_x=42,
