@@ -231,5 +231,5 @@ if __name__ == "__main__":
     parser = get_argparser()
     args = parser.parse_args()
     tags = ['probe']
-    wandb.init(project="curl-atari-3", entity="curl-atari", tags=tags)
+    wandb.init(project="curl-atari-neurips", entity="curl-atari", tags=tags)
     main(args)
