@@ -51,7 +51,8 @@ class Decoder(nn.Module):
                                          output_padding=1)),
                 nn.ReLU(),
                 init_(nn.ConvTranspose2d(in_channels=32, out_channels=num_input_channels,
-                                         kernel_size=8, stride=4, output_padding=(2, 0)))
+                                         kernel_size=8, stride=4, output_padding=(2, 0))),
+                nn.Sigmoid()
             )
 
     def forward(self, f):
@@ -68,6 +69,9 @@ class VAE(nn.Module):
         self.final_conv_shape = self.encoder.final_conv_shape
         self.input_channels = self.encoder.input_channels
 
+#         self.mu_fc = nn.Linear(in_features=self.feature_size,
+#                                    out_features=self.feature_size)
+        
         self.logvar_fc = nn.Linear(in_features=self.final_conv_size,
                                    out_features=self.feature_size)
 
@@ -87,7 +91,7 @@ class VAE(nn.Module):
 
     def forward(self, x):
         mu = self.encoder(x)
-        logvar = self.logvar_fc(self.encoder.main[:9](x))
+        logvar = self.logvar_fc(self.encoder.main[:-1](x))
         z = self.reparametrize(mu, logvar)
         x_hat = self.decoder(z)
         return x_hat, mu, logvar
@@ -98,13 +102,10 @@ class VAELoss(object):
         self.beta = beta
 
     def __call__(self, x, x_hat, mu, logvar):
-        num_pixels = int(np.prod(x.size()[1:]))
-        kldiv = -0.5 * torch.sum(1 + logvar - mu ** 2 - torch.exp(logvar), dim=1) / num_pixels
-        rec = torch.sum((x_hat - x) ** 2, dim=(1, 2, 3)) / num_pixels
-
+        kldiv = -0.5 * torch.sum(1 + logvar - mu ** 2 - torch.exp(logvar))
+        rec = F.mse_loss(x_hat, x, reduction='sum')
         loss = rec + self.beta * kldiv
-
-        return loss.mean()
+        return loss
 
 
 class VAETrainer(Trainer):

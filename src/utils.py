@@ -57,7 +57,7 @@ def get_argparser():
     parser.add_argument("--time-window", nargs=2, default=[-1, 0], type=int)
     parser.add_argument("--entropy-threshold", type=float, default=0.5)
     parser.add_argument("--color", action='store_true', default=False)
-
+    parser.add_argument("--end-with-relu", action='store_true',default=False)
     #bert specific arguments
     parser.add_argument("--num_transformer_layers", type=int, default=2)
     parser.add_argument("--num_lin_projections", type=int, default=8)
@@ -90,7 +90,7 @@ def get_argparser():
     
     #probe arguments
     parser.add_argument("--weights-path", type=str, default="None")
-    parser.add_argument("--train-encoder", action='store_true')
+    parser.add_argument("--train-encoder", action='store_true', default=True)
     parser.add_argument('--probe-lr', type=float, default=5e-2)
     parser.add_argument("--probe-collect-mode", type=str, choices=["random_agent", "atari_zoo"], default="random_agent")
     parser.add_argument('--zoo-algos', nargs='+', default=["a2c"])
