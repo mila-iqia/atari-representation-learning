@@ -31,6 +31,13 @@ atari_dict = {"asteroids": dict(enemy_asteroids_y = [3,4,5,6,7,8,9,12,13,14,15,1
                                 enemy_robots_x = range(65,73),
                                 enemy_robots_y = range(56,65), 
                                 player_score = range(93,96)),
+              "bowling": dict(ball_x=30, 
+                              ball_y=41,
+                              player_x=29,
+                              player_y=40,
+                              frame_count=36,
+                              pin_position=range(57,67),
+                              score=33),
               
               "boxing" : dict(player_x = 32, 
                               player_y=34, 
@@ -271,7 +278,7 @@ for a in list_of_keys:
 
 small_object_names = [ "ball", "missile"]
 agent_names = ["agent", "player"]
-localization_keys = [k for k in all_keys if any(coord in k for coord in ["_x","_y","_z","_column"])]
+localization_keys = [k for k in all_keys if any(coord in k for coord in ["_x","_y","_z","_column","_position"])]
 agent_localization_keys = [k for k in localization_keys if any(agent_name in k for agent_name in agent_names) and not any(small_object_name in k for small_object_name in small_object_names)]
 small_object_localization_keys = [k for k in localization_keys if any(small_object_name in k for small_object_name in small_object_names) ]
 other_localization_keys = [k for k in localization_keys if k not in agent_localization_keys + small_object_localization_keys]
