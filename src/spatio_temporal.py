@@ -77,6 +77,7 @@ class SpatioTemporalTrainer(Trainer):
         mode = "train" if self.encoder.training and self.classifier1.training else "val"
         epoch_loss, accuracy, steps = 0., 0., 0
         accuracy1, accuracy2 = 0., 0.
+        epoch_loss1, epoch_loss2 = 0., 0.
         data_generator = self.generate_batch(episodes)
         for x_t, x_tprev, x_that, ts, thats in data_generator:
             f_t_maps, f_t_prev_maps = self.encoder(x_t, fmaps=True), self.encoder(x_tprev, fmaps=True)
@@ -108,15 +109,17 @@ class SpatioTemporalTrainer(Trainer):
                 self.optimizer.step()
 
             epoch_loss += loss.detach().item()
+            epoch_loss1 += loss1.detach().item()
+            epoch_loss2 += loss2.detach().item()
             preds1 = torch.sigmoid(self.classifier1(x1, x2).squeeze())
             accuracy1 += calculate_accuracy(preds1, target)
             preds2 = torch.sigmoid(self.classifier2(x1_p, x2_p).squeeze())
             accuracy2 += calculate_accuracy(preds2, target)
-            accuracy = (accuracy1 + accuracy2) / 2.
             steps += 1
-        self.log_results(epoch, epoch_loss / steps, accuracy / steps, prefix=mode)
+        self.log_results(epoch, epoch_loss1 / steps, epoch_loss2 / steps, epoch_loss / steps,
+                         accuracy1 / steps, accuracy2 / steps, (accuracy1 + accuracy2) / steps, prefix=mode)
         if mode == "val":
-            self.early_stopper(accuracy, self.encoder)
+            self.early_stopper((accuracy1 + accuracy2) / steps, self.encoder)
 
     def train(self, tr_eps, val_eps):
         # TODO: Make it work for all modes, right now only it defaults to pcl.
@@ -131,7 +134,9 @@ class SpatioTemporalTrainer(Trainer):
                 break
         torch.save(self.encoder.state_dict(), os.path.join(self.wandb.run.dir, self.config['env_name'] + '.pt'))
 
-    def log_results(self, epoch_idx, epoch_loss, accuracy, prefix=""):
+    def log_results(self, epoch_idx, epoch_loss1, epoch_loss2, epoch_loss, accuracy1, accuracy2, accuracy, prefix=""):
         print("{} Epoch: {}, Epoch Loss: {}, {} Accuracy: {}".format(prefix.capitalize(), epoch_idx, epoch_loss,
                                                                      prefix.capitalize(), accuracy))
-        self.wandb.log({prefix + '_loss': epoch_loss, prefix + '_accuracy': accuracy})
+        self.wandb.log({prefix + '_loss': epoch_loss, prefix + '_accuracy': accuracy,
+                        prefix + '_loss1': epoch_loss1, prefix + '_accuracy1': accuracy1,
+                        prefix + '_loss2': epoch_loss2, prefix + '_accuracy2': accuracy2}, step=epoch_idx)
