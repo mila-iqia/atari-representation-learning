@@ -90,7 +90,7 @@ def get_argparser():
     
     #probe arguments
     parser.add_argument("--weights-path", type=str, default="None")
-    parser.add_argument("--train-encoder", action='store_true')
+    parser.add_argument("--train-encoder", action='store_true', default=True)
     parser.add_argument('--probe-lr', type=float, default=5e-2)
     parser.add_argument("--probe-collect-mode", type=str, choices=["random_agent", "atari_zoo"], default="random_agent")
     parser.add_argument('--zoo-algos', nargs='+', default=["a2c"])
