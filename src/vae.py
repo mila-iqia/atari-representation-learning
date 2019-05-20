@@ -102,13 +102,10 @@ class VAELoss(object):
         self.beta = beta
 
     def __call__(self, x, x_hat, mu, logvar):
-        num_pixels = int(np.prod(x.size()[1:]))
-        kldiv = -0.5 * torch.sum(1 + logvar - mu ** 2 - torch.exp(logvar), dim=1) # / num_pixels
-        rec = torch.sum((x_hat - x) ** 2, dim=(1, 2, 3))# / num_pixels
-
-        loss = (rec + self.beta * kldiv) / num_pixels
-
-        return loss.sum() #sum over batch
+        kldiv = -0.5 * torch.sum(1 + logvar - mu ** 2 - torch.exp(logvar))
+        rec = F.mse_loss(x_hat, x, reduction='sum')
+        loss = rec + self.beta * kldiv
+        return loss
 
 
 class VAETrainer(Trainer):
