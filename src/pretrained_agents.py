@@ -26,7 +26,7 @@ def download_run(args, checkpoint_step):
     runs = list(api.runs("curl-atari/pretrained-rl-agents", {"state": "finished",
                                                              "config.env_name": args.env_name}))
     run = runs[0]
-    mean_reward = run.summary['Mean Reward']
+    mean_reward = run.summary['Mean Rewards']
     index = checkpointed_steps.index(int(checkpoint_step))
     files = [file for file in run.files() if file.name.startswith(args.env_name)]
     files[index].download(root='../trained_models/', replace=True)
@@ -54,7 +54,7 @@ def get_ppo_rollouts(args, checkpoint_step):
     obs = envs.reset()
     for step in range(args.probe_steps // args.num_processes):
         # Take action using a random policy
-        _, action, _, _ = actor_critic.act(obs, None, masks, deterministic=False)
+        _, action, _, _, actor_features = actor_critic.act(obs, None, masks, deterministic=False)
         obs, reward, done, infos = envs.step(action)
         for i, info in enumerate(infos):
             if 'episode' in info.keys():
