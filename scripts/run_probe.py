@@ -167,8 +167,10 @@ def run_probe(encoder, args, device, seed):
                            feature_size=feature_size)
 
     trainer.train(tr_eps, val_eps, tr_labels, val_labels)
-    _, test_acc = trainer.evaluate(test_eps, test_labels)
-    return test_acc
+    test_acc,test_f1score = trainer.test(test_eps, test_labels)
+
+    #_, test_acc = trainer.evaluate(test_eps, test_labels)
+    return test_acc, test_f1score
 
 
 
@@ -213,18 +215,26 @@ def main(args):
     # encoder.to(device)
     torch.set_num_threads(1)
 
+    all_runs_test_f1 = appendabledict()
     all_runs_test_acc = appendabledict()
     for i, seed in enumerate(range(args.seed, args.seed + args.num_runs)):
         print("Run number {} of {}".format(i + 1, args.num_runs))
-        test_acc = run_probe(encoder, args, device, seed)
+        test_acc,f1score = run_probe(encoder, args, device, seed=1)
+        all_runs_test_f1.append_update(f1score)
         all_runs_test_acc.append_update(test_acc)
 
     mean_acc_dict = {"mean_" + k: np.mean(v) for k, v in all_runs_test_acc.items()}
     var_acc_dict = {"var_" + k: np.var(v) for k, v in all_runs_test_acc.items()}
+    mean_f1_dict = {"mean_" + k: np.mean(v) for k, v in all_runs_test_f1.items()}
+    var_f1_dict = {"var_" + k: np.var(v) for k, v in all_runs_test_f1.items()}
     print(mean_acc_dict)
     print(var_acc_dict)
     wandb.log(mean_acc_dict)
     wandb.log(var_acc_dict)
+    print(mean_f1_dict)
+    print(var_f1_dict)
+    wandb.log(mean_f1_dict)
+    wandb.log(var_f1_dict)
 
 
 if __name__ == "__main__":

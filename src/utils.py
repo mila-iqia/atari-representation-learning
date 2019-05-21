@@ -8,7 +8,7 @@ from torchvision.utils import make_grid
 import torch.nn.functional as F
 import matplotlib.pyplot as plt
 import numpy as np
-
+from sklearn.metrics import f1_score as compute_f1_score
 from a2c_ppo_acktr.envs import make_vec_envs
 from a2c_ppo_acktr.utils import get_vec_normalize
 from collections import defaultdict
@@ -115,6 +115,12 @@ def calculate_accuracy(preds, y):
     acc = preds.eq(labels).sum().float() / labels.numel()
     return acc
 
+
+def calculate_multiclass_f1_score(preds,labels):
+    preds = torch.argmax(preds, dim=1).detach().numpy()
+    labels = labels.numpy()
+    f1score = compute_f1_score(labels, preds, average="weighted")
+    return f1score
 
 def calculate_multiclass_accuracy(preds, labels):
     preds = torch.argmax(preds, dim=1)
