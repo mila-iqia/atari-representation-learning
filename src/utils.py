@@ -83,7 +83,7 @@ def get_argparser():
                         help='Skip every these many frames.')
     parser.add_argument('--gru_size', type=int, default=256,
                         help='Hidden size of the GRU layers.')
-    parser.add_argument('--gru_layers', type=int, default=1,
+    parser.add_argument('--gru_layers', type=int, default=2,
                         help='Number of GRU layers.')
     parser.add_argument("--collect-mode", type=str, choices=["random_agent", "atari_zoo"], default="random_agent")
     
