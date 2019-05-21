@@ -1,7 +1,7 @@
 description: CURL-ATRI
 
 auth:
-  cluster: eu1
+  cluster: eu2
   vc: msrlabs
   docker:
     image: philly/jobs/custom/generic-docker:py36
@@ -22,7 +22,7 @@ storage:
 
 search:
   job_template:
-    name: curl_atari_stdim
+    name: curl_atari_cpc
     sku: G1
     command:
       - conda install -y pytorch torchvision cudatoolkit=9.0 -c pytorch
@@ -33,10 +33,10 @@ search:
       - export LC_ALL=C.UTF-8
       - export LANG=C.UTF-8
       - wandb login fa235c4236ea0bd894bc3f26e87054a6ed6af293
-      - python -m scripts.run_probe --env-name {env_name} --epochs 200 --method spatial-appo --lr 5e-4
+      - python -m scripts.run_probe --env-name {env_name} --method spatial-appo --epochs 200 --lr 5e-4
   type: grid
   max_trials: 22
   params:
     - name: env_name
       spec: discrete
-      values: ['AsteroidsNoFrameskip-v4', 'BerzerkNoFrameskip-v4', 'BoxingNoFrameskip-v4', 'BreakoutNoFrameskip-v4', 'DefenderNoFrameskip-v4', 'DemonAttackNoFrameskip-v4', 'FreewayNoFrameskip-v4', 'FrostbiteNoFrameskip-v4', 'HeroNoFrameskip-v4', 'MontezumaRevengeNoFrameskip-v4', 'MsPacmanNoFrameskip-v4', 'PitfallNoFrameskip-v4', 'PongNoFrameskip-v4', 'PrivateEyeNoFrameskip-v4', 'QbertNoFrameskip-v4', 'RiverraidNoFrameskip-v4', 'SeaquestNoFrameskip-v4', 'SpaceInvadersNoFrameskip-v4', 'TennisNoFrameskip-v4', 'VentureNoFrameskip-v4', 'VideoPinballNoFrameskip-v4', 'YarsRevengeNoFrameskip-v4']
+      values: ['AsteroidsNoFrameskip-v4', 'BerzerkNoFrameskip-v4', 'BowlingNoFrameskip-v4', 'BoxingNoFrameskip-v4', 'BreakoutNoFrameskip-v4', 'DemonAttackNoFrameskip-v4', 'FreewayNoFrameskip-v4', 'FrostbiteNoFrameskip-v4', 'HeroNoFrameskip-v4', 'MontezumaRevengeNoFrameskip-v4', 'MsPacmanNoFrameskip-v4', 'PitfallNoFrameskip-v4', 'PongNoFrameskip-v4', 'PrivateEyeNoFrameskip-v4', 'QbertNoFrameskip-v4', 'RiverraidNoFrameskip-v4', 'SeaquestNoFrameskip-v4', 'SpaceInvadersNoFrameskip-v4', 'TennisNoFrameskip-v4', 'VentureNoFrameskip-v4', 'VideoPinballNoFrameskip-v4', 'YarsRevengeNoFrameskip-v4']

@@ -9,7 +9,8 @@ import torch
 import gym
 
 from src.envs import make_vec_envs
-from src.utils import get_argparser, visualize_activation_maps, appendabledict
+from src.utils import get_argparser, visualize_activation_maps, appendabledict, calculate_multiclass_accuracy, \
+    calculate_multiclass_f1_score
 from src.encoders import NatureCNN, ImpalaCNN
 from src.appo import AppoTrainer
 from src.atari_zoo import get_atari_zoo_episodes
@@ -59,16 +60,22 @@ def majority_baseline(tr_labels, test_labels, wandb):
     for label in counts:
         maj_dict[label] = max(counts[label], key=counts[label].get)
 
-    test_counts = {}
-    for label_dict in test_labels:
-        for k in label_dict:
-            if label_dict[k] == maj_dict[k]:
-                test_counts[k] = test_counts.get(k, 0) + 1
+    accuracy_dict = {}
+    f1_score_dict = {}
+    for k in test_labels[0]:
+        labels = torch.tensor([label_d[k] for label_d in test_labels]).long()
+        preds = torch.zeros(len(test_labels), 256)
+        preds[:, maj_dict[k]] = 1
+        accuracy = calculate_multiclass_accuracy(preds, labels)
+        f1score = calculate_multiclass_f1_score(preds, labels)
+        accuracy_dict[k + "_test_acc"] = accuracy
+        f1_score_dict[k + "_f1score"] = f1score
 
-    test_accuracy = {'test_' + k: test_counts[k] / len(test_labels) for k in test_counts}
-    test_accuracy['test_mean_acc'] = np.mean(list(test_accuracy.values()))
-    wandb.log(test_accuracy, step=0)
-    return test_accuracy
+    accuracy_dict['mean_test_acc'] = np.mean(list(accuracy_dict.values()))
+    f1_score_dict["mean_f1score"] = np.mean(list(f1_score_dict.values()))
+    wandb.log(accuracy_dict)
+    wandb.log(f1_score_dict)
+    return accuracy_dict, f1_score_dict
 
 
 def get_random_agent_episodes(args, device):
@@ -241,5 +248,5 @@ if __name__ == "__main__":
     parser = get_argparser()
     args = parser.parse_args()
     tags = ['probe']
-    wandb.init(project="curl-atari-neurips-2", entity="curl-atari", tags=tags)
+    wandb.init(project="curl-atari-neurips-3", entity="curl-atari", tags=tags)
     main(args)

@@ -115,3 +115,7 @@ wandb/
 act_maps/
 trained_models/
 *monitor.csv
+.ptignore
+neurips-exps/
+philly-exps/
+tmp/

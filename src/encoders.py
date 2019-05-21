@@ -85,6 +85,7 @@ class NatureCNN(nn.Module):
         self.downsample = not args.no_downsample
         self.input_channels = input_channels
         self.end_with_relu = args.end_with_relu
+        self.args = args
         init_ = lambda m: init(m,
                                nn.init.orthogonal_,
                                lambda x: nn.init.constant_(x, 0),
