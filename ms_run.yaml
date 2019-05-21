@@ -1,7 +1,7 @@
 description: CURL-ATRI
 
 auth:
-  cluster: eu1
+  cluster: eu2
   vc: msrlabs
   docker:
     image: philly/jobs/custom/generic-docker:py36
@@ -33,7 +33,7 @@ search:
       - export LC_ALL=C.UTF-8
       - export LANG=C.UTF-8
       - wandb login fa235c4236ea0bd894bc3f26e87054a6ed6af293
-      - python -m scripts.run_probe --env-name {env_name} --method {method} --epochs 200 --lr 5e-4
+      - python -m scripts.run_probe --env-name {env_name} --method spatial-appo --epochs 200 --lr 5e-4
   type: grid
   max_trials: 22
   params:
