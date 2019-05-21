@@ -1,7 +1,7 @@
 import argparse
 from collections import deque
 from itertools import chain
-
+import numpy as np
 import torch
 import wandb
 import time
@@ -57,6 +57,9 @@ def get_ppo_rollouts(args, checkpoint_step,  use_representations_instead_of_fram
     for step in range(args.probe_steps // args.num_processes):
         # Take action using a random policy
         _, action, _, _, actor_features = actor_critic.act(obs, None, masks, deterministic=False)
+        action = torch.tensor(
+                    np.array([np.random.randint(1, envs.action_space.n) for _ in range(args.num_processes)])) \
+                    .unsqueeze(dim=1)
         obs, reward, done, infos = envs.step(action)
         for i, info in enumerate(infos):
             if 'episode' in info.keys():
