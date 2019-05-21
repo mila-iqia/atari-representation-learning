@@ -58,6 +58,10 @@ def get_argparser():
     parser.add_argument("--entropy-threshold", type=float, default=0.6)
     parser.add_argument("--color", action='store_true', default=False)
     parser.add_argument("--end-with-relu", action='store_true',default=False)
+    
+    # rl-probe specific arguments
+    parser.add_argument("--checkpoint-index", type=int, default=0)
+    
     #bert specific arguments
     parser.add_argument("--num_transformer_layers", type=int, default=2)
     parser.add_argument("--num_lin_projections", type=int, default=8)

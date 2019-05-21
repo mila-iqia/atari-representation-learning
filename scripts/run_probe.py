@@ -14,6 +14,7 @@ from src.utils import get_argparser, visualize_activation_maps, appendabledict, 
 from src.encoders import NatureCNN, ImpalaCNN
 from src.appo import AppoTrainer
 from src.atari_zoo import get_atari_zoo_episodes
+from src.pretrained_agents import get_ppo_rollouts, checkpointed_steps_sorted
 import wandb
 import sys
 
@@ -118,22 +119,14 @@ def get_random_agent_episodes(args, device):
 
 
 def run_probe(encoder, args, device, seed):
-    if args.probe_collect_mode == "random_agent":
+    if args.probe_collect_mode == "random_agent" and args.method != "pretrained-rl-agent":
         episodes, episode_labels = get_random_agent_episodes(args, device)
 
     else:
-        episodes, episode_labels, episode_rewards = get_atari_zoo_episodes(args.env_name,
-                                                          num_frame_stack=args.num_frame_stack,
-                                                          downsample=not args.no_downsample,
-                                                          algos=args.zoo_algos,
-                                                          tags=args.zoo_tags,
-                                                          use_representations_instead_of_frames=(
-                                                                      "pretrained-rl-agent" in args.method))
+        checkpoint = checkpointed_steps_sorted[args.checkpoint_index]
+        episodes, episode_labels, mean_reward = get_ppo_rollouts(args, checkpoint, use_representations_instead_of_frames=("pretrained-rl-agent" in args.method))
+        wandb.log({"reward":mean_reward, "checkpoint":checkpoint})
 
-        episodes = [torch.from_numpy(ep).float() for ep in episodes]
-
-        if len(episodes[0].shape) > 2:
-            episodes = [ep.permute(0, 3, 1, 2) for ep in episodes]
 
     ep_inds = [i for i in range(len(episodes)) if len(episodes[i]) > args.batch_size]
     episodes = [episodes[i] for i in ep_inds]
@@ -150,14 +143,6 @@ def run_probe(encoder, args, device, seed):
                                                                          val_split_ind:te_split_ind], episode_labels[
                                                                                                       te_split_ind:]
 
-    if args.probe_collect_mode == "atari_zoo":
-        episode_rewards = [episode_rewards[i] for i in ep_inds]
-        tr_rew, val_rew, test_rew = episode_rewards[:val_split_ind],\
-                                    episode_rewards[val_split_ind:te_split_ind],\
-                                    episode_rewards[te_split_ind:]
-        wandb.log({"test_mean_reward_per_episode":np.mean(test_rew)})
-
-    feature_size = np.prod(tr_eps[0][0].shape[1:]) if args.method == "flat-pixels" else None
 
     if args.method == 'majority':
         return majority_baseline(tr_labels, test_labels, wandb)
@@ -170,8 +155,7 @@ def run_probe(encoder, args, device, seed):
                            batch_size=args.batch_size,
                            device=device,
                            patience=args.patience,
-                           log=False,
-                           feature_size=feature_size)
+                           log=False)
 
     trainer.train(tr_eps, val_eps, tr_labels, val_labels)
     test_acc,test_f1score = trainer.test(test_eps, test_labels)

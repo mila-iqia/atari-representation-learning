@@ -33,7 +33,7 @@ def download_run(args, checkpoint_step):
     return '../trained_models/' + args.env_name + '_' + str(checkpoint_step) + ".pt", mean_reward
 
 
-def get_ppo_rollouts(args, checkpoint_step):
+def get_ppo_rollouts(args, checkpoint_step,  use_representations_instead_of_frames=False):
     filepath, mean_reward = download_run(args, checkpoint_step)
     while not os.path.exists(filepath):
         time.sleep(5)
@@ -45,9 +45,11 @@ def get_ppo_rollouts(args, checkpoint_step):
     actor_critic, ob_rms = \
         torch.load(filepath, map_location=lambda storage, loc: storage)
 
+
     episodes = [[[]] for _ in range(args.num_processes)]  # (n_processes * n_episodes * episode_len)
     episode_labels = [[[]] for _ in range(args.num_processes)]
     episode_rewards = deque(maxlen=10)
+    episode_features = [[[]] for _ in range(args.num_processes)] 
 
     step = 0
     masks = torch.zeros(1, 1)
@@ -62,10 +64,12 @@ def get_ppo_rollouts(args, checkpoint_step):
 
             if done[i] != 1:
                 episodes[i][-1].append(obs[i].clone())
+                episode_features[i][-1].append(actor_features[i].clone())
                 if "labels" in info.keys():
                     episode_labels[i][-1].append(info["labels"])
             else:
                 episodes[i].append([obs[i].clone()])
+                episode_features[i].append([actor_features[i].clone()])
                 if "labels" in info.keys():
                     episode_labels[i].append([info["labels"]])
 
@@ -73,12 +77,18 @@ def get_ppo_rollouts(args, checkpoint_step):
     for p in range(args.num_processes):
         for e in range(len(episodes[p])):
             episodes[p][e] = torch.stack(episodes[p][e])
+            episode_features[p][e] = torch.stack(episode_features[p][e])
+            
 
     # Convert to 1d list from 2d list
     episodes = list(chain.from_iterable(episodes))
     # Convert to 1d list from 2d list
     episode_labels = list(chain.from_iterable(episode_labels))
-    return episodes, episode_labels, mean_reward
+    episode_features = list(chain.from_iterable(episode_features))
+    if use_representations_instead_of_frames:
+        return episode_features, episode_labels, mean_reward
+    else:
+        return episodes, episode_labels, mean_reward
 
 
 if __name__ == "__main__":
