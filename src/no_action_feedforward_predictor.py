@@ -27,11 +27,7 @@ class NaFFPredictor(nn.Module):
 
         self.fc_layers = nn.Sequential(
                                     nn.Linear(in_features=self.feature_size,
-                                               out_features=self.fc_size),
-                                    nn.Linear(in_features=self.fc_size,
-                                             out_features=self.fc_size),
-                                    nn.Linear(in_features=self.fc_size,
-                                             out_features=self.feature_size))
+                                               out_features=self.feature_size))
                                     
 
         self.decoder = Decoder(feature_size=self.feature_size,

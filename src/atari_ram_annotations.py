@@ -35,8 +35,8 @@ atari_dict = {"asteroids": dict(enemy_asteroids_y = [3,4,5,6,7,8,9,12,13,14,15,1
                               ball_y=41,
                               player_x=29,
                               player_y=40,
-                              frame_count=36,
-                              pin_position=range(57,67),
+                              frame_number_display=36,
+                              pin_existence=range(57,67),
                               score=33),
               
               "boxing" : dict(player_x = 32, 
@@ -278,7 +278,7 @@ for a in list_of_keys:
 
 small_object_names = [ "ball", "missile"]
 agent_names = ["agent", "player"]
-localization_keys = [k for k in all_keys if any(coord in k for coord in ["_x","_y","_z","_column","_position"])]
+localization_keys = [k for k in all_keys if any(coord in k for coord in ["_x","_y","_z","_column"])]
 agent_localization_keys = [k for k in localization_keys if any(agent_name in k for agent_name in agent_names) and not any(small_object_name in k for small_object_name in small_object_names)]
 small_object_localization_keys = [k for k in localization_keys if any(small_object_name in k for small_object_name in small_object_names) ]
 other_localization_keys = [k for k in localization_keys if k not in agent_localization_keys + small_object_localization_keys]
@@ -288,21 +288,22 @@ clock_keys = [k for k in all_keys if "clock" in k]
 lives_keys = [k for k in all_keys if "lives" in k or "lifes" in k ]
 count_keys = [k for k in all_keys if "count" in k]
 meter_keys = [k for k in all_keys if "meter" in k in k]
-existence_keys = [k for k in all_keys if "bit_map" in k]
-score_clock_lives_keys = score_keys + clock_keys + lives_keys 
+display_keys = [k for k in all_keys if "display" in k]
+existence_keys = [k for k in all_keys if "bit_map" in k or "existence" in k]
+score_clock_lives_display_keys = score_keys + clock_keys + lives_keys + meter_keys + display_keys
 direction_keys = [k for k in all_keys if "direction" in k]
 level_room_keys = [k for k in all_keys if "level" in k or "room" in k or "game_state" in k]
-misc_keys = count_keys + meter_keys + existence_keys + level_room_keys + direction_keys
+misc_keys = count_keys  + existence_keys + level_room_keys + direction_keys
 
 
 unused_keys = deepcopy(all_keys)
 
 
-summary_key_dict = dict(small_object_localization=small_object_localization_keys,
+summary_key_dict = dict(overall=all_keys,small_object_localization=small_object_localization_keys,
                         agent_localization=agent_localization_keys,
                         other_localization=other_localization_keys,
-                        score_clock_lives_display = score_clock_lives_keys,
-                        misc_keys = misc_keys 
+                        score_clock_lives_display = score_clock_lives_display_keys,
+                        misc_keys = misc_keys
                         )   
     
 
@@ -315,6 +316,7 @@ detailed_key_dict = dict(overall=all_keys,
                             lives=lives_keys,
                             count=count_keys,
                             meter=meter_keys,
+                            display=display_keys,
                             existence=existence_keys,
                             direction=direction_keys,
                             level_room=level_room_keys)
