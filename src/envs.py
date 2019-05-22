@@ -68,7 +68,7 @@ def make_vec_envs(args, num_processes, gamma=0.99, log_dir='./tmp/', device=torc
             for i in range(num_processes)]
 
     if len(envs) > 1:
-        envs = SubprocVecEnv(envs)
+        envs = SubprocVecEnv(envs, context='fork')
     else:
         envs = DummyVecEnv(envs)
 
