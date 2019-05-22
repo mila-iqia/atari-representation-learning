@@ -20,7 +20,7 @@ def evaluate(actor_critic, env_name, seed, num_processes, eval_log_dir,
         num_processes, actor_critic.recurrent_hidden_state_size, device=device)
     eval_masks = torch.zeros(num_processes, 1, device=device)
 
-    while len(eval_episode_rewards) < 10:
+    while len(eval_episode_rewards) < 1:
         with torch.no_grad():
             _, action, _, eval_recurrent_hidden_states, _,_ = actor_critic.act(
                 obs,
@@ -135,11 +135,20 @@ def get_ppo_rollouts(args, checkpoint_step):
     return episodes, episode_labels, np.mean(episode_rewards), mean_entropy
 
 
-def get_ppo_representations(args, checkpoint_step):
+def get_ppo_representations(args, checkpoint_step, rollout_checkpoint_step=None):
     # Gives PPO represnetations over data collected by a random agent
     filepath = download_run(args, checkpoint_step)
     while not os.path.exists(filepath):
         time.sleep(5)
+    random_agent = True  
+    if rollout_checkpoint_step:
+        random_agent = False
+        ro_filepath = download_run(args, rollout_checkpoint_step)
+        while not os.path.exists(ro_filepath):
+            time.sleep(5)
+        ro_actor_critic, ob_rms = \
+        torch.load(ro_filepath, map_location=lambda storage, loc: storage)
+        
 
     # args.no_downsample = False
     # args.num_frame_stack = 4
@@ -163,9 +172,14 @@ def get_ppo_representations(args, checkpoint_step):
     for step in range(args.probe_steps // args.num_processes):
         # Take action using a random policy
         _, action, _, _, actor_features, _ = actor_critic.act(obs, None, masks, deterministic=False)
-        action = torch.tensor(
-            np.array([np.random.randint(1, envs.action_space.n) for _ in range(args.num_processes)])) \
-            .unsqueeze(dim=1)
+        
+        if random_agent:
+            action = torch.tensor(
+                np.array([np.random.randint(1, envs.action_space.n) for _ in range(args.num_processes)])) \
+                .unsqueeze(dim=1)
+        else:
+            _, action, _, _, actor_features, _ = ro_actor_critic.act(obs, None, masks, deterministic=False)
+        
         obs, reward, done, infos = envs.step(action)
         for i, info in enumerate(infos):
             if 'episode' in info.keys():
