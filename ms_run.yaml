@@ -22,7 +22,7 @@ storage:
 
 search:
   job_template:
-    name: curl_atari_cpc
+    name: curl_atari_spatial_appo_300
     sku: G1
     command:
       - conda install -y pytorch torchvision cudatoolkit=9.0 -c pytorch
@@ -33,7 +33,7 @@ search:
       - export LC_ALL=C.UTF-8
       - export LANG=C.UTF-8
       - wandb login fa235c4236ea0bd894bc3f26e87054a6ed6af293
-      - python -m scripts.run_probe --env-name {env_name} --method spatial-appo --epochs 200 --lr 5e-4
+      - python -m scripts.run_probe --env-name {env_name} --method spatial-appo --epochs 200 --patience 100 --lr 5e-4
   type: grid
   max_trials: 22
   params:
