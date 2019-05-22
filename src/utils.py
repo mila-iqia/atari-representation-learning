@@ -59,7 +59,7 @@ def get_argparser():
     parser.add_argument("--color", action='store_true', default=False)
     parser.add_argument("--end-with-relu", action='store_true',default=False)
     parser.add_argument("--wandb-proj", type=str, default="curl-atari-neurips-scratch")
-
+    parser.add_argument("--num_rew_evals",type=int,default=10)
     # rl-probe specific arguments
     parser.add_argument("--checkpoint-index", type=int, default=10)
 

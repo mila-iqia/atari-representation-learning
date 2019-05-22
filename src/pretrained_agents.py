@@ -6,7 +6,7 @@ from a2c_ppo_acktr.envs import make_vec_envs as mve
 
 
 def evaluate(actor_critic, env_name, seed, num_processes, eval_log_dir,
-             device):
+             device, num_evals):
     eval_envs = mve(env_name, seed + num_processes, num_processes,
                               None, eval_log_dir, device, True, num_frame_stack=1)
 
@@ -20,7 +20,7 @@ def evaluate(actor_critic, env_name, seed, num_processes, eval_log_dir,
         num_processes, actor_critic.recurrent_hidden_state_size, device=device)
     eval_masks = torch.zeros(num_processes, 1, device=device)
 
-    while len(eval_episode_rewards) < 10:
+    while len(eval_episode_rewards) < num_evals:
         with torch.no_grad():
             _, action, _, eval_recurrent_hidden_states, _,_ = actor_critic.act(
                 obs,
@@ -160,7 +160,7 @@ def get_ppo_representations(args, checkpoint_step, rollout_checkpoint_step=None)
                            env_name=args.env_name,
                            seed=args.seed,
                            num_processes=args.num_processes,
-                           eval_log_dir="./tmp",device="cpu")
+                           eval_log_dir="./tmp",device="cpu",num_evals=args.num_rew_evals)
     print(mean_reward)
     episode_labels = [[[]] for _ in range(args.num_processes)]
     episode_rewards = deque(maxlen=10)
