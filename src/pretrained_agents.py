@@ -107,7 +107,8 @@ def get_ppo_rollouts(args, checkpoint_step):
     entropies = []
     for step in range(args.probe_steps // args.num_processes):
         # Take action using a random policy
-        obs, action, _, _, actor_features, dist_entropy = actor_critic.act(obs, None, masks, deterministic=False)
+        with torch.no_grad():
+            obs, action, _, _, actor_features, dist_entropy = actor_critic.act(obs, None, masks, deterministic=False)
         entropies.append(dist_entropy.clone())
         obs, reward, done, infos = envs.step(action)
         for i, info in enumerate(infos):
@@ -172,14 +173,16 @@ def get_ppo_representations(args, checkpoint_step, rollout_checkpoint_step=None)
     obs = envs.reset()
     for step in range(args.probe_steps // args.num_processes):
         # Take action using a random policy
-        _, action, _, _, actor_features, _ = actor_critic.act(obs, None, masks, deterministic=False)
+        with torch.no_grad:
+            _, action, _, _, actor_features, _ = actor_critic.act(obs, None, masks, deterministic=False)
         
         if random_agent:
             action = torch.tensor(
                 np.array([np.random.randint(1, envs.action_space.n) for _ in range(args.num_processes)])) \
                 .unsqueeze(dim=1)
         else:
-            _, action, _, _, actor_features, _ = ro_actor_critic.act(obs, None, masks, deterministic=False)
+            with torch.no_grad:
+                _, action, _, _, actor_features, _ = ro_actor_critic.act(obs, None, masks, deterministic=False)
         
         obs, reward, done, infos = envs.step(action)
         for i, info in enumerate(infos):
