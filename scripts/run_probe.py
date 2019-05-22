@@ -13,7 +13,6 @@ from src.utils import get_argparser, visualize_activation_maps, appendabledict, 
     calculate_multiclass_f1_score
 from src.encoders import NatureCNN, ImpalaCNN
 from src.appo import AppoTrainer
-from src.atari_zoo import get_atari_zoo_episodes
 from src.pretrained_agents import get_ppo_rollouts, checkpointed_steps_full_sorted, get_ppo_representations
 import wandb
 import sys
@@ -128,13 +127,20 @@ def run_probe(encoder, args, device, seed):
 
     elif args.method == 'pretrained-rl-agent':
         if args.probe_collect_mode == 'random_agent':
+            print("starting")
             checkpoint = checkpointed_steps_full_sorted[args.checkpoint_index]
             # episodes is actually episode_features in this case
             episodes, episode_labels, mean_reward = get_ppo_representations(args, checkpoint)
             wandb.log({"reward": mean_reward, "checkpoint": checkpoint})
-        else:
-            pass
+        elif args.probe_collect_mode == 'pretrained_ppo':
+            rollout_checkpoint_index = 10
+            rollout_checkpoint = checkpointed_steps_full_sorted[rollout_checkpoint_index]
+            checkpoint = checkpointed_steps_full_sorted[args.checkpoint_index]
+            # episodes is actually episode_features in this case
+            episodes, episode_labels, mean_reward = get_ppo_representations(args, checkpoint, rollout_checkpoint)
+            wandb.log({"reward": mean_reward, "checkpoint": checkpoint, "rollout_checkpoint": rollout_checkpoint})
 
+    print("got episodes!")
     ep_inds = [i for i in range(len(episodes)) if len(episodes[i]) > args.batch_size]
     episodes = [episodes[i] for i in ep_inds]
     episode_labels = [episode_labels[i] for i in ep_inds]
