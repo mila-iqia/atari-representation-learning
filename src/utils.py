@@ -32,7 +32,7 @@ def get_argparser():
                         help='Number of parallel environments to collect samples from (default: 8)')
     parser.add_argument('--method', type=str, default='appo',
                         choices=["appo", "cpc", "supervised", "random-cnn", "nonlinear", "spatial-appo", "majority",
-                            "pretrained-rl-agent", "flat-pixels", "vae", "ms-dim", "bert", "pixel-predictor","naff"],
+                            "pretrained-rl-agent", "flat-pixels", "vae", "ms-dim", "bert", "pixel-predictor","naff", "infonce-stdim"],
                         help='Method to use for training representations (default: appo)')
     parser.add_argument('--mode', type=str, default='pcl',
                         help='Mode to use when using the Appo estimator [pcl | tcl | both] (default: pcl)')
@@ -58,10 +58,10 @@ def get_argparser():
     parser.add_argument("--entropy-threshold", type=float, default=0.6)
     parser.add_argument("--color", action='store_true', default=False)
     parser.add_argument("--end-with-relu", action='store_true',default=False)
-    
+
     # rl-probe specific arguments
     parser.add_argument("--checkpoint-index", type=int, default=0)
-    
+
     #bert specific arguments
     parser.add_argument("--num_transformer_layers", type=int, default=2)
     parser.add_argument("--num_lin_projections", type=int, default=8)
@@ -70,9 +70,9 @@ def get_argparser():
                         help='Sequence length.')
     parser.add_argument("--d_ff", type=int, default=512)
     parser.add_argument("--beta", type=float, default=1.0)
-    
+
     #naff-specific arguments
-    parser.add_argument("--naff_fc_size", type=int, default=2048, 
+    parser.add_argument("--naff_fc_size", type=int, default=2048,
                         help="fully connected layer width for naff")
     parser.add_argument("--pred_offset", type=int, default=1,
                         help="how many steps in future to predict")
@@ -90,8 +90,8 @@ def get_argparser():
     parser.add_argument('--gru_layers', type=int, default=2,
                         help='Number of GRU layers.')
     parser.add_argument("--collect-mode", type=str, choices=["random_agent", "atari_zoo"], default="random_agent")
-    
-    
+
+
     #probe arguments
     parser.add_argument("--weights-path", type=str, default="None")
     parser.add_argument("--train-encoder", action='store_true', default=True)
