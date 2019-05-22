@@ -1,3 +1,51 @@
+import numpy as np
+import torch
+
+from a2c_ppo_acktr import utils
+from a2c_ppo_acktr.envs import make_vec_envs as mve
+
+
+def evaluate(actor_critic, env_name, seed, num_processes, eval_log_dir,
+             device):
+    eval_envs = mve(env_name, seed + num_processes, num_processes,
+                              None, eval_log_dir, device, True, num_frame_stack=1)
+
+    vec_norm = utils.get_vec_normalize(eval_envs)
+
+
+    eval_episode_rewards = []
+
+    obs = eval_envs.reset()
+    eval_recurrent_hidden_states = torch.zeros(
+        num_processes, actor_critic.recurrent_hidden_state_size, device=device)
+    eval_masks = torch.zeros(num_processes, 1, device=device)
+
+    while len(eval_episode_rewards) < 10:
+        with torch.no_grad():
+            _, action, _, eval_recurrent_hidden_states, _,_ = actor_critic.act(
+                obs,
+                eval_recurrent_hidden_states,
+                eval_masks,
+                deterministic=True)
+
+        # Obser reward and next obs
+        obs, _, done, infos = eval_envs.step(action)
+
+        eval_masks = torch.tensor(
+            [[0.0] if done_ else [1.0] for done_ in done],
+            dtype=torch.float32,
+            device=device)
+
+        for info in infos:
+            if 'episode' in info.keys():
+                eval_episode_rewards.append(info['episode']['r'])
+
+    eval_envs.close()
+
+    print(" Evaluation using {} episodes: mean reward {:.5f}\n".format(
+        len(eval_episode_rewards), np.mean(eval_episode_rewards)))
+    return np.mean(eval_episode_rewards)
+
 import argparse
 from collections import deque
 from itertools import chain
@@ -99,7 +147,12 @@ def get_ppo_representations(args, checkpoint_step):
 
     actor_critic, ob_rms = \
         torch.load(filepath, map_location=lambda storage, loc: storage)
-
+    mean_reward = evaluate(actor_critic,
+                           env_name=args.env_name,
+                           seed=args.seed,
+                           num_processes=args.num_processes,
+                           eval_log_dir="./tmp",device="cpu")
+    print(mean_reward)
     episode_labels = [[[]] for _ in range(args.num_processes)]
     episode_rewards = deque(maxlen=10)
     episode_features = [[[]] for _ in range(args.num_processes)]
@@ -109,7 +162,7 @@ def get_ppo_representations(args, checkpoint_step):
     obs = envs.reset()
     for step in range(args.probe_steps // args.num_processes):
         # Take action using a random policy
-        _, action, _, _, actor_features = actor_critic.act(obs, None, masks, deterministic=False)
+        _, action, _, _, actor_features, _ = actor_critic.act(obs, None, masks, deterministic=False)
         action = torch.tensor(
             np.array([np.random.randint(1, envs.action_space.n) for _ in range(args.num_processes)])) \
             .unsqueeze(dim=1)
@@ -135,7 +188,7 @@ def get_ppo_representations(args, checkpoint_step):
     # Convert to 1d list from 2d list
     episode_labels = list(chain.from_iterable(episode_labels))
     episode_features = list(chain.from_iterable(episode_features))
-    return episode_features, episode_labels, 0.
+    return episode_features, episode_labels, mean_reward
 
 
 if __name__ == "__main__":
@@ -143,4 +196,4 @@ if __name__ == "__main__":
     args = parser.parse_args()
     args.env_name = 'SeaquestNoFrameskip-v4'
     args.probe_steps = 2000
-    episodes, episode_labels, mean_reward, mean_entropy = get_ppo_rollouts(args, 10753536)
+    episode_features, episode_labels, mean_reward = get_ppo_representations(args, 10753536)
