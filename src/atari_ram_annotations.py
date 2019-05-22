@@ -299,7 +299,7 @@ misc_keys = count_keys  + existence_keys + level_room_keys + direction_keys
 unused_keys = deepcopy(all_keys)
 
 
-summary_key_dict = dict(overall=all_keys,small_object_localization=small_object_localization_keys,
+summary_key_dict = dict(small_object_localization=small_object_localization_keys,
                         agent_localization=agent_localization_keys,
                         other_localization=other_localization_keys,
                         score_clock_lives_display = score_clock_lives_display_keys,
@@ -307,7 +307,7 @@ summary_key_dict = dict(overall=all_keys,small_object_localization=small_object_
                         )   
     
 
-detailed_key_dict = dict(overall=all_keys,
+detailed_key_dict = dict(
                          agent_localization=agent_localization_keys,
                             small_object_localization=small_object_localization_keys,
                             other_localization=other_localization_keys,
