@@ -109,6 +109,8 @@ def get_ppo_rollouts(args, checkpoint_step):
         # Take action using a random policy
         with torch.no_grad():
             obs, action, _, _, actor_features, dist_entropy = actor_critic.act(obs, None, masks, deterministic=False)
+        action = torch.tensor([envs.action_space.sample() if np.random.uniform(0, 1) < 0.2 else action[i]
+                               for i in range(args.num_processes)]).unsqueeze(dim=1)
         entropies.append(dist_entropy.clone())
         obs, reward, done, infos = envs.step(action)
         for i, info in enumerate(infos):
