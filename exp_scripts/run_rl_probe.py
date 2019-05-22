@@ -1,30 +1,46 @@
 import subprocess
 
 base_cmd = "sbatch"
-ss= "exp_scripts/run_gpu_mila.sl"
+ss= "exp_scripts/run_gpu_cloud.sl"
 module = "scripts.run_probe"
 args = [base_cmd, ss, module]
 args.append("--method pretrained-rl-agent")
-args.append("--probe-collect-mode atari_zoo")
-args.append('--zoo-algos a2c')
-args.append('--zoo-tags 10HR  400M final 6HR')  #1B 400M final 10HR')
-
-envs =  ["asteroids", "freeway", "montezuma_revenge", 'berzerk',   # 'boxing',
-        'demon_attack', 'enduro', 'freeway', 'frostbite', 'hero', 
-        'ms_pacman', 'pong', 'private_eye', 'qbert', 'riverraid', 
-        'seaquest', 'solaris', 'space_invaders', 'venture', 'video_pinball', 
-        'yars_revenge','breakout','pitfall','montezuma_revenge'
-        ]
+#args.append("--probe-collect-mode random_agent")
+args.append("--probe-collect-mode pretrained_ppo")
+checkpoints = [33]
+envs = ['asteroids',
+ 'berzerk',
+ 'bowling',
+ 'boxing',
+ 'breakout',
+ 'demonattack',
+ 'freeway',
+ 'frostbite',
+ 'hero',
+ 'montezumarevenge',
+ 'mspacman',
+ 'pitfall',
+ 'pong',
+ 'privateeye',
+ 'qbert',
+ 'riverraid',
+ 'seaquest',
+ 'spaceinvaders',
+ 'tennis',
+ 'venture',
+ 'videopinball',
+ 'yarsrevenge']
 
 
 suffix = "NoFrameskip-v4"
 for i,env in enumerate(envs):
+    for ind in checkpoints:
+        names = env.split("_")
+        name = "".join([s.capitalize() for s in names])
+        sargs = args + ["--env-name"]
     
-    names = env.split("_")
-    name = "".join([s.capitalize() for s in names])
-    sargs = args + ["--env-name"]
+        sargs.append(name + suffix) 
+        sargs.extend(["--checkpoint-index",str(ind)])
     
-    sargs.append(name + suffix) 
-    
-    
-    subprocess.run(sargs)
+        print(" ".join(sargs))
+        subprocess.run(sargs)
