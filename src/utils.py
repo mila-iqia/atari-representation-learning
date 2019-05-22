@@ -90,7 +90,7 @@ def get_argparser():
                         help='Hidden size of the GRU layers.')
     parser.add_argument('--gru_layers', type=int, default=2,
                         help='Number of GRU layers.')
-    parser.add_argument("--collect-mode", type=str, choices=["random_agent", "atari_zoo"], default="random_agent")
+    parser.add_argument("--collect-mode", type=str, choices=["random_agent", "atari_zoo", "pretrained_ppo"], default="random_agent")
 
 
     #probe arguments

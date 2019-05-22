@@ -122,7 +122,7 @@ def run_probe(encoder, args, device, seed):
             episodes, episode_labels = get_random_agent_episodes(args, device)
         elif args.probe_collect_mode == 'pretrained_ppo':
             checkpoint = checkpointed_steps_full_sorted[args.checkpoint_index]
-            episodes, episode_labels, mean_reward, mean_action_entropy = get_ppo_rollouts(args, checkpoint)
+            episodes, episode_labels, mean_reward, mean_action_entropy = get_ppo_rollouts(args, args.probe_steps, checkpoint)
             wandb.log({'action_entropy': mean_action_entropy, 'mean_reward': mean_reward})
 
     elif args.method == 'pretrained-rl-agent':

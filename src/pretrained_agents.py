@@ -87,7 +87,7 @@ def download_run(args, checkpoint_step):
     return './trained_models_full/' + filename
 
 
-def get_ppo_rollouts(args, checkpoint_step):
+def get_ppo_rollouts(args, steps, checkpoint_step):
     filepath = download_run(args, checkpoint_step)
     while not os.path.exists(filepath):
         time.sleep(5)
@@ -105,7 +105,7 @@ def get_ppo_rollouts(args, checkpoint_step):
     masks = torch.zeros(1, 1)
     obs = envs.reset()
     entropies = []
-    for step in range(args.probe_steps // args.num_processes):
+    for step in range(steps // args.num_processes):
         # Take action using a random policy
         with torch.no_grad():
             obs, action, _, _, actor_features, dist_entropy = actor_critic.act(obs, None, masks, deterministic=False)
@@ -185,6 +185,8 @@ def get_ppo_representations(args, checkpoint_step, rollout_checkpoint_step=None)
         else:
             with torch.no_grad:
                 _, action, _, _, actor_features, _ = ro_actor_critic.act(obs, None, masks, deterministic=False)
+            action = torch.tensor([envs.action_space.sample() if np.random.uniform(0, 1) < 0.2 else action[i]
+                                   for i in range(args.num_processes)]).unsqueeze(dim=1)
         
         obs, reward, done, infos = envs.step(action)
         for i, info in enumerate(infos):
