@@ -83,6 +83,7 @@ def download_run(args, checkpoint_step):
     run = runs[0]
     filename = args.env_name + '_' + str(checkpoint_step) + '.pt'
     run.files(names=[filename])[0].download(root='./trained_models_full/', replace=True)
+    print('Downloaded ' + filename)
     return './trained_models_full/' + filename
 
 
@@ -107,7 +108,7 @@ def get_ppo_rollouts(args, checkpoint_step):
     for step in range(args.probe_steps // args.num_processes):
         # Take action using a random policy
         obs, action, _, _, actor_features, dist_entropy = actor_critic.act(obs, None, masks, deterministic=False)
-        entropies.append(dist_entropy)
+        entropies.append(dist_entropy.clone())
         obs, reward, done, infos = envs.step(action)
         for i, info in enumerate(infos):
             if 'episode' in info.keys():

@@ -214,6 +214,7 @@ def main(args):
                 encoder.eval()
 
     device = torch.device("cuda:" + str(args.cuda_id) if torch.cuda.is_available() else "cpu")
+    env.close()
 
     # encoder.to(device)
     torch.set_num_threads(1)
