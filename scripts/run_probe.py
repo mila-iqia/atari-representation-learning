@@ -14,7 +14,7 @@ from src.utils import get_argparser, visualize_activation_maps, appendabledict, 
 from src.encoders import NatureCNN, ImpalaCNN
 from src.appo import AppoTrainer
 from src.atari_zoo import get_atari_zoo_episodes
-from src.pretrained_agents import get_ppo_rollouts, checkpointed_steps_sorted
+from src.pretrained_agents import get_ppo_rollouts, checkpointed_steps_full_sorted, get_ppo_representations
 import wandb
 import sys
 
@@ -40,7 +40,6 @@ def remove_low_entropy_labels(episode_labels, entropy_threshold=0.3):
     for e in episode_labels:
         for obs in e:
             for key in low_entropy_labels:
-                
                 del obs[key]
 
     return episode_labels
@@ -119,14 +118,21 @@ def get_random_agent_episodes(args, device):
 
 
 def run_probe(encoder, args, device, seed):
-    if args.probe_collect_mode == "random_agent" and args.method != "pretrained-rl-agent":
-        episodes, episode_labels = get_random_agent_episodes(args, device)
+    if args.method != "pretrained-rl-agent":
+        if args.probe_collect_mode == "random_agent":
+            episodes, episode_labels = get_random_agent_episodes(args, device)
+        elif args.probe_collect_mode == 'pretrained_ppo':
+            checkpoint = checkpointed_steps_full_sorted[args.checkpoint_index]
+            episodes, episode_labels = get_ppo_rollouts(args, checkpoint)
 
-    else:
-        checkpoint = checkpointed_steps_sorted[args.checkpoint_index]
-        episodes, episode_labels, mean_reward = get_ppo_rollouts(args, checkpoint, use_representations_instead_of_frames=("pretrained-rl-agent" in args.method))
-        wandb.log({"reward":mean_reward, "checkpoint":checkpoint})
-
+    elif args.method == 'pretrained-rl-agent':
+        if args.collect_mode == 'random_agent':
+            checkpoint = checkpointed_steps_full_sorted[args.checkpoint_index]
+            # episodes is actually episode_features in this case
+            episodes, episode_labels, mean_reward = get_ppo_representations(args, checkpoint)
+            wandb.log({"reward": mean_reward, "checkpoint": checkpoint})
+        else:
+            pass
 
     ep_inds = [i for i in range(len(episodes)) if len(episodes[i]) > args.batch_size]
     episodes = [episodes[i] for i in ep_inds]
@@ -143,7 +149,6 @@ def run_probe(encoder, args, device, seed):
                                                                          val_split_ind:te_split_ind], episode_labels[
                                                                                                       te_split_ind:]
 
-
     if args.method == 'majority':
         return majority_baseline(tr_labels, test_labels, wandb)
 
@@ -158,11 +163,10 @@ def run_probe(encoder, args, device, seed):
                            log=False)
 
     trainer.train(tr_eps, val_eps, tr_labels, val_labels)
-    test_acc,test_f1score = trainer.test(test_eps, test_labels)
+    test_acc, test_f1score = trainer.test(test_eps, test_labels)
 
-    #_, test_acc = trainer.evaluate(test_eps, test_labels)
+    # _, test_acc = trainer.evaluate(test_eps, test_labels)
     return test_acc, test_f1score
-
 
 
 def main(args):
@@ -170,7 +174,8 @@ def main(args):
     env = make_vec_envs(args, 1)
     wandb.config.update(vars(args))
 
-    if args.train_encoder and args.method in ['appo', 'spatial-appo', 'cpc', 'vae', 'bert', 'ms-dim', 'pixel_predictor',"naff"]:
+    if args.train_encoder and args.method in ['appo', 'spatial-appo', 'cpc', 'vae', 'bert', 'ms-dim', 'pixel_predictor',
+                                              "naff"]:
         print("Training encoder from scratch")
         encoder = train_encoder(args)
         encoder.probing = True
@@ -210,7 +215,7 @@ def main(args):
     all_runs_test_acc = appendabledict()
     for i, seed in enumerate(range(args.seed, args.seed + args.num_runs)):
         print("Run number {} of {}".format(i + 1, args.num_runs))
-        test_acc,f1score = run_probe(encoder, args, device, seed=1)
+        test_acc, f1score = run_probe(encoder, args, device, seed=1)
         all_runs_test_f1.append_update(f1score)
         all_runs_test_acc.append_update(test_acc)
 
@@ -232,5 +237,5 @@ if __name__ == "__main__":
     parser = get_argparser()
     args = parser.parse_args()
     tags = ['probe']
-    wandb.init(project="curl-atari-neurips-3", entity="curl-atari", tags=tags)
+    wandb.init(project="curl-atari-neurips-scratch", entity="curl-atari", tags=tags)
     main(args)
