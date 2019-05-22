@@ -34,8 +34,8 @@ def download_run(args, checkpoint_step):
                                                                "config.env_name": args.env_name}))
     run = runs[0]
     filename = args.env_name + '_' + str(checkpoint_step) + '.pt'
-    run.files(names=[filename])[0].download(root='../trained_models_full/', replace=True)
-    return '../trained_models_full/' + filename
+    run.files(names=[filename])[0].download(root='./trained_models_full/', replace=True)
+    return './trained_models_full/' + filename
 
 
 def get_ppo_rollouts(args, checkpoint_step):
@@ -55,9 +55,11 @@ def get_ppo_rollouts(args, checkpoint_step):
     step = 0
     masks = torch.zeros(1, 1)
     obs = envs.reset()
+    entropies = []
     for step in range(args.probe_steps // args.num_processes):
         # Take action using a random policy
-        obs, action, _, _, actor_features = actor_critic.act(obs, None, masks, deterministic=False)
+        obs, action, _, _, actor_features, dist_entropy = actor_critic.act(obs, None, masks, deterministic=False)
+        entropies.append(dist_entropy)
         obs, reward, done, infos = envs.step(action)
         for i, info in enumerate(infos):
             if 'episode' in info.keys():
@@ -81,7 +83,8 @@ def get_ppo_rollouts(args, checkpoint_step):
     episodes = list(chain.from_iterable(episodes))
     # Convert to 1d list from 2d list
     episode_labels = list(chain.from_iterable(episode_labels))
-    return episodes, episode_labels, np.mean(episode_rewards)
+    mean_entropy = torch.stack(entropies).mean()
+    return episodes, episode_labels, np.mean(episode_rewards), mean_entropy
 
 
 def get_ppo_representations(args, checkpoint_step):
@@ -138,6 +141,6 @@ def get_ppo_representations(args, checkpoint_step):
 if __name__ == "__main__":
     parser = get_argparser()
     args = parser.parse_args()
-    args.env_name = 'PongNoFrameskip-v4'
+    args.env_name = 'SeaquestNoFrameskip-v4'
     args.probe_steps = 2000
-    episodes, episode_labels, mean_reward = get_ppo_rollouts(args, 1076736)
+    episodes, episode_labels, mean_reward, mean_entropy = get_ppo_rollouts(args, 10753536)
