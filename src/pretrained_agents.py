@@ -175,7 +175,7 @@ def get_ppo_representations(args, checkpoint_step, rollout_checkpoint_step=None)
     obs = envs.reset()
     for step in range(args.probe_steps // args.num_processes):
         # Take action using a random policy
-        with torch.no_grad:
+        with torch.no_grad():
             _, action, _, _, actor_features, _ = actor_critic.act(obs, None, masks, deterministic=False)
         
         if random_agent:
@@ -183,7 +183,7 @@ def get_ppo_representations(args, checkpoint_step, rollout_checkpoint_step=None)
                 np.array([np.random.randint(1, envs.action_space.n) for _ in range(args.num_processes)])) \
                 .unsqueeze(dim=1)
         else:
-            with torch.no_grad:
+            with torch.no_grad():
                 _, action, _, _, actor_features, _ = ro_actor_critic.act(obs, None, masks, deterministic=False)
             action = torch.tensor([envs.action_space.sample() if np.random.uniform(0, 1) < 0.2 else action[i]
                                    for i in range(args.num_processes)]).unsqueeze(dim=1)
