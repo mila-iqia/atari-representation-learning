@@ -7,6 +7,7 @@ import torch
 
 from src.envs import make_vec_envs
 from src.global_infonce_stdim import GlobalInfoNCESpatioTemporalTrainer
+from src.global_local_infonce import GlobalLocalInfoNCESpatioTemporalTrainer
 from src.multi_step_stdim import MultiStepSTDIM
 from src.pretrained_agents import get_ppo_rollouts, checkpointed_steps_full_sorted
 from src.spatio_temporal import SpatioTemporalTrainer
@@ -58,6 +59,8 @@ def train_encoder(args):
         trainer = InfoNCESpatioTemporalTrainer(encoder, config, device=device, wandb=wandb)
     if args.method == "global-infonce-stdim":
         trainer = GlobalInfoNCESpatioTemporalTrainer(encoder, config, device=device, wandb=wandb)
+    if args.method == "global-local-infonce-stdim":
+        trainer = GlobalLocalInfoNCESpatioTemporalTrainer(encoder, config, device=device, wandb=wandb)
 
     if args.collect_mode == "random_agent":
         obs = envs.reset()

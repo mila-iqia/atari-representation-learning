@@ -33,7 +33,7 @@ def get_argparser():
     parser.add_argument('--method', type=str, default='appo',
                         choices=["appo", "cpc", "supervised", "random-cnn", "nonlinear", "spatial-appo", "majority",
                             "pretrained-rl-agent", "flat-pixels", "vae", "ms-dim", "bert", "pixel-predictor","naff", "infonce-stdim",
-                                 "global-infonce-stdim"],
+                                 "global-infonce-stdim", "global-local-infonce-stdim"],
                         help='Method to use for training representations (default: appo)')
     parser.add_argument('--mode', type=str, default='pcl',
                         help='Mode to use when using the Appo estimator [pcl | tcl | both] (default: pcl)')
