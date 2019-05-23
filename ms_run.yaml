@@ -1,7 +1,7 @@
 description: CURL-ATRI
 
 auth:
-  cluster: eu2
+  cluster: wu2
   vc: msrlabs
   docker:
     image: philly/jobs/custom/generic-docker:py36
@@ -22,21 +22,27 @@ storage:
 
 search:
   job_template:
-    name: curl_atari_spatial_appo_300
+    name: curl_atari_rl_probes
     sku: G1
     command:
       - conda install -y pytorch torchvision cudatoolkit=9.0 -c pytorch
       - pip install https://github.com/openai/baselines/archive/master.zip
-      - pip install https://github.com/ikostrikov/pytorch-a2c-ppo-acktr-gail/archive/master.zip
+      - pip install https://github.com/ankeshanand/pytorch-a2c-ppo-acktr-gail/archive/master.zip
       - pip install 'gym[atari]' --upgrade
       - pip install matplotlib wandb wget opencv-python
       - export LC_ALL=C.UTF-8
       - export LANG=C.UTF-8
       - wandb login fa235c4236ea0bd894bc3f26e87054a6ed6af293
-      - python -m scripts.run_probe --env-name {env_name} --method spatial-appo --epochs 200 --patience 100 --lr 5e-4
+      - python -m scripts.run_probe --env-name {env_name} --method pretrained-rl-agent --probe-collect-mode {pcm} --checkpoint-index {checkpoint_index} --wandb-proj curl-atari-inspect-agents-2
   type: grid
-  max_trials: 22
+  max_trials: 2000
   params:
     - name: env_name
       spec: discrete
       values: ['AsteroidsNoFrameskip-v4', 'BerzerkNoFrameskip-v4', 'BowlingNoFrameskip-v4', 'BoxingNoFrameskip-v4', 'BreakoutNoFrameskip-v4', 'DemonAttackNoFrameskip-v4', 'FreewayNoFrameskip-v4', 'FrostbiteNoFrameskip-v4', 'HeroNoFrameskip-v4', 'MontezumaRevengeNoFrameskip-v4', 'MsPacmanNoFrameskip-v4', 'PitfallNoFrameskip-v4', 'PongNoFrameskip-v4', 'PrivateEyeNoFrameskip-v4', 'QbertNoFrameskip-v4', 'RiverraidNoFrameskip-v4', 'SeaquestNoFrameskip-v4', 'SpaceInvadersNoFrameskip-v4', 'TennisNoFrameskip-v4', 'VentureNoFrameskip-v4', 'VideoPinballNoFrameskip-v4', 'YarsRevengeNoFrameskip-v4']
+    - name: checkpoint_index
+      spec: discrete
+      values: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29, 30, 31, 32, 33]
+    - name: pcm
+      spec: discrete
+      values: ['random_agent', 'pretrained_ppo']
