@@ -82,7 +82,7 @@ class GlobalLocalInfoNCESpatioTemporalTrainer(Trainer):
             yield torch.stack(x_t).to(self.device) / 255., torch.stack(x_tprev).to(self.device) / 255.
 
     def do_one_epoch(self, epoch, episodes):
-        mode = "train" if self.encoder.trainin else "val"
+        mode = "train" if self.encoder.training else "val"
         epoch_loss, accuracy, steps = 0., 0., 0
         accuracy1, accuracy2 = 0., 0.
         epoch_loss1, epoch_loss2 = 0., 0.
@@ -103,10 +103,10 @@ class GlobalLocalInfoNCESpatioTemporalTrainer(Trainer):
             for y in range(sy):
                 for x in range(sx):
                     if self.use_multiple_predictors:
-                        predictions = self.classifier1(f_t)
-                    else:
                         predictions = self.classifiers[classifier_index](f_t)
                         classifier_index += 1
+                    else:
+                        predictions = self.classifier1(f_t)
 
                     positive = f_t_prev[:, y, x, :]
                     logits = torch.matmul(predictions, positive.t())
@@ -135,7 +135,7 @@ class GlobalLocalInfoNCESpatioTemporalTrainer(Trainer):
         # TODO: Make it work for all modes, right now only it defaults to pcl.
         for e in range(self.epochs):
             self.encoder.train()
-            if self.use_multiple_features:
+            if self.use_multiple_predictors:
                 for c in self.classifiers:
                   c.train()
             else:
@@ -143,7 +143,7 @@ class GlobalLocalInfoNCESpatioTemporalTrainer(Trainer):
             self.do_one_epoch(e, tr_eps)
 
             self.encoder.eval()
-            if self.use_multiple_features:
+            if self.use_multiple_predictors:
                 for c in self.classifiers:
                   c.eval()
             else:
