@@ -18,6 +18,18 @@ import wandb
 import sys
 
 
+def count_duplicates(tr_eps, test_eps):
+    flat_tr = list(chain.from_iterable(tr_eps))
+    tr_set = set([x.numpy().tostring() for x in flat_tr])
+    flat_test = list(chain.from_iterable(test_eps))
+    flat_test_hash = [x.numpy().tostring() for x in flat_test]
+    dups = 0
+    for item in flat_test_hash:
+        if item in tr_set:
+            dups += 1
+    return dups
+
+
 def remove_low_entropy_labels(episode_labels, entropy_threshold=0.3):
     flat_label_list = list(chain.from_iterable(episode_labels))
     counts = {}
@@ -155,7 +167,8 @@ def run_probe(encoder, args, device, seed):
     tr_labels, val_labels, test_labels = episode_labels[:val_split_ind], episode_labels[
                                                                          val_split_ind:te_split_ind], episode_labels[
                                                                                                       te_split_ind:]
-
+    print(count_duplicates(tr_eps, test_eps))
+    wandb.log({'Duplicates': count_duplicates(tr_eps, test_eps)})
     if args.method == 'majority':
         return majority_baseline(tr_labels, test_labels, wandb)
 
