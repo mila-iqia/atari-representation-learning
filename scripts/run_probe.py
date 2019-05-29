@@ -44,6 +44,7 @@ def remove_low_entropy_labels(episode_labels, entropy_threshold=0.3):
     for k in counts:
         entropy = torch.distributions.Categorical(
             torch.tensor([x / len(flat_label_list) for x in counts[k].values()])).entropy()
+        wandb.log({'entropy_' + k: entropy})
         if entropy < entropy_threshold:
             print("Deleting {} for being too low in entropy! Sorry, dood!".format(k))
             low_entropy_labels.append(k)
