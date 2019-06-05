@@ -65,7 +65,7 @@ def get_argparser():
     parser.add_argument("--wandb-proj", type=str, default="curl-atari-neurips-scratch")
     parser.add_argument("--num_rew_evals",type=int,default=10)
     # rl-probe specific arguments
-    parser.add_argument("--checkpoint-index", type=int, default=10)
+    parser.add_argument("--checkpoint-index", type=int, default=-1)
 
     #bert specific arguments
     parser.add_argument("--num_transformer_layers", type=int, default=2)
