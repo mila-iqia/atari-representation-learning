@@ -18,16 +18,23 @@ import wandb
 import sys
 
 
-def count_duplicates(tr_eps, test_eps):
+def remove_duplicates(tr_eps, val_eps, test_eps, test_labels):
+    """
+    Remove any items in test_eps (&test_labels) which are present in tr/val_eps
+    """
     flat_tr = list(chain.from_iterable(tr_eps))
-    tr_set = set([x.numpy().tostring() for x in flat_tr])
+    flat_val = list(chain.from_iterable(val_eps))
+    tr_val_set = set([x.numpy().tostring() for x in flat_tr] + [x.numpy().tostring() for x in flat_val])
     flat_test = list(chain.from_iterable(test_eps))
-    flat_test_hash = [x.numpy().tostring() for x in flat_test]
-    dups = 0
-    for item in flat_test_hash:
-        if item in tr_set:
-            dups += 1
-    return dups
+
+    for i, episode in enumerate(test_eps[:]):
+        test_labels[i] = [label for obs, label in zip(test_eps[i], test_labels[i]) if obs.numpy().tostring() not in tr_val_set]
+        test_eps[i] = [obs for obs in episode if obs.numpy().tostring() not in tr_val_set]
+    test_len = len(list(chain.from_iterable(test_eps)))
+    dups = len(flat_test) - test_len
+    print('Duplicates: {}, Test Len: {}'.format(dups, test_len))
+    wandb.log({'Duplicates': dups, 'Test Len': test_len})
+    return test_eps, test_labels
 
 
 def remove_low_entropy_labels(episode_labels, entropy_threshold=0.3):
@@ -117,14 +124,9 @@ def get_random_agent_episodes(args, device):
                 if "labels" in info.keys():
                     episode_labels[i].append([info["labels"]])
 
-    # Put episode frames on the GPU.
-    for p in range(args.num_processes):
-        for e in range(len(episodes[p])):
-            episodes[p][e] = torch.stack(episodes[p][e])
-
-    # Convert to 1d list from 2d list
+    # Convert to 2d list from 3d list
     episodes = list(chain.from_iterable(episodes))
-    # Convert to 1d list from 2d list
+    # Convert to 2d list from 3d list
     episode_labels = list(chain.from_iterable(episode_labels))
     return episodes, episode_labels
 
@@ -168,8 +170,10 @@ def run_probe(encoder, args, device, seed):
     tr_labels, val_labels, test_labels = episode_labels[:val_split_ind], episode_labels[
                                                                          val_split_ind:te_split_ind], episode_labels[
                                                                                                       te_split_ind:]
-    print(count_duplicates(tr_eps, test_eps))
-    wandb.log({'Duplicates': count_duplicates(tr_eps, test_eps)})
+    test_eps, test_labels = remove_duplicates(tr_eps, val_eps, test_eps, test_labels)
+    for e in range(len(episodes)):
+        episodes[e] = torch.stack(episodes[e])
+
     if args.method == 'majority':
         return majority_baseline(tr_labels, test_labels, wandb)
 
@@ -186,7 +190,6 @@ def run_probe(encoder, args, device, seed):
     trainer.train(tr_eps, val_eps, tr_labels, val_labels)
     test_acc, test_f1score = trainer.test(test_eps, test_labels)
 
-    # _, test_acc = trainer.evaluate(test_eps, test_labels)
     return test_acc, test_f1score
 
 

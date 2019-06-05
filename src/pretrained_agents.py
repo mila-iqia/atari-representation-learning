@@ -126,14 +126,9 @@ def get_ppo_rollouts(args, steps, checkpoint_step):
                 if "labels" in info.keys():
                     episode_labels[i].append([info["labels"]])
 
-    # Put episode frames on the GPU.
-    for p in range(args.num_processes):
-        for e in range(len(episodes[p])):
-            episodes[p][e] = torch.stack(episodes[p][e])
-
-    # Convert to 1d list from 2d list
+    # Convert to 2d list from 3d list
     episodes = list(chain.from_iterable(episodes))
-    # Convert to 1d list from 2d list
+    # Convert to 2d list from 3d list
     episode_labels = list(chain.from_iterable(episode_labels))
     mean_entropy = torch.stack(entropies).mean()
     return episodes, episode_labels, np.mean(episode_rewards), mean_entropy
@@ -202,12 +197,7 @@ def get_ppo_representations(args, checkpoint_step, rollout_checkpoint_step=None)
                 if "labels" in info.keys():
                     episode_labels[i].append([info["labels"]])
 
-    # Put episode frames on the GPU.
-    for p in range(args.num_processes):
-        for e in range(len(episode_features[p])):
-            episode_features[p][e] = torch.stack(episode_features[p][e])
-
-    # Convert to 1d list from 2d list
+    # Convert to 2d list from 3d list
     episode_labels = list(chain.from_iterable(episode_labels))
     episode_features = list(chain.from_iterable(episode_features))
     return episode_features, episode_labels, mean_reward
