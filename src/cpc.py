@@ -40,7 +40,7 @@ class CPCTrainer(Trainer):
             for episode in episodes_batch:
               start_index = np.random.randint(0, len(episode) - self.sequence_length+1)
               seq = episode[start_index: start_index + self.sequence_length]
-              sequences.append(seq)
+              sequences.append(torch.stack(seq))
             yield torch.stack(sequences)
 
     def do_one_epoch(self, epoch, episodes):

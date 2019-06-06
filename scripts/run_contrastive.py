@@ -88,12 +88,8 @@ def train_encoder(args):
         print("Episode lengths: mean/std/min/max",
               np.mean(episode_lens), np.std(episode_lens),
               np.min(episode_lens), np.max(episode_lens))
-        # Put episode frames on the GPU.
-        for p in range(args.num_processes):
-            for e in range(len(episodes[p])):
-                episodes[p][e] = torch.stack(episodes[p][e])
 
-        # Convert to 1d list from 2d list
+        # Convert to 2d list from 3d list
         episodes = list(chain.from_iterable(episodes))
         episodes = [x for x in episodes if len(x) > args.batch_size]
 
