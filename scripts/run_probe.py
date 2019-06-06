@@ -160,8 +160,9 @@ def run_probe(encoder, args, device, seed):
                                                                          val_split_ind:te_split_ind], episode_labels[
                                                                                                       te_split_ind:]
     test_eps, test_labels = remove_duplicates(tr_eps, val_eps, test_eps, test_labels)
-    for e in range(len(episodes)):
-        episodes[e] = torch.stack(episodes[e])
+    test_ep_inds = [i for i in range(len(test_eps)) if len(test_eps[i]) > 1]
+    test_eps = [test_eps[i] for i in test_ep_inds]
+    test_labels = [test_labels[i] for i in test_ep_inds]
 
     if args.method == 'majority':
         return majority_baseline(tr_labels, test_labels, wandb)
