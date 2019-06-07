@@ -87,12 +87,13 @@ class NaFFPredictorTrainer(Trainer):
         mode = "train" if self.naff.training else "val"
         epoch_loss, accuracy, steps = 0., 0., 0
         data_generator = self.generate_batch(episodes)
-        for x_t,x_tn in data_generator:
-            x_tn_hat = self.naff(x_t)
-            self.optimizer.zero_grad()
-            loss = self.loss_fn(x_tn_hat,x_tn)
+        for x_t, x_tn in data_generator:
+            with torch.set_grad_enabled(mode == 'train'):
+                x_tn_hat = self.naff(x_t)
+                loss = self.loss_fn(x_tn_hat, x_tn)
 
             if mode == "train":
+                self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
 

@@ -78,39 +78,40 @@ class InfoNCESpatioTemporalTrainer(Trainer):
         epoch_loss1, epoch_loss2 = 0., 0.
         data_generator = self.generate_batch(episodes)
         for x_t, x_tprev in data_generator:
-            f_t_maps, f_t_prev_maps = self.encoder(x_t, fmaps=True), self.encoder(x_tprev, fmaps=True)
+            with torch.set_grad_enabled(mode == 'train'):
+                f_t_maps, f_t_prev_maps = self.encoder(x_t, fmaps=True), self.encoder(x_tprev, fmaps=True)
 
-            # Loss 1: Global at time t, f5 patches at time t-1
-            f_t, f_t_prev = f_t_maps['out'], f_t_prev_maps['f5']
-            # print(f_t.size(), f_t_prev.size())
-            sy = f_t_prev.size(1)
-            sx = f_t_prev.size(2)
+                # Loss 1: Global at time t, f5 patches at time t-1
+                f_t, f_t_prev = f_t_maps['out'], f_t_prev_maps['f5']
+                sy = f_t_prev.size(1)
+                sx = f_t_prev.size(2)
 
-            N = f_t.size(0)
-            loss1 = 0.
-            for y in range(sy):
-                for x in range(sx):
-                    predictions = self.classifier1(f_t)
-                    positive = f_t_prev[:, y, x, :]
-                    logits = torch.matmul(predictions, positive.t())
-                    step_loss = F.cross_entropy(logits, torch.arange(N).to(self.device))
-                    loss1 += step_loss
-            loss1 = loss1 / (sx * sy)
+                N = f_t.size(0)
+                loss1 = 0.
+                for y in range(sy):
+                    for x in range(sx):
+                        predictions = self.classifier1(f_t)
+                        positive = f_t_prev[:, y, x, :]
+                        logits = torch.matmul(predictions, positive.t())
+                        step_loss = F.cross_entropy(logits, torch.arange(N).to(self.device))
+                        loss1 += step_loss
+                loss1 = loss1 / (sx * sy)
 
-            # Loss 2: f5 patches at time t, with f5 patches at time t-1
-            f_t = f_t_maps['f5']
-            loss2 = 0.
-            for y in range(sy):
-                for x in range(sx):
-                    predictions = self.classifier2(f_t[:, y, x, :])
-                    positive = f_t_prev[:, y, x, :]
-                    logits = torch.matmul(predictions, positive.t())
-                    step_loss = F.cross_entropy(logits, torch.arange(N).to(self.device))
-                    loss2 += step_loss
-            loss2 = loss2 / (sx * sy)
-            self.optimizer.zero_grad()
-            loss = loss1 + loss2
+                # Loss 2: f5 patches at time t, with f5 patches at time t-1
+                f_t = f_t_maps['f5']
+                loss2 = 0.
+                for y in range(sy):
+                    for x in range(sx):
+                        predictions = self.classifier2(f_t[:, y, x, :])
+                        positive = f_t_prev[:, y, x, :]
+                        logits = torch.matmul(predictions, positive.t())
+                        step_loss = F.cross_entropy(logits, torch.arange(N).to(self.device))
+                        loss2 += step_loss
+                loss2 = loss2 / (sx * sy)
+                loss = loss1 + loss2
+
             if mode == "train":
+                self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
 
