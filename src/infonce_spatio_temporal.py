@@ -58,17 +58,8 @@ class InfoNCESpatioTemporalTrainer(Trainer):
                 t, t_hat = np.random.randint(0, len(episode)), np.random.randint(0, len(episode))
                 x_t.append(episode[t])
 
-                # Apply the same transform to x_{t-1} and x_{t_hat}
-                # https://github.com/pytorch/vision/issues/9#issuecomment-383110707
-                # Use numpy's random seed because Cutout uses np
-                # seed = random.randint(0, 2 ** 32)
-                # np.random.seed(seed)
                 x_tprev.append(episode[t - 1])
-                # np.random.seed(seed)
-                #x_that.append(episode[t_hat])
-
                 ts.append([t])
-                #thats.append([t_hat])
             yield torch.stack(x_t).to(self.device) / 255., torch.stack(x_tprev).to(self.device) / 255.
 
     def do_one_epoch(self, epoch, episodes):
@@ -78,37 +69,36 @@ class InfoNCESpatioTemporalTrainer(Trainer):
         epoch_loss1, epoch_loss2 = 0., 0.
         data_generator = self.generate_batch(episodes)
         for x_t, x_tprev in data_generator:
-            with torch.set_grad_enabled(mode == 'train'):
-                f_t_maps, f_t_prev_maps = self.encoder(x_t, fmaps=True), self.encoder(x_tprev, fmaps=True)
+            f_t_maps, f_t_prev_maps = self.encoder(x_t, fmaps=True), self.encoder(x_tprev, fmaps=True)
 
-                # Loss 1: Global at time t, f5 patches at time t-1
-                f_t, f_t_prev = f_t_maps['out'], f_t_prev_maps['f5']
-                sy = f_t_prev.size(1)
-                sx = f_t_prev.size(2)
+            # Loss 1: Global at time t, f5 patches at time t-1
+            f_t, f_t_prev = f_t_maps['out'], f_t_prev_maps['f5']
+            sy = f_t_prev.size(1)
+            sx = f_t_prev.size(2)
 
-                N = f_t.size(0)
-                loss1 = 0.
-                for y in range(sy):
-                    for x in range(sx):
-                        predictions = self.classifier1(f_t)
-                        positive = f_t_prev[:, y, x, :]
-                        logits = torch.matmul(predictions, positive.t())
-                        step_loss = F.cross_entropy(logits, torch.arange(N).to(self.device))
-                        loss1 += step_loss
-                loss1 = loss1 / (sx * sy)
+            N = f_t.size(0)
+            loss1 = 0.
+            for y in range(sy):
+                for x in range(sx):
+                    predictions = self.classifier1(f_t)
+                    positive = f_t_prev[:, y, x, :]
+                    logits = torch.matmul(predictions, positive.t())
+                    step_loss = F.cross_entropy(logits, torch.arange(N).to(self.device))
+                    loss1 += step_loss
+            loss1 = loss1 / (sx * sy)
 
-                # Loss 2: f5 patches at time t, with f5 patches at time t-1
-                f_t = f_t_maps['f5']
-                loss2 = 0.
-                for y in range(sy):
-                    for x in range(sx):
-                        predictions = self.classifier2(f_t[:, y, x, :])
-                        positive = f_t_prev[:, y, x, :]
-                        logits = torch.matmul(predictions, positive.t())
-                        step_loss = F.cross_entropy(logits, torch.arange(N).to(self.device))
-                        loss2 += step_loss
-                loss2 = loss2 / (sx * sy)
-                loss = loss1 + loss2
+            # Loss 2: f5 patches at time t, with f5 patches at time t-1
+            f_t = f_t_maps['f5']
+            loss2 = 0.
+            for y in range(sy):
+                for x in range(sx):
+                    predictions = self.classifier2(f_t[:, y, x, :])
+                    positive = f_t_prev[:, y, x, :]
+                    logits = torch.matmul(predictions, positive.t())
+                    step_loss = F.cross_entropy(logits, torch.arange(N).to(self.device))
+                    loss2 += step_loss
+            loss2 = loss2 / (sx * sy)
+            loss = loss1 + loss2
 
             if mode == "train":
                 self.optimizer.zero_grad()
@@ -145,4 +135,4 @@ class InfoNCESpatioTemporalTrainer(Trainer):
                                                                      prefix.capitalize()))
         self.wandb.log({prefix + '_loss': epoch_loss,
                         prefix + '_loss1': epoch_loss1,
-                        prefix + '_loss2': epoch_loss2}, step=epoch_idx)
+                        prefix + '_loss2': epoch_loss2}, step=epoch_idx, commit=False)
