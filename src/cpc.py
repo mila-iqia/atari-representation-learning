@@ -40,7 +40,7 @@ class CPCTrainer(Trainer):
             for episode in episodes_batch:
               start_index = np.random.randint(0, len(episode) - self.sequence_length+1)
               seq = episode[start_index: start_index + self.sequence_length]
-              sequences.append(seq)
+              sequences.append(torch.stack(seq))
             yield torch.stack(sequences)
 
     def do_one_epoch(self, epoch, episodes):
@@ -51,26 +51,27 @@ class CPCTrainer(Trainer):
 
         data_generator = self.generate_batch(episodes)
         for sequence in data_generator:
-            sequence = sequence.to(self.device)
-            sequence = sequence / 255.
-            channels, w, h = self.config['obs_space'][-3:]
-            flat_sequence = sequence.view(-1, channels, w, h)
-            flat_latents = self.encoder(flat_sequence)
-            latents = flat_latents.view(
-                self.batch_size, self.sequence_length, self.encoder.hidden_size)
-            contexts, _ = self.gru(latents)
-            loss = 0.
-            for i in self.steps_gen():
-              predictions = self.discriminators[i](contexts[:, :-(i+1), :]).contiguous().view(-1, self.encoder.hidden_size)
-              targets = latents[:, i+1:, :].contiguous().view(-1, self.encoder.hidden_size)
-              logits = torch.matmul(predictions, targets.t())
-              step_loss = F.cross_entropy(logits, self.labels[i])
-              step_losses[i].append(step_loss.detach().item())
-              loss += step_loss
+            with torch.set_grad_enabled(mode == 'train'):
+                sequence = sequence.to(self.device)
+                sequence = sequence / 255.
+                channels, w, h = self.config['obs_space'][-3:]
+                flat_sequence = sequence.view(-1, channels, w, h)
+                flat_latents = self.encoder(flat_sequence)
+                latents = flat_latents.view(
+                    self.batch_size, self.sequence_length, self.encoder.hidden_size)
+                contexts, _ = self.gru(latents)
+                loss = 0.
+                for i in self.steps_gen():
+                  predictions = self.discriminators[i](contexts[:, :-(i+1), :]).contiguous().view(-1, self.encoder.hidden_size)
+                  targets = latents[:, i+1:, :].contiguous().view(-1, self.encoder.hidden_size)
+                  logits = torch.matmul(predictions, targets.t())
+                  step_loss = F.cross_entropy(logits, self.labels[i])
+                  step_losses[i].append(step_loss.detach().item())
+                  loss += step_loss
 
-              preds = torch.argmax(logits, dim=1)
-              step_accuracy = preds.eq(self.labels[i]).sum().float() / self.labels[i].numel()
-              step_accuracies[i].append(step_accuracy.detach().item())
+                  preds = torch.argmax(logits, dim=1)
+                  step_accuracy = preds.eq(self.labels[i]).sum().float() / self.labels[i].numel()
+                  step_accuracies[i].append(step_accuracy.detach().item())
 
             if mode == "train":
                 self.optimizer.zero_grad()

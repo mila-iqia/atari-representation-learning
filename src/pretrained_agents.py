@@ -83,10 +83,11 @@ def download_run(args, checkpoint_step):
     run = runs[0]
     filename = args.env_name + '_' + str(checkpoint_step) + '.pt'
     run.files(names=[filename])[0].download(root='./trained_models_full/', replace=True)
+    print('Downloaded ' + filename)
     return './trained_models_full/' + filename
 
 
-def get_ppo_rollouts(args, checkpoint_step):
+def get_ppo_rollouts(args, steps, checkpoint_step):
     filepath = download_run(args, checkpoint_step)
     while not os.path.exists(filepath):
         time.sleep(5)
@@ -104,10 +105,13 @@ def get_ppo_rollouts(args, checkpoint_step):
     masks = torch.zeros(1, 1)
     obs = envs.reset()
     entropies = []
-    for step in range(args.probe_steps // args.num_processes):
+    for step in range(steps // args.num_processes):
         # Take action using a random policy
-        obs, action, _, _, actor_features, dist_entropy = actor_critic.act(obs, None, masks, deterministic=False)
-        entropies.append(dist_entropy)
+        with torch.no_grad():
+            obs, action, _, _, actor_features, dist_entropy = actor_critic.act(obs, None, masks, deterministic=False)
+        action = torch.tensor([envs.action_space.sample() if np.random.uniform(0, 1) < 0.2 else action[i]
+                               for i in range(args.num_processes)]).unsqueeze(dim=1)
+        entropies.append(dist_entropy.clone())
         obs, reward, done, infos = envs.step(action)
         for i, info in enumerate(infos):
             if 'episode' in info.keys():
@@ -122,36 +126,20 @@ def get_ppo_rollouts(args, checkpoint_step):
                 if "labels" in info.keys():
                     episode_labels[i].append([info["labels"]])
 
-    # Put episode frames on the GPU.
-    for p in range(args.num_processes):
-        for e in range(len(episodes[p])):
-            episodes[p][e] = torch.stack(episodes[p][e])
-
-    # Convert to 1d list from 2d list
+    # Convert to 2d list from 3d list
     episodes = list(chain.from_iterable(episodes))
-    # Convert to 1d list from 2d list
+    # Convert to 2d list from 3d list
     episode_labels = list(chain.from_iterable(episode_labels))
     mean_entropy = torch.stack(entropies).mean()
     return episodes, episode_labels, np.mean(episode_rewards), mean_entropy
 
 
-def get_ppo_representations(args, checkpoint_step, rollout_checkpoint_step=None):
+def get_ppo_representations(args, checkpoint_step):
     # Gives PPO represnetations over data collected by a random agent
     filepath = download_run(args, checkpoint_step)
     while not os.path.exists(filepath):
         time.sleep(5)
-    random_agent = True  
-    if rollout_checkpoint_step:
-        random_agent = False
-        ro_filepath = download_run(args, rollout_checkpoint_step)
-        while not os.path.exists(ro_filepath):
-            time.sleep(5)
-        ro_actor_critic, ob_rms = \
-        torch.load(ro_filepath, map_location=lambda storage, loc: storage)
-        
 
-    # args.no_downsample = False
-    # args.num_frame_stack = 4
     envs = make_vec_envs(args, args.num_processes)
 
     actor_critic, ob_rms = \
@@ -160,7 +148,7 @@ def get_ppo_representations(args, checkpoint_step, rollout_checkpoint_step=None)
                            env_name=args.env_name,
                            seed=args.seed,
                            num_processes=args.num_processes,
-                           eval_log_dir="./tmp",device="cpu",num_evals=args.num_rew_evals)
+                           eval_log_dir="./tmp", device="cpu", num_evals=args.num_rew_evals)
     print(mean_reward)
     episode_labels = [[[]] for _ in range(args.num_processes)]
     episode_rewards = deque(maxlen=10)
@@ -171,14 +159,15 @@ def get_ppo_representations(args, checkpoint_step, rollout_checkpoint_step=None)
     obs = envs.reset()
     for step in range(args.probe_steps // args.num_processes):
         # Take action using a random policy
-        _, action, _, _, actor_features, _ = actor_critic.act(obs, None, masks, deterministic=False)
-        
-        if random_agent:
+        if args.probe_collect_mode == 'random_agent':
             action = torch.tensor(
                 np.array([np.random.randint(1, envs.action_space.n) for _ in range(args.num_processes)])) \
                 .unsqueeze(dim=1)
         else:
-            _, action, _, _, actor_features, _ = ro_actor_critic.act(obs, None, masks, deterministic=False)
+            with torch.no_grad():
+                _, action, _, _, actor_features, _ = actor_critic.act(obs, None, masks, deterministic=False)
+            action = torch.tensor([envs.action_space.sample() if np.random.uniform(0, 1) < 0.2 else action[i]
+                                   for i in range(args.num_processes)]).unsqueeze(dim=1)
         
         obs, reward, done, infos = envs.step(action)
         for i, info in enumerate(infos):
@@ -194,12 +183,7 @@ def get_ppo_representations(args, checkpoint_step, rollout_checkpoint_step=None)
                 if "labels" in info.keys():
                     episode_labels[i].append([info["labels"]])
 
-    # Put episode frames on the GPU.
-    for p in range(args.num_processes):
-        for e in range(len(episode_features[p])):
-            episode_features[p][e] = torch.stack(episode_features[p][e])
-
-    # Convert to 1d list from 2d list
+    # Convert to 2d list from 3d list
     episode_labels = list(chain.from_iterable(episode_labels))
     episode_features = list(chain.from_iterable(episode_features))
     return episode_features, episode_labels, mean_reward

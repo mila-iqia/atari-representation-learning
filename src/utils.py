@@ -32,12 +32,16 @@ def get_argparser():
                         help='Number of parallel environments to collect samples from (default: 8)')
     parser.add_argument('--method', type=str, default='appo',
                         choices=["appo", "cpc", "supervised", "random-cnn", "nonlinear", "spatial-appo", "majority",
-                            "pretrained-rl-agent", "flat-pixels", "vae", "ms-dim", "bert", "pixel-predictor","naff", "infonce-stdim"],
+                            "pretrained-rl-agent", "flat-pixels", "vae", "ms-dim", "bert", "pixel-predictor","naff", "infonce-stdim",
+                                 "global-infonce-stdim", "global-local-infonce-stdim"],
                         help='Method to use for training representations (default: appo)')
     parser.add_argument('--mode', type=str, default='pcl',
                         help='Mode to use when using the Appo estimator [pcl | tcl | both] (default: pcl)')
     parser.add_argument('--linear', action='store_true', default=True,
                         help='Whether to use a linear classifier')
+    parser.add_argument('--use_multiple_predictors', action='store_true', default=False,
+                        help='Whether to use multiple linear classifiers in the contrastive loss')
+
     parser.add_argument('--lr', type=float, default=3e-4,
                         help='Learning Rate foe learning representations (default: 5e-4)')
     parser.add_argument('--batch-size', type=int, default=64,
@@ -61,7 +65,7 @@ def get_argparser():
                                                     parser.add_argument("--wandb-proj", type=str, default="curl-atari-neurips-scratch")
     parser.add_argument("--num_rew_evals",type=int,default=10)
     # rl-probe specific arguments
-    parser.add_argument("--checkpoint-index", type=int, default=10)
+    parser.add_argument("--checkpoint-index", type=int, default=-1)
 
     #bert specific arguments
     parser.add_argument("--num_transformer_layers", type=int, default=2)
@@ -90,7 +94,7 @@ def get_argparser():
                         help='Hidden size of the GRU layers.')
     parser.add_argument('--gru_layers', type=int, default=2,
                         help='Number of GRU layers.')
-    parser.add_argument("--collect-mode", type=str, choices=["random_agent", "atari_zoo"], default="random_agent")
+    parser.add_argument("--collect-mode", type=str, choices=["random_agent", "atari_zoo", "pretrained_ppo"], default="random_agent")
 
 
     #probe arguments

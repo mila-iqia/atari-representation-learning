@@ -147,11 +147,12 @@ class VAETrainer(Trainer):
         epoch_loss, accuracy, steps = 0., 0., 0
         data_generator = self.generate_batch(episodes)
         for x_t in data_generator:
-            x_hat, mu, logvar = self.VAE(x_t)
-            self.optimizer.zero_grad()
-            loss = self.loss_fn(x_t, x_hat, mu, logvar)
+            with torch.set_grad_enabled(mode == 'train'):
+                x_hat, mu, logvar = self.VAE(x_t)
+                loss = self.loss_fn(x_t, x_hat, mu, logvar)
 
             if mode == "train":
+                self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
 

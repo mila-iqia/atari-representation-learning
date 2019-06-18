@@ -6,7 +6,10 @@ import numpy as np
 import torch
 
 from src.envs import make_vec_envs
+from src.global_infonce_stdim import GlobalInfoNCESpatioTemporalTrainer
+from src.global_local_infonce import GlobalLocalInfoNCESpatioTemporalTrainer
 from src.multi_step_stdim import MultiStepSTDIM
+from src.pretrained_agents import get_ppo_rollouts, checkpointed_steps_full_sorted
 from src.spatio_temporal import SpatioTemporalTrainer
 from src.utils import get_argparser, visualize_activation_maps
 from src.encoders import NatureCNN, ImpalaCNN
@@ -54,6 +57,10 @@ def train_encoder(args):
         trainer = NaFFPredictorTrainer(encoder, config, device=device, wandb=wandb)
     if args.method == "infonce-stdim":
         trainer = InfoNCESpatioTemporalTrainer(encoder, config, device=device, wandb=wandb)
+    if args.method == "global-infonce-stdim":
+        trainer = GlobalInfoNCESpatioTemporalTrainer(encoder, config, device=device, wandb=wandb)
+    if args.method == "global-local-infonce-stdim":
+        trainer = GlobalLocalInfoNCESpatioTemporalTrainer(encoder, config, device=device, wandb=wandb)
 
     if args.collect_mode == "random_agent":
         obs = envs.reset()
@@ -81,18 +88,21 @@ def train_encoder(args):
         print("Episode lengths: mean/std/min/max",
               np.mean(episode_lens), np.std(episode_lens),
               np.min(episode_lens), np.max(episode_lens))
-        # Put episode frames on the GPU.
-        for p in range(args.num_processes):
-            for e in range(len(episodes[p])):
-                episodes[p][e] = torch.stack(episodes[p][e])
 
-        # Convert to 1d list from 2d list
+        # Convert to 2d list from 3d list
         episodes = list(chain.from_iterable(episodes))
         episodes = [x for x in episodes if len(x) > args.batch_size]
+
     elif args.collect_mode == "atari_zoo":
         episodes, _, _ = get_atari_zoo_episodes(args.env_name,num_frame_stack=args.num_frame_stack,
                                              downsample=not args.no_downsample)
         episodes = [torch.from_numpy(ep).permute(0, 3, 1, 2).float() for ep in episodes]
+
+    elif args.collect_mode == "pretrained_ppo":
+        checkpoint = checkpointed_steps_full_sorted[args.checkpoint_index]
+        episodes, episode_labels, mean_reward, mean_action_entropy = get_ppo_rollouts(args, args.pretraining_steps,
+                                                                                      checkpoint)
+        episodes = [x for x in episodes if len(x) > args.batch_size]
 
     inds = range(len(episodes))
     split_ind = int(0.8 * len(inds))

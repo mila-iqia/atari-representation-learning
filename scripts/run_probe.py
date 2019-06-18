@@ -12,10 +12,28 @@ from src.envs import make_vec_envs
 from src.utils import get_argparser, visualize_activation_maps, appendabledict, calculate_multiclass_accuracy, \
     calculate_multiclass_f1_score
 from src.encoders import NatureCNN, ImpalaCNN
-from src.appo import AppoTrainer
 from src.pretrained_agents import get_ppo_rollouts, checkpointed_steps_full_sorted, get_ppo_representations
 import wandb
 import sys
+
+
+def remove_duplicates(tr_eps, val_eps, test_eps, test_labels):
+    """
+    Remove any items in test_eps (&test_labels) which are present in tr/val_eps
+    """
+    flat_tr = list(chain.from_iterable(tr_eps))
+    flat_val = list(chain.from_iterable(val_eps))
+    tr_val_set = set([x.numpy().tostring() for x in flat_tr] + [x.numpy().tostring() for x in flat_val])
+    flat_test = list(chain.from_iterable(test_eps))
+
+    for i, episode in enumerate(test_eps[:]):
+        test_labels[i] = [label for obs, label in zip(test_eps[i], test_labels[i]) if obs.numpy().tostring() not in tr_val_set]
+        test_eps[i] = [obs for obs in episode if obs.numpy().tostring() not in tr_val_set]
+    test_len = len(list(chain.from_iterable(test_eps)))
+    dups = len(flat_test) - test_len
+    print('Duplicates: {}, Test Len: {}'.format(dups, test_len))
+    wandb.log({'Duplicates': dups, 'Test Len': test_len})
+    return test_eps, test_labels
 
 
 def remove_low_entropy_labels(episode_labels, entropy_threshold=0.3):
@@ -32,6 +50,7 @@ def remove_low_entropy_labels(episode_labels, entropy_threshold=0.3):
     for k in counts:
         entropy = torch.distributions.Categorical(
             torch.tensor([x / len(flat_label_list) for x in counts[k].values()])).entropy()
+        wandb.log({'entropy_' + k: entropy})
         if entropy < entropy_threshold:
             print("Deleting {} for being too low in entropy! Sorry, dood!".format(k))
             low_entropy_labels.append(k)
@@ -104,14 +123,9 @@ def get_random_agent_episodes(args, device):
                 if "labels" in info.keys():
                     episode_labels[i].append([info["labels"]])
 
-    # Put episode frames on the GPU.
-    for p in range(args.num_processes):
-        for e in range(len(episodes[p])):
-            episodes[p][e] = torch.stack(episodes[p][e])
-
-    # Convert to 1d list from 2d list
+    # Convert to 2d list from 3d list
     episodes = list(chain.from_iterable(episodes))
-    # Convert to 1d list from 2d list
+    # Convert to 2d list from 3d list
     episode_labels = list(chain.from_iterable(episode_labels))
     return episodes, episode_labels
 
@@ -122,23 +136,13 @@ def run_probe(encoder, args, device, seed):
             episodes, episode_labels = get_random_agent_episodes(args, device)
         elif args.probe_collect_mode == 'pretrained_ppo':
             checkpoint = checkpointed_steps_full_sorted[args.checkpoint_index]
-            episodes, episode_labels, mean_reward, mean_action_entropy = get_ppo_rollouts(args, checkpoint)
+            episodes, episode_labels, mean_reward, mean_action_entropy = get_ppo_rollouts(args, args.probe_steps, checkpoint)
             wandb.log({'action_entropy': mean_action_entropy, 'mean_reward': mean_reward})
 
     elif args.method == 'pretrained-rl-agent':
-        if args.probe_collect_mode == 'random_agent':
-            print("starting")
-            checkpoint = checkpointed_steps_full_sorted[args.checkpoint_index]
-            # episodes is actually episode_features in this case
-            episodes, episode_labels, mean_reward = get_ppo_representations(args, checkpoint)
-            wandb.log({"reward": mean_reward, "checkpoint": checkpoint})
-        elif args.probe_collect_mode == 'pretrained_ppo':
-            rollout_checkpoint_index = 10
-            rollout_checkpoint = checkpointed_steps_full_sorted[rollout_checkpoint_index]
-            checkpoint = checkpointed_steps_full_sorted[args.checkpoint_index]
-            # episodes is actually episode_features in this case
-            episodes, episode_labels, mean_reward = get_ppo_representations(args, checkpoint, rollout_checkpoint)
-            wandb.log({"reward": mean_reward, "checkpoint": checkpoint, "rollout_checkpoint": rollout_checkpoint})
+        checkpoint = checkpointed_steps_full_sorted[args.checkpoint_index]
+        episodes, episode_labels, mean_reward = get_ppo_representations(args, checkpoint)
+        wandb.log({"reward": mean_reward, "checkpoint": checkpoint})
 
     print("got episodes!")
     ep_inds = [i for i in range(len(episodes)) if len(episodes[i]) > args.batch_size]
@@ -155,6 +159,10 @@ def run_probe(encoder, args, device, seed):
     tr_labels, val_labels, test_labels = episode_labels[:val_split_ind], episode_labels[
                                                                          val_split_ind:te_split_ind], episode_labels[
                                                                                                       te_split_ind:]
+    test_eps, test_labels = remove_duplicates(tr_eps, val_eps, test_eps, test_labels)
+    test_ep_inds = [i for i in range(len(test_eps)) if len(test_eps[i]) > 1]
+    test_eps = [test_eps[i] for i in test_ep_inds]
+    test_labels = [test_labels[i] for i in test_ep_inds]
 
     if args.method == 'majority':
         return majority_baseline(tr_labels, test_labels, wandb)
@@ -172,7 +180,6 @@ def run_probe(encoder, args, device, seed):
     trainer.train(tr_eps, val_eps, tr_labels, val_labels)
     test_acc, test_f1score = trainer.test(test_eps, test_labels)
 
-    # _, test_acc = trainer.evaluate(test_eps, test_labels)
     return test_acc, test_f1score
 
 
@@ -182,7 +189,7 @@ def main(args):
     wandb.config.update(vars(args))
 
     if args.train_encoder and args.method in ['appo', 'spatial-appo', 'cpc', 'vae', 'bert', 'ms-dim', 'pixel_predictor',
-                                              "naff", "infonce-stdim"]:
+                                              "naff", "infonce-stdim", "global-infonce-stdim", "global-local-infonce-stdim"]:
         print("Training encoder from scratch")
         encoder = train_encoder(args)
         encoder.probing = True
@@ -214,6 +221,7 @@ def main(args):
                 encoder.eval()
 
     device = torch.device("cuda:" + str(args.cuda_id) if torch.cuda.is_available() else "cpu")
+    env.close()
 
     # encoder.to(device)
     torch.set_num_threads(1)
