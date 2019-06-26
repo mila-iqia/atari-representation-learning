@@ -13,22 +13,18 @@ import torch
 from baselines import bench
 from baselines.common.atari_wrappers import make_atari, EpisodicLifeEnv, FireResetEnv, WarpFrame, ScaledFloatFrame, \
     ClipRewardEnv, FrameStack
-from src.atari import AtariWrapper
+from src.atari import AARIWrapper
 
 
 def make_env(env_id, seed, rank, log_dir, downsample=True, color=False):
     def _thunk():
-        if env_id.startswith("dm"):
-            _, domain, task = env_id.split('.')
-            env = dm_control2gym.make(domain_name=domain, task_name=task)
-        else:
-            env = gym.make(env_id)
+        env = gym.make(env_id)
 
         is_atari = hasattr(gym.envs, 'atari') and isinstance(
             env.unwrapped, gym.envs.atari.atari_env.AtariEnv)
         if is_atari:
             env = make_atari(env_id)
-            env = AtariWrapper(env)
+            env = AARIWrapper(env)
 
         env.seed(seed + rank)
 
@@ -44,7 +40,7 @@ def make_env(env_id, seed, rank, log_dir, downsample=True, color=False):
                 allow_early_resets=False)
 
         if is_atari:
-            if len(env.observation_space.shape) == 3:                
+            if len(env.observation_space.shape) == 3:
                 env = wrap_deepmind(env, downsample=downsample, color=color)
         elif len(env.observation_space.shape) == 3:
             raise NotImplementedError(
@@ -91,7 +87,8 @@ class GrayscaleWrapper(gym.ObservationWrapper):
         """Warp frames to 84x84 as done in the Nature paper and later work."""
         gym.ObservationWrapper.__init__(self, env)
         self.observation_space = spaces.Box(low=0, high=255,
-                                            shape=(self.observation_space.shape[0], self.observation_space.shape[1], 1), dtype=np.uint8)
+                                            shape=(self.observation_space.shape[0], self.observation_space.shape[1], 1),
+                                            dtype=np.uint8)
 
     def observation(self, frame):
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
@@ -99,7 +96,8 @@ class GrayscaleWrapper(gym.ObservationWrapper):
         return frame
 
 
-def wrap_deepmind(env, downsample=True, episode_life=True, clip_rewards=True, frame_stack=False, scale=False, color=False):
+def wrap_deepmind(env, downsample=True, episode_life=True, clip_rewards=True, frame_stack=False, scale=False,
+                  color=False):
     """Configure environment for DeepMind-style Atari.
     """
     if ("videopinball" in str(env.spec.id).lower()) or ('tennis' in str(env.spec.id).lower()):
