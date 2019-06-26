@@ -32,8 +32,8 @@ def get_argparser():
                         help='Number of parallel environments to collect samples from (default: 8)')
     parser.add_argument('--method', type=str, default='appo',
                         choices=["appo", "cpc", "supervised", "random-cnn", "nonlinear", "spatial-appo", "majority",
-                            "pretrained-rl-agent", "flat-pixels", "vae", "ms-dim", "bert", "pixel-predictor","naff", "infonce-stdim",
-                                 "global-infonce-stdim", "global-local-infonce-stdim"],
+                                 "pretrained-rl-agent", "flat-pixels", "vae", "ms-dim", "bert", "pixel-predictor",
+                                 "naff", "infonce-stdim", "global-infonce-stdim", "global-local-infonce-stdim"],
                         help='Method to use for training representations (default: appo)')
     parser.add_argument('--mode', type=str, default='pcl',
                         help='Mode to use when using the Appo estimator [pcl | tcl | both] (default: pcl)')
@@ -61,13 +61,13 @@ def get_argparser():
     parser.add_argument("--time-window", nargs=2, default=[-1, 0], type=int)
     parser.add_argument("--entropy-threshold", type=float, default=0.6)
     parser.add_argument("--color", action='store_true', default=False)
-    parser.add_argument("--end-with-relu", action='store_true',default=False)
-                                                    parser.add_argument("--wandb-proj", type=str, default="curl-atari-neurips-scratch")
-    parser.add_argument("--num_rew_evals",type=int,default=10)
+    parser.add_argument("--end-with-relu", action='store_true', default=False)
+    parser.add_argument("--wandb-proj", type=str, default="curl-atari-neurips-scratch")
+    parser.add_argument("--num_rew_evals", type=int, default=10)
     # rl-probe specific arguments
     parser.add_argument("--checkpoint-index", type=int, default=-1)
 
-    #bert specific arguments
+    # bert specific arguments
     parser.add_argument("--num_transformer_layers", type=int, default=2)
     parser.add_argument("--num_lin_projections", type=int, default=8)
     parser.add_argument("--dropout", type=float, default=0.1)
@@ -76,7 +76,7 @@ def get_argparser():
     parser.add_argument("--d_ff", type=int, default=512)
     parser.add_argument("--beta", type=float, default=1.0)
 
-    #naff-specific arguments
+    # naff-specific arguments
     parser.add_argument("--naff_fc_size", type=int, default=2048,
                         help="fully connected layer width for naff")
     parser.add_argument("--pred_offset", type=int, default=1,
@@ -94,14 +94,15 @@ def get_argparser():
                         help='Hidden size of the GRU layers.')
     parser.add_argument('--gru_layers', type=int, default=2,
                         help='Number of GRU layers.')
-    parser.add_argument("--collect-mode", type=str, choices=["random_agent", "atari_zoo", "pretrained_ppo"], default="random_agent")
+    parser.add_argument("--collect-mode", type=str, choices=["random_agent", "atari_zoo", "pretrained_ppo"],
+                        default="random_agent")
 
-
-    #probe arguments
+    # probe arguments
     parser.add_argument("--weights-path", type=str, default="None")
     parser.add_argument("--train-encoder", action='store_true', default=True)
     parser.add_argument('--probe-lr', type=float, default=5e-2)
-    parser.add_argument("--probe-collect-mode", type=str, choices=["random_agent", "atari_zoo", "pretrained_ppo"], default="random_agent")
+    parser.add_argument("--probe-collect-mode", type=str, choices=["random_agent", "atari_zoo", "pretrained_ppo"],
+                        default="random_agent")
     parser.add_argument('--zoo-algos', nargs='+', default=["a2c"])
     parser.add_argument('--zoo-tags', nargs='+', default=["10HR"])
     parser.add_argument('--num-runs', type=int, default=1)
@@ -125,11 +126,12 @@ def calculate_accuracy(preds, y):
     return acc
 
 
-def calculate_multiclass_f1_score(preds,labels):
+def calculate_multiclass_f1_score(preds, labels):
     preds = torch.argmax(preds, dim=1).detach().numpy()
     labels = labels.numpy()
     f1score = compute_f1_score(labels, preds, average="weighted")
     return f1score
+
 
 def calculate_multiclass_accuracy(preds, labels):
     preds = torch.argmax(preds, dim=1)
