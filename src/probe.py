@@ -113,13 +113,13 @@ class ProbeTrainer(Trainer):
             batch = Flatten()(batch)
         if self.method in ["pretrained-rl-agent"]:
             batch = batch.detach()
-        if self.method in ["supervised","pretrained-rl-agent","flat-pixels"]:
-            '''#if method is supervised batch is a batch of frames and probe is a full encoder + linear or nonlinear probe
-                if method is pretrained-rl-agent, then batch is a batch of feature vectors and probe is just a linear or nonlinear probe
-                if method is flat-pixel, then batch is a batch of flattened raw images and the linear probe is a really wide linear probe'''
+        if self.method in ["supervised", "pretrained-rl-agent", "flat-pixels"]:
+            '''
+            if method is supervised batch is a batch of frames and probe is a full encoder + linear or nonlinear probe
+            if method is pretrained-rl-agent, then batch is a batch of feature vectors and probe is just a linear or nonlinear probe
+            if method is flat-pixel, then batch is a batch of flattened raw images and the linear probe is a really wide linear probe
+            '''
             preds = probe(batch)
-
-            
 
         else:
             with torch.no_grad():
@@ -145,7 +145,6 @@ class ProbeTrainer(Trainer):
                 label = torch.tensor(label).long().to(self.device)
                 preds = self.probe(x, k)
                 loss = self.loss_fn(preds, label)
-                
 
                 epoch_loss[k + "_loss"].append(loss.detach().item())
                 accuracy[k + "_acc"].append(calculate_multiclass_accuracy(preds, label))
@@ -157,13 +156,11 @@ class ProbeTrainer(Trainer):
         accuracy = {k: np.mean(acc) for k, acc in accuracy.items()}
 
         return epoch_loss, accuracy
-    
-    
+
     def do_test_epoch(self, episodes, label_dicts):
-        accuracy_dict, f1_score_dict = {},{} 
-        pred_dict, all_label_dict = {k: [] for k in self.sample_label.keys()},\
-                                 {k: [] for k in self.sample_label.keys()},\
-                                
+        accuracy_dict, f1_score_dict = {}, {}
+        pred_dict, all_label_dict = {k: [] for k in self.sample_label.keys()}, \
+                                    {k: [] for k in self.sample_label.keys()}
 
         # collect all predicitons first
         data_generator = self.generate_batch(episodes, label_dicts)
@@ -173,17 +170,15 @@ class ProbeTrainer(Trainer):
                 all_label_dict[k].append(label)
                 preds = self.probe(x, k).detach().cpu()
                 pred_dict[k].append(preds)
-        
-                
 
         for k in all_label_dict.keys():
             preds, labels = torch.cat(pred_dict[k]), torch.cat(all_label_dict[k])
-            
+
             accuracy = calculate_multiclass_accuracy(preds, labels)
             f1score = calculate_multiclass_f1_score(preds, labels)
             accuracy_dict[k + "_test_acc"] = accuracy
             f1_score_dict[k + "_f1score"] = f1score
-            
+
         return accuracy_dict, f1_score_dict
 
     def train(self, tr_eps, val_eps, tr_labels, val_labels):
@@ -223,8 +218,8 @@ class ProbeTrainer(Trainer):
         for k, probe in self.probes.items():
             probe.eval()
         accuracy_dict, f1_score_dict = self.do_test_epoch(test_episodes, test_label_dicts)
-        accuracy_dict['mean_test_acc'] = np.mean(list(accuracy_dict.values()))      
-        f1_score_dict["mean_f1score"] = np.mean(list(f1_score_dict.values()))     
+        accuracy_dict['mean_test_acc'] = np.mean(list(accuracy_dict.values()))
+        f1_score_dict["mean_f1score"] = np.mean(list(f1_score_dict.values()))
         self.wandb.log(f1_score_dict)
         self.wandb.log(accuracy_dict)
         print("F1 scores")
@@ -235,8 +230,7 @@ class ProbeTrainer(Trainer):
         for k in accuracy_dict.keys():
             print("\t {}: {:8.4f}%".format(k, 100 * accuracy_dict[k]))
         return accuracy_dict, f1_score_dict
-            
-            
+
     def log_results(self, epoch_idx, loss_dict, acc_dict):
         print("Epoch: {}".format(epoch_idx))
         for k in loss_dict.keys():
@@ -244,4 +238,3 @@ class ProbeTrainer(Trainer):
         print("\t --")
         for k in acc_dict.keys():
             print("\t {}: {:8.4f}%".format(k, 100 * acc_dict[k]))
-
