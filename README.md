@@ -1,4 +1,4 @@
-# Unsupervised State Representation Learning in Atari Representation
+# Unsupervised State Representation Learning in Atari
 
 Ankesh Anand*, Evan Racah*, Sherjil Ozair*, Yoshua Bengio, Marc-Alexandre Côté, R Devon Hjelm
 
