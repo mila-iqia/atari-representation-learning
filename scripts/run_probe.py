@@ -1,5 +1,5 @@
 from scripts.run_contrastive import train_encoder
-from src.probe import ProbeTrainer
+from aari.probe import ProbeTrainer
 import time
 from collections import deque
 from itertools import chain

@@ -13,7 +13,7 @@ import torch
 from baselines import bench
 from baselines.common.atari_wrappers import make_atari, EpisodicLifeEnv, FireResetEnv, WarpFrame, ScaledFloatFrame, \
     ClipRewardEnv, FrameStack
-from src.atari import AARIWrapper
+from .wrapper import AARIWrapper
 
 
 def make_env(env_id, seed, rank, log_dir, downsample=True, color=False):

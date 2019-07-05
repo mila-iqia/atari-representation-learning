@@ -4,6 +4,7 @@ import numpy as np
 from src.atari import convert_ram_to_label
 import cv2
 import sys
+
 def separate_into_episodes(arr, ep_inds):
     middle_eps = [arr[ep_inds[i]:ep_inds[i+1]] for i in range(0,len(ep_inds)-1)] # gets all episodes except the first and last
     first_ep, last_ep = arr[:ep_inds[0]], arr[ep_inds[-1]:]
@@ -23,6 +24,8 @@ def convert2grayscale(frame):
         frame = cv2.cvtColor(frame, cv2.COLOR_RGB2GRAY)
         frame = np.expand_dims(frame, -1)
         return frame
+    
+    
 def get_atari_zoo_episodes(env, run_ids="all", num_frame_stack=4, downsample=True, algos = ["a2c","apex","ga","es"],
                            tags = ["initial","1HR","2HR", "6HR", "10HR","final", "400M", "1B"],
                            use_representations_instead_of_frames=False, get_ram=False):

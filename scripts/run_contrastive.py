@@ -5,7 +5,7 @@ from itertools import chain
 import numpy as np
 import torch
 
-from src.envs import make_vec_envs
+from aari.envs import make_vec_envs
 from src.global_infonce_stdim import GlobalInfoNCESpatioTemporalTrainer
 from src.global_local_infonce import GlobalLocalInfoNCESpatioTemporalTrainer
 from src.multi_step_stdim import MultiStepSTDIM
@@ -13,14 +13,11 @@ from src.pretrained_agents import get_ppo_rollouts, checkpointed_steps_full_sort
 from src.spatio_temporal import SpatioTemporalTrainer
 from src.utils import get_argparser, visualize_activation_maps
 from src.encoders import NatureCNN, ImpalaCNN
-from src.appo import AppoTrainer
-from src.pixel_predictor import PixelPredictorTrainer
 from src.cpc import CPCTrainer
 from src.vae import VAETrainer
 from src.bert import BERTTrainer
 from src.no_action_feedforward_predictor import NaFFPredictorTrainer
 from src.infonce_spatio_temporal import InfoNCESpatioTemporalTrainer
-from src.atari_zoo import get_atari_zoo_episodes
 import wandb
 import sys
 
@@ -39,16 +36,12 @@ def train_encoder(args):
     config = {}
     config.update(vars(args))
     config['obs_space'] = envs.observation_space.shape  # weird hack
-    if args.method == 'appo':
-        trainer = AppoTrainer(encoder, config, device=device, wandb=wandb)
     if args.method == 'cpc':
         trainer = CPCTrainer(encoder, config, device=device, wandb=wandb)
     if args.method == 'spatial-appo':
         trainer = SpatioTemporalTrainer(encoder, config, device=device, wandb=wandb)
     if args.method == 'vae':
         trainer = VAETrainer(encoder, config, device=device, wandb=wandb)
-    if args.method == 'pixel-predictor':
-        trainer = PixelPredictorTrainer(encoder, config, device=device, wandb=wandb)
     if args.method == 'ms-dim':
         trainer = MultiStepSTDIM(encoder, config, device=device, wandb=wandb)
     if args.method == 'bert':
