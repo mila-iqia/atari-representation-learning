@@ -1,7 +1,9 @@
 # rl-representation-learning
-Representation Learning for RL
+Code for the paper **"Unsupervised State Representation Learning in Atari
+Representation"**: https://arxiv.org/abs/1906.08226
 
-Dependencies: 
+
+### Dependencies: 
 * PyTorch 
 * OpenAI Baselines (for vectorized environments and Atari wrappers)
 * pytorch-a2c-ppo-acktr (for actor-critic algorithms)
@@ -32,3 +34,5 @@ pip install -r requirements.txt
 ```bash
 python -m scripts.probe --method infonce-stdim --env-name {env_name}
 ```
+### Atari Annotated RAM Interface:
+TODO
