@@ -37,9 +37,9 @@ class GlobalLocalInfoNCESpatioTemporalTrainer(Trainer):
         self.device = device
         if self.use_multiple_predictors:
             # todo remove the hard coded 11x8
-            self.classifiers = [nn.Linear(self.encoder.hidden_size, 128).to(device) for _ in range(11*8)]  # x1 = global, x2=patch, n_channels = 32
+            self.classifiers = [nn.Linear(self.encoder.hidden_size, 128).to(device) for _ in range(11*8)]
         else:
-            self.classifier1 = nn.Linear(self.encoder.hidden_size, 128).to(device)  # x1 = global, x2=patch, n_channels = 32
+            self.classifier1 = nn.Linear(self.encoder.hidden_size, 128).to(device)
         self.params = list(self.encoder.parameters())
         if self.use_multiple_predictors:
             for classifier in self.classifiers:
@@ -49,7 +49,6 @@ class GlobalLocalInfoNCESpatioTemporalTrainer(Trainer):
         self.optimizer = torch.optim.Adam(self.params, lr=config['lr'], eps=1e-5)
         self.early_stopper = EarlyStopping(patience=self.patience, verbose=False, wandb=self.wandb, name="encoder")
         self.transform = transforms.Compose([Cutout(n_holes=1, length=80)])
-
 
     def generate_batch(self, episodes):
         total_steps = sum([len(e) for e in episodes])

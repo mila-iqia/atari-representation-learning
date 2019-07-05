@@ -30,7 +30,7 @@ class GlobalInfoNCESpatioTemporalTrainer(Trainer):
         self.config = config
         self.mode = config['mode']
         self.patience = self.config["patience"]
-        self.classifier1 = nn.Linear(self.encoder.hidden_size, 256).to(device)  # x1 = global, x2=patch, n_channels = 32
+        self.classifier1 = nn.Linear(self.encoder.hidden_size, 256).to(device)
         self.epochs = config['epochs']
         self.batch_size = config['batch_size']
         self.device = device

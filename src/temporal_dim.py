@@ -29,7 +29,7 @@ class SpatioTemporalTrainer(Trainer):
         self.config = config
         self.mode = config['mode']
         self.patience = self.config["patience"]
-        self.classifier1 = Classifier(self.encoder.hidden_size, 128).to(device)  # x1 = global, x2=patch, n_channels = 32
+        self.classifier1 = Classifier(self.encoder.hidden_size, 128).to(device)
         self.classifier2 = Classifier(128, 128).to(device)
         self.epochs = config['epochs']
         self.batch_size = config['batch_size']
