@@ -8,10 +8,9 @@ from a2c_ppo_acktr.envs import make_vec_envs as mve
 def evaluate(actor_critic, env_name, seed, num_processes, eval_log_dir,
              device, num_evals):
     eval_envs = mve(env_name, seed + num_processes, num_processes,
-                              None, eval_log_dir, device, True, num_frame_stack=1)
+                    None, eval_log_dir, device, True, num_frame_stack=1)
 
     vec_norm = utils.get_vec_normalize(eval_envs)
-
 
     eval_episode_rewards = []
 
@@ -22,7 +21,7 @@ def evaluate(actor_critic, env_name, seed, num_processes, eval_log_dir,
 
     while len(eval_episode_rewards) < num_evals:
         with torch.no_grad():
-            _, action, _, eval_recurrent_hidden_states, _,_ = actor_critic.act(
+            _, action, _, eval_recurrent_hidden_states, _, _ = actor_critic.act(
                 obs,
                 eval_recurrent_hidden_states,
                 eval_masks,
@@ -45,6 +44,7 @@ def evaluate(actor_critic, env_name, seed, num_processes, eval_log_dir,
     print(" Evaluation using {} episodes: mean reward {:.5f}\n".format(
         len(eval_episode_rewards), np.mean(eval_episode_rewards)))
     return np.mean(eval_episode_rewards)
+
 
 import argparse
 from collections import deque
@@ -168,7 +168,7 @@ def get_ppo_representations(args, checkpoint_step):
                 _, action, _, _, actor_features, _ = actor_critic.act(obs, None, masks, deterministic=False)
             action = torch.tensor([envs.action_space.sample() if np.random.uniform(0, 1) < 0.2 else action[i]
                                    for i in range(args.num_processes)]).unsqueeze(dim=1)
-        
+
         obs, reward, done, infos = envs.step(action)
         for i, info in enumerate(infos):
             if 'episode' in info.keys():
