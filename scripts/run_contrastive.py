@@ -83,11 +83,6 @@ def train_encoder(args):
         episodes = list(chain.from_iterable(episodes))
         episodes = [x for x in episodes if len(x) > args.batch_size]
 
-    elif args.collect_mode == "atari_zoo":
-        episodes, _, _ = get_atari_zoo_episodes(args.env_name,num_frame_stack=args.num_frame_stack,
-                                             downsample=not args.no_downsample)
-        episodes = [torch.from_numpy(ep).permute(0, 3, 1, 2).float() for ep in episodes]
-
     elif args.collect_mode == "pretrained_ppo":
         checkpoint = checkpointed_steps_full_sorted[args.checkpoint_index]
         episodes, episode_labels, mean_reward, mean_action_entropy = get_ppo_rollouts(args, args.pretraining_steps,
