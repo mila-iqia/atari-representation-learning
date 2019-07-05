@@ -19,19 +19,6 @@ class LinearProbe(nn.Module):
         return self.model(feature_vectors)
 
 
-class NonLinearProbe(nn.Module):
-    def __init__(self, input_dim, num_classes=255):
-        super().__init__()
-        self.model = nn.Sequential(
-            nn.Linear(input_dim, 512),
-            nn.ReLU(),
-            nn.Linear(in_features=512, out_features=num_classes)
-        )
-
-    def forward(self, feature_vectors):
-        return self.model(feature_vectors)
-
-
 class FullySupervisedLinearProbe(nn.Module):
     def __init__(self, encoder, num_classes=255):
         super().__init__()
@@ -65,23 +52,18 @@ class ProbeTrainer(Trainer):
             self.probes = {k: FullySupervisedLinearProbe(encoder=self.encoder,
                                                          num_classes=self.num_classes).to(device) for k in
                            sample_label.keys()}
-        elif self.method == 'nonlinear':
-            self.probes = {k: NonLinearProbe(input_dim=self.feature_size,
-                                             num_classes=self.num_classes).to(device) for k in sample_label.keys()}
         else:
-            # sample_label should have {label_name: number_of_classes_for_that_label}
             self.probes = {k: LinearProbe(input_dim=self.feature_size,
                                           num_classes=self.num_classes).to(device) for k in sample_label.keys()}
 
         self.early_stoppers = {k: EarlyStopping(patience=patience, verbose=False, wandb=self.wandb, name=k + "_probe")
-                               for k in
-                               sample_label.keys()}
+                               for k in sample_label.keys()}
 
         self.optimizers = {k: torch.optim.Adam(list(self.probes[k].parameters()),
                                                eps=1e-5, lr=self.lr) for k in sample_label.keys()}
-        self.schedulers = {k: torch.optim.lr_scheduler.ReduceLROnPlateau(
-            self.optimizers[k], patience=5, factor=0.2, verbose=True, mode='max', min_lr=1e-5) for k in
-            sample_label.keys()}
+        self.schedulers = {
+            k: torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizers[k], patience=5, factor=0.2, verbose=True,
+                                                          mode='max', min_lr=1e-5) for k in sample_label.keys()}
         self.loss_fn = nn.CrossEntropyLoss()
 
     def generate_batch(self, episodes, episode_labels):
@@ -109,15 +91,12 @@ class ProbeTrainer(Trainer):
         [probe.to("cpu") for probe in self.probes.values()]
         probe = self.probes[k]
         probe.to(self.device)
-        if self.method == "flat-pixels":
-            batch = Flatten()(batch)
         if self.method in ["pretrained-rl-agent"]:
             batch = batch.detach()
-        if self.method in ["supervised", "pretrained-rl-agent", "flat-pixels"]:
+        if self.method in ["supervised", "pretrained-rl-agent"]:
             '''
             if method is supervised batch is a batch of frames and probe is a full encoder + linear or nonlinear probe
             if method is pretrained-rl-agent, then batch is a batch of feature vectors and probe is just a linear or nonlinear probe
-            if method is flat-pixel, then batch is a batch of flattened raw images and the linear probe is a really wide linear probe
             '''
             preds = probe(batch)
 
