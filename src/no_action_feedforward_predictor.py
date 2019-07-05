@@ -26,23 +26,19 @@ class NaFFPredictor(nn.Module):
         self.input_channels = self.encoder.input_channels
 
         self.fc_layers = nn.Sequential(
-                                    nn.Linear(in_features=self.feature_size,
-                                               out_features=self.feature_size))
-                                    
+            nn.Linear(in_features=self.feature_size,
+                      out_features=self.feature_size))
 
         self.decoder = Decoder(feature_size=self.feature_size,
                                final_conv_size=self.final_conv_size,
                                final_conv_shape=self.final_conv_shape,
                                num_input_channels=self.input_channels)
 
-
-
     def forward(self, x):
         feature_vector = self.encoder(x)
         z = self.fc_layers(feature_vector)
         x_hat = self.decoder(z)
         return x_hat
-
 
 
 class NaFFPredictorTrainer(Trainer):
@@ -53,13 +49,13 @@ class NaFFPredictorTrainer(Trainer):
         self.patience = self.config["patience"]
         self.fc_size = self.config["naff_fc_size"]
         self.pred_offset = self.config["pred_offset"]
-        self.naff = NaFFPredictor(encoder,self.fc_size).to(device)
+        self.naff = NaFFPredictor(encoder, self.fc_size).to(device)
         self.epochs = config['epochs']
         self.batch_size = config['batch_size']
         self.device = device
         self.optimizer = torch.optim.Adam(list(self.naff.parameters()),
                                           lr=config['lr'], eps=1e-5)
-        self.loss_fn  = nn.MSELoss()
+        self.loss_fn = nn.MSELoss()
         self.early_stopper = EarlyStopping(patience=self.patience, verbose=False, wandb=self.wandb, name="encoder")
 
     def generate_batch(self, episodes):
@@ -75,13 +71,13 @@ class NaFFPredictorTrainer(Trainer):
             x_t, x_tn = [], []
             for episode in episodes_batch:
                 # Get one sample from this episode
-                t = np.random.randint(0, len(episode)-self.pred_offset)
+                t = np.random.randint(0, len(episode) - self.pred_offset)
                 t_n = t + self.pred_offset
-                
+
                 x_t.append(episode[t])
                 x_tn.append(episode[t_n])
-            yield torch.stack(x_t).to(self.device) / 255.,\
-                    torch.stack(x_tn).to(self.device) / 255.
+            yield torch.stack(x_t).to(self.device) / 255., \
+                  torch.stack(x_tn).to(self.device) / 255.
 
     def do_one_epoch(self, epoch, episodes):
         mode = "train" if self.naff.training else "val"
