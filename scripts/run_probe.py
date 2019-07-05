@@ -8,7 +8,7 @@ import numpy as np
 import torch
 import gym
 
-from src.envs import make_vec_envs
+from aari.envs import make_vec_envs
 from src.utils import get_argparser, visualize_activation_maps, appendabledict, calculate_multiclass_accuracy, \
     calculate_multiclass_f1_score
 from src.encoders import NatureCNN, ImpalaCNN

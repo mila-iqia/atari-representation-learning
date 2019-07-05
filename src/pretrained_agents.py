@@ -55,7 +55,7 @@ import wandb
 import time
 import os
 
-from src.envs import make_vec_envs
+from aari.envs import make_vec_envs
 from src.utils import get_argparser
 
 checkpointed_steps_full = [10753536, 1076736, 11828736, 12903936, 13979136, 15054336, 1536, 16129536, 17204736,
