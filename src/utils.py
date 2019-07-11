@@ -13,6 +13,9 @@ from a2c_ppo_acktr.envs import make_vec_envs
 from a2c_ppo_acktr.utils import get_vec_normalize
 from collections import defaultdict
 
+
+
+
 # methods that need encoder trained before
 train_encoder_methods = ['cpc','spatial-appo' , 'vae',"naff", "infonce-stdim", "global-infonce-stdim", "global-local-infonce-stdim"]
 probe_only_methods = ["supervised", "random-cnn", "majority", "pretrained-rl-agent"]
@@ -87,10 +90,11 @@ def get_argparser():
     parser.add_argument("--collect-mode", type=str, choices=["random_agent", "pretrained_ppo"],
                         default="random_agent")
 
+    parser.add_argument("--beta", default=1.0)
     # probe arguments
     parser.add_argument("--weights-path", type=str, default="None")
     parser.add_argument("--train-encoder", action='store_true', default=True)
-    parser.add_argument('--probe-lr', type=float, default=5e-2)
+    parser.add_argument('--probe-lr', type=float, default=3e-4)
     parser.add_argument("--probe-collect-mode", type=str, choices=["random_agent", "pretrained_ppo"],
                         default="random_agent")
     parser.add_argument('--num-runs', type=int, default=1)
