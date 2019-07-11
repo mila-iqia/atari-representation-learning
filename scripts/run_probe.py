@@ -9,8 +9,8 @@ import torch
 import gym
 
 from aari.envs import make_vec_envs
-from src.utils import get_argparser, visualize_activation_maps, appendabledict, calculate_multiclass_accuracy, \
-    calculate_multiclass_f1_score
+from src.utils import get_argparser, appendabledict, calculate_multiclass_accuracy, \
+    calculate_multiclass_f1_score,  train_encoder_methods
 from src.encoders import NatureCNN, ImpalaCNN
 from src.pretrained_agents import get_ppo_rollouts, checkpointed_steps_full_sorted, get_ppo_representations
 import wandb
@@ -188,8 +188,7 @@ def main(args):
     env = make_vec_envs(args, 1)
     wandb.config.update(vars(args))
 
-    if args.train_encoder and args.method in ['appo', 'spatial-appo', 'cpc', 'vae', 'bert', 'ms-dim', 'pixel_predictor',
-                                              "naff", "infonce-stdim", "global-infonce-stdim", "global-local-infonce-stdim"]:
+    if args.train_encoder and args.method in train_encoder_methods:
         print("Training encoder from scratch")
         encoder = train_encoder(args)
         encoder.probing = True

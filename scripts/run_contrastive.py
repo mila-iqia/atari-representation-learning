@@ -36,18 +36,21 @@ def train_encoder(args):
     config['obs_space'] = envs.observation_space.shape  # weird hack
     if args.method == 'cpc':
         trainer = CPCTrainer(encoder, config, device=device, wandb=wandb)
-    if args.method == 'spatial-appo':
+    elif args.method == 'spatial-appo':
         trainer = SpatioTemporalTrainer(encoder, config, device=device, wandb=wandb)
-    if args.method == 'vae':
+    elif args.method == 'vae':
         trainer = VAETrainer(encoder, config, device=device, wandb=wandb)
-    if args.method == "naff":
+    elif args.method == "naff":
         trainer = NaFFPredictorTrainer(encoder, config, device=device, wandb=wandb)
-    if args.method == "infonce-stdim":
+    elif args.method == "infonce-stdim":
         trainer = InfoNCESpatioTemporalTrainer(encoder, config, device=device, wandb=wandb)
-    if args.method == "global-infonce-stdim":
+    elif args.method == "global-infonce-stdim":
         trainer = GlobalInfoNCESpatioTemporalTrainer(encoder, config, device=device, wandb=wandb)
-    if args.method == "global-local-infonce-stdim":
+    elif args.method == "global-local-infonce-stdim":
         trainer = GlobalLocalInfoNCESpatioTemporalTrainer(encoder, config, device=device, wandb=wandb)
+    else:
+        assert False, "method {} has no trainer".format(args.method)
+
 
     if args.collect_mode == "random_agent":
         obs = envs.reset()

@@ -13,6 +13,9 @@ from a2c_ppo_acktr.envs import make_vec_envs
 from a2c_ppo_acktr.utils import get_vec_normalize
 from collections import defaultdict
 
+# methods that need encoder trained before
+train_encoder_methods = ['cpc','spatial-appo' , 'vae',"naff", "infonce-stdim", "global-infonce-stdim", "global-local-infonce-stdim"]
+probe_only_methods = ["supervised", "random-cnn", "majority", "pretrained-rl-agent"]
 
 def get_argparser():
     parser = argparse.ArgumentParser()
@@ -31,9 +34,7 @@ def get_argparser():
     parser.add_argument('--num-processes', type=int, default=8,
                         help='Number of parallel environments to collect samples from (default: 8)')
     parser.add_argument('--method', type=str, default='infonce-stdim',
-                        choices=["cpc", "supervised", "random-cnn", "spatial-appo", "majority",
-                                 "pretrained-rl-agent", "vae",
-                                 "naff", "infonce-stdim", "global-infonce-stdim", "global-local-infonce-stdim"],
+                        choices= train_encoder_methods + probe_only_methods,
                         help='Method to use for training representations (default: infonce-stdim)')
     parser.add_argument('--mode', type=str, default='pcl',
                         help='Mode to use when using the Appo estimator [pcl | tcl | both] (default: pcl)')
