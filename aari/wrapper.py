@@ -22,6 +22,7 @@ class AARIWrapper(InfoWrapper):
     def __init__(self, env):
         super().__init__(env)
         env_name = self.env.spec.id
+        assert 'NoFrameskip' in env_name
         self.env_name = env_name.split("-")[0].split("No")[0].lower()
 
         if self.env_name in atari_dict:
