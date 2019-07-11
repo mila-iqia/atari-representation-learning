@@ -8,7 +8,6 @@ import torch
 from aari.envs import make_vec_envs
 from src.global_infonce_stdim import GlobalInfoNCESpatioTemporalTrainer
 from src.global_local_infonce import GlobalLocalInfoNCESpatioTemporalTrainer
-from src.multi_step_stdim import MultiStepSTDIM
 from src.pretrained_agents import get_ppo_rollouts, checkpointed_steps_full_sorted
 from src.spatio_temporal import SpatioTemporalTrainer
 from src.utils import get_argparser, visualize_activation_maps
@@ -41,8 +40,6 @@ def train_encoder(args):
         trainer = SpatioTemporalTrainer(encoder, config, device=device, wandb=wandb)
     if args.method == 'vae':
         trainer = VAETrainer(encoder, config, device=device, wandb=wandb)
-    if args.method == 'ms-dim':
-        trainer = MultiStepSTDIM(encoder, config, device=device, wandb=wandb)
     if args.method == "naff":
         trainer = NaFFPredictorTrainer(encoder, config, device=device, wandb=wandb)
     if args.method == "infonce-stdim":
