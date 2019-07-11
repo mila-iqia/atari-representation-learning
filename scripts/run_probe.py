@@ -209,8 +209,6 @@ def main(args):
             print("Fully supervised, so starting from random encoder weights!")
         elif args.method == "pretrained-rl-agent":
             print("Representation from pretrained rl agent, so we don't need an encoder!")
-        elif args.method == "flat-pixels":
-            print("Just using flattened pixels, so no need for encoder or weights for that matter!")
         else:
             if args.weights_path == "None":
                 sys.stderr.write("Probing without loading in encoder weights! Are sure you want to do that??")
