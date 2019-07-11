@@ -119,3 +119,9 @@ trained_models/
 neurips-exps/
 philly-exps/
 tmp/
+
+*.pt
+*.yaml
+*.diff
+*.npz
+stdout.txt
