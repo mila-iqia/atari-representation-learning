@@ -42,6 +42,7 @@ class AARIWrapper(InfoWrapper):
 
 
 def convert_ram_to_label(env_name, ram):
+    assert 'NoFrameskip' in env_name
     env_name = env_name.split("-")[0].split("No")[0].lower()
     assert env_name in atari_dict
     ram_dict = atari_dict[env_name]
