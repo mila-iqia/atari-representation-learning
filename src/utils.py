@@ -30,11 +30,11 @@ def get_argparser():
     #                         help='Number of steps to train probes (default: 15000 )')
     parser.add_argument('--num-processes', type=int, default=8,
                         help='Number of parallel environments to collect samples from (default: 8)')
-    parser.add_argument('--method', type=str, default='appo',
-                        choices=["appo", "cpc", "supervised", "random-cnn", "nonlinear", "spatial-appo", "majority",
-                                 "pretrained-rl-agent", "flat-pixels", "vae", "ms-dim", "bert", "pixel-predictor",
+    parser.add_argument('--method', type=str, default='infonce-stdim',
+                        choices=["cpc", "supervised", "random-cnn", "spatial-appo", "majority",
+                                 "pretrained-rl-agent", "vae",
                                  "naff", "infonce-stdim", "global-infonce-stdim", "global-local-infonce-stdim"],
-                        help='Method to use for training representations (default: appo)')
+                        help='Method to use for training representations (default: infonce-stdim)')
     parser.add_argument('--mode', type=str, default='pcl',
                         help='Mode to use when using the Appo estimator [pcl | tcl | both] (default: pcl)')
     parser.add_argument('--linear', action='store_true', default=True,
@@ -56,9 +56,7 @@ def get_argparser():
                         help='Encoder type (Impala or Nature)')
     parser.add_argument('--feature-size', type=int, default=256,
                         help='Size of features')
-    parser.add_argument('--spatial', action='store_true', default=False)
     parser.add_argument("--patience", type=int, default=15)
-    parser.add_argument("--time-window", nargs=2, default=[-1, 0], type=int)
     parser.add_argument("--entropy-threshold", type=float, default=0.6)
     parser.add_argument("--color", action='store_true', default=False)
     parser.add_argument("--end-with-relu", action='store_true', default=False)
@@ -66,15 +64,6 @@ def get_argparser():
     parser.add_argument("--num_rew_evals", type=int, default=10)
     # rl-probe specific arguments
     parser.add_argument("--checkpoint-index", type=int, default=-1)
-
-    # bert specific arguments
-    parser.add_argument("--num_transformer_layers", type=int, default=2)
-    parser.add_argument("--num_lin_projections", type=int, default=8)
-    parser.add_argument("--dropout", type=float, default=0.1)
-    parser.add_argument('--seq_len', type=int, default=5,
-                        help='Sequence length.')
-    parser.add_argument("--d_ff", type=int, default=512)
-    parser.add_argument("--beta", type=float, default=1.0)
 
     # naff-specific arguments
     parser.add_argument("--naff_fc_size", type=int, default=2048,
@@ -94,17 +83,15 @@ def get_argparser():
                         help='Hidden size of the GRU layers.')
     parser.add_argument('--gru_layers', type=int, default=2,
                         help='Number of GRU layers.')
-    parser.add_argument("--collect-mode", type=str, choices=["random_agent", "atari_zoo", "pretrained_ppo"],
+    parser.add_argument("--collect-mode", type=str, choices=["random_agent", "pretrained_ppo"],
                         default="random_agent")
 
     # probe arguments
     parser.add_argument("--weights-path", type=str, default="None")
     parser.add_argument("--train-encoder", action='store_true', default=True)
     parser.add_argument('--probe-lr', type=float, default=5e-2)
-    parser.add_argument("--probe-collect-mode", type=str, choices=["random_agent", "atari_zoo", "pretrained_ppo"],
+    parser.add_argument("--probe-collect-mode", type=str, choices=["random_agent", "pretrained_ppo"],
                         default="random_agent")
-    parser.add_argument('--zoo-algos', nargs='+', default=["a2c"])
-    parser.add_argument('--zoo-tags', nargs='+', default=["10HR"])
     parser.add_argument('--num-runs', type=int, default=1)
     return parser
 
