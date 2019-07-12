@@ -1,11 +1,8 @@
 from scripts.run_contrastive import train_encoder
 from aari.probe import ProbeTrainer
 
-
-import numpy as np
 import torch
-from aari.envs import make_vec_envs
-from src.utils import get_argparser, appendabledict, train_encoder_methods, probe_only_methods
+from src.utils import get_argparser, train_encoder_methods, probe_only_methods
 from src.encoders import NatureCNN, ImpalaCNN
 import wandb
 import sys

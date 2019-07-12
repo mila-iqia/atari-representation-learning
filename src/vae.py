@@ -2,16 +2,13 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from a2c_ppo_acktr.utils import init
-import numpy as np
+
 import os
-import torch
-import torch.nn as nn
 import numpy as np
 from torch.utils.data import RandomSampler, BatchSampler
 from src.utils import calculate_accuracy
 from src.trainer import Trainer
 from src.utils import EarlyStopping
-import sys
 
 
 class Unflatten(nn.Module):
