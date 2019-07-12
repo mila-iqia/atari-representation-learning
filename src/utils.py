@@ -13,12 +13,12 @@ from a2c_ppo_acktr.envs import make_vec_envs
 from a2c_ppo_acktr.utils import get_vec_normalize
 from collections import defaultdict
 
-
-
-
 # methods that need encoder trained before
-train_encoder_methods = ['cpc','spatial-appo' , 'vae',"naff", "infonce-stdim", "global-infonce-stdim", "global-local-infonce-stdim"]
+train_encoder_methods = ['cpc', 'spatial-appo', 'vae', "naff", "infonce-stdim", "global-infonce-stdim",
+                         "global-local-infonce-stdim"]
 probe_only_methods = ["supervised", "random-cnn", "majority", "pretrained-rl-agent"]
+probe_only_methods = ["supervised", "random-cnn", "majority", "pretrained-rl-agent"]
+
 
 def get_argparser():
     parser = argparse.ArgumentParser()
@@ -37,7 +37,7 @@ def get_argparser():
     parser.add_argument('--num-processes', type=int, default=8,
                         help='Number of parallel environments to collect samples from (default: 8)')
     parser.add_argument('--method', type=str, default='infonce-stdim',
-                        choices= train_encoder_methods + probe_only_methods,
+                        choices=train_encoder_methods + probe_only_methods,
                         help='Method to use for training representations (default: infonce-stdim)')
     parser.add_argument('--mode', type=str, default='pcl',
                         help='Mode to use when using the Appo estimator [pcl | tcl | both] (default: pcl)')
@@ -311,31 +311,6 @@ class EarlyStopping(object):
         save_dir = self.wandb.run.dir
         torch.save(model.state_dict(), save_dir + "/" + self.name + ".pt")
         self.val_acc_max = val_acc
-
-
-def bucket_coord(coord, num_buckets, min_coord=0, max_coord=255, stride=1):
-    # stride is how much a variable is incremented by (usually 1)
-    try:
-        assert (coord <= max_coord and coord >= min_coord)
-    except:
-        print("coord: %i, max: %i, min: %i, num_buckets: %i" % (coord, max_coord, min_coord, num_buckets))
-        assert False, coord
-    coord_range = (max_coord - min_coord) + 1
-
-    # thresh is how many units in raw_coord space correspond to one bucket
-    if coord_range < num_buckets:  # we never want to upsample from the original coord
-        thresh = stride
-    else:
-        thresh = coord_range / num_buckets
-    bucketed_coord = np.floor((coord - min_coord) / thresh)
-    return bucketed_coord
-
-
-def bucket_discrete(coord, possible_values):
-    # possible values is a list of all values a coord can take on
-    inds = range(len(possible_values))
-    hash_table = dict(zip(possible_values, inds))
-    return hash_table[coord]
 
 
 class Cutout(object):
