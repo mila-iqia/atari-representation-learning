@@ -39,8 +39,6 @@ def get_argparser():
     parser.add_argument('--method', type=str, default='infonce-stdim',
                         choices=train_encoder_methods + probe_only_methods,
                         help='Method to use for training representations (default: infonce-stdim)')
-    parser.add_argument('--mode', type=str, default='pcl',
-                        help='Mode to use when using the Appo estimator [pcl | tcl | both] (default: pcl)')
     parser.add_argument('--linear', action='store_true', default=True,
                         help='Whether to use a linear classifier')
     parser.add_argument('--use_multiple_predictors', action='store_true', default=False,

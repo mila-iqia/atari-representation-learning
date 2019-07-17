@@ -27,7 +27,6 @@ class InfoNCESpatioTemporalTrainer(Trainer):
     def __init__(self, encoder, config, device=torch.device('cpu'), wandb=None):
         super().__init__(encoder, wandb, device)
         self.config = config
-        self.mode = config['mode']
         self.patience = self.config["patience"]
         self.classifier1 = nn.Linear(self.encoder.hidden_size, 128).to(device)  # x1 = global, x2=patch, n_channels = 32
         self.classifier2 = nn.Linear(128, 128).to(device)

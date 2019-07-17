@@ -45,7 +45,6 @@ class NaFFPredictorTrainer(Trainer):
     def __init__(self, encoder, config, device=torch.device('cpu'), wandb=None):
         super().__init__(encoder, wandb, device)
         self.config = config
-        self.mode = config['mode']
         self.patience = self.config["patience"]
         self.fc_size = self.config["naff_fc_size"]
         self.pred_offset = self.config["pred_offset"]

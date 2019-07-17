@@ -27,7 +27,6 @@ class GlobalLocalInfoNCESpatioTemporalTrainer(Trainer):
     def __init__(self, encoder, config, device=torch.device('cpu'), wandb=None):
         super().__init__(encoder, wandb, device)
         self.config = config
-        self.mode = config['mode']
         self.patience = self.config["patience"]
         self.use_multiple_predictors = config.get("use_multiple_predictors", False)
         print("Using multiple predictors" if self.use_multiple_predictors else "Using shared classifier")

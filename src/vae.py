@@ -110,7 +110,6 @@ class VAETrainer(Trainer):
     def __init__(self, encoder, config, device=torch.device('cpu'), wandb=None):
         super().__init__(encoder, wandb, device)
         self.config = config
-        self.mode = config['mode']
         self.patience = self.config["patience"]
         self.VAE = VAE(encoder).to(device)
         self.epochs = config['epochs']
