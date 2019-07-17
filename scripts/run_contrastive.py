@@ -14,7 +14,6 @@ from src.vae import VAETrainer
 from src.no_action_feedforward_predictor import NaFFPredictorTrainer
 from src.infonce_spatio_temporal import InfoNCESpatioTemporalTrainer
 import wandb
-import sys
 from aari.episodes import get_episodes
 
 
@@ -52,11 +51,7 @@ def train_encoder(args):
     else:
         assert False, "method {} has no trainer".format(args.method)
 
-
-
-
     trainer.train(tr_eps, val_eps)
-
 
     return encoder
 
