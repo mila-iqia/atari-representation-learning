@@ -16,7 +16,6 @@ def run_probe(args):
     tr_eps, val_eps, tr_labels, val_labels, test_eps, test_labels = get_episodes(args,device, collect_mode=collect_mode,
                                                                                  train_mode="probe")
     print("got episodes!")
-    observation_shape = tr_eps[0][0].shape
     wandb.config.update(vars(args))
 
     if args.train_encoder and args.method in train_encoder_methods:
@@ -25,7 +24,11 @@ def run_probe(args):
         encoder.probing = True
         encoder.eval()
 
+    elif args.method in ["pretrained-rl-agent", "majority"]:
+        encoder = None
+
     else:
+        observation_shape = tr_eps[0][0].shape
         if args.encoder_type == "Nature":
             encoder = NatureCNN(observation_shape[0], args)
         elif args.encoder_type == "Impala":
@@ -46,21 +49,20 @@ def run_probe(args):
         test_acc, test_f1score = majority_baseline(tr_labels, test_labels, wandb)
 
     else:
-        trainer = ProbeTrainer(encoder,
-                               wandb,
+        trainer = ProbeTrainer(encoder=encoder,
                                epochs=args.epochs,
-                               sample_label=tr_labels[0][0],
+                               method_name=args.method,
                                lr=args.probe_lr,
                                batch_size=args.batch_size,
-                               device=device,
                                patience=args.patience,
-                               log=False)
+                               wandb=wandb,
+                               fully_supervised=(args.method == "supervised"),
+                               save_dir=wandb.run.dir)
 
         trainer.train(tr_eps, val_eps, tr_labels, val_labels)
         test_acc, test_f1score = trainer.test(test_eps, test_labels)
 
-    print(test_acc)
-    print(test_f1score)
+    print(test_acc, test_f1score)
     wandb.log(test_acc)
     wandb.log(test_f1score)
 
