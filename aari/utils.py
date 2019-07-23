@@ -1,7 +1,18 @@
 from collections import defaultdict
 import torch
 from sklearn.metrics import f1_score as compute_f1_score
+from pathlib import Path
+import wandb
 
+def download_run(args, checkpoint_step):
+    api = wandb.Api()
+    runs = list(api.runs("curl-atari/pretrained-rl-agents-2", {"state": "finished",
+                                                               "config.env_name": args.env_name}))
+    run = runs[0]
+    filename = args.env_name + '_' + str(checkpoint_step) + '.pt'
+    run.files(names=[filename])[0].download(root='./trained_models_full/', replace=True)
+    print('Downloaded ' + filename)
+    return './trained_models_full/' + filename
 
 class appendabledict(defaultdict):
     def __init__(self, type_=list, *args, **kwargs):
@@ -56,7 +67,7 @@ class appendabledict(defaultdict):
 class EarlyStopping(object):
     """Early stops the training if validation loss doesn't improve after a given patience."""
 
-    def __init__(self, patience=7, verbose=False, wandb=None, name=""):
+    def __init__(self, patience=7, verbose=False, name="", checkpoint=False, save_dir=".models"):
         """
         Args:
             patience (int): How long to wait after last time validation loss improved.
@@ -71,7 +82,10 @@ class EarlyStopping(object):
         self.early_stop = False
         self.val_acc_max = 0.
         self.name = name
-        self.wandb = wandb
+        self.checkpoint = checkpoint
+        self.save_dir = Path(save_dir)
+        self.save_dir.mkdir(exist_ok=True)
+
 
     def __call__(self, val_acc, model):
 
@@ -79,7 +93,9 @@ class EarlyStopping(object):
 
         if self.best_score is None:
             self.best_score = score
-            self.save_checkpoint(val_acc, model)
+            if self.checkpoint:
+                self.save_checkpoint(val_acc, model)
+            self.val_acc_max = val_acc
         elif score <= self.best_score:
             self.counter += 1
             print(f'EarlyStopping for {self.name} counter: {self.counter} out of {self.patience}')
@@ -89,7 +105,9 @@ class EarlyStopping(object):
 
         else:
             self.best_score = score
-            self.save_checkpoint(val_acc, model)
+            if self.checkpoint:
+                self.save_checkpoint(val_acc, model)
+            self.val_acc_max = val_acc
             self.counter = 0
 
     def save_checkpoint(self, val_acc, model):
@@ -98,9 +116,8 @@ class EarlyStopping(object):
             print(
                 f'Validation accuracy increased for {self.name}  ({self.val_acc_max:.6f} --> {val_acc:.6f}).  Saving model ...')
 
-        save_dir = self.wandb.run.dir
-        torch.save(model.state_dict(), save_dir + "/" + self.name + ".pt")
-        self.val_acc_max = val_acc
+        torch.save(model.state_dict(), str(self.save_dir) + "/" + self.name + ".pt")
+
 
     def calculate_accuracy(preds, y):
         preds = preds >= 0.5
