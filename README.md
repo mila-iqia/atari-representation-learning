@@ -12,8 +12,8 @@ State representation learning, or the ability to capture latent generative facto
 * OpenAI Baselines (for vectorized environments and Atari wrappers)
 * pytorch-a2c-ppo-acktr (for actor-critic algorithms)
 * wandb (logging tool)
-* gym
-* wget
+* gym[atari]
+* opencv-python
 
 To install the requirements, follow these steps:
 ```bash
