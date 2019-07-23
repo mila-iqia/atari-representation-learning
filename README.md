@@ -72,7 +72,7 @@ Now, `info` is a dictionary of the form:
   }
 ```
 
-Note: In our experiments, we use additional preprocessing for Atari environments mainly following Minh et. al, 2014. See [aari/envs.py](aari/envs.py) for more info! 
+**Note:** In our experiments, we use additional preprocessing for Atari environments mainly following Minh et. al, 2014. See [aari/envs.py](aari/envs.py) for more info! 
 
 If you want the raw RAM annotations, check out [aari/ram_annotations.py](aari/ram_annotations.py)
 
