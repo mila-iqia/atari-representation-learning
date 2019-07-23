@@ -4,9 +4,6 @@ import os
 import subprocess
 
 import torch
-from torchvision.utils import make_grid
-import torch.nn.functional as F
-import matplotlib.pyplot as plt
 import numpy as np
 from sklearn.metrics import f1_score as compute_f1_score
 from a2c_ppo_acktr.envs import make_vec_envs
@@ -182,25 +179,6 @@ def evaluate_policy(actor_critic, envs, args, eval_log_dir, device):
                  np.mean(eval_episode_rewards)))
     eval_envs.close()
     return eval_episode_rewards
-
-
-def visualize_activation_maps(encoder, input_obs_batch, wandb):
-    scaled_images = input_obs_batch / 255.
-    if encoder.__class__.__name__ == 'ImpalaCNN':
-        fmap = F.relu(encoder.layer3(encoder.layer2(encoder.layer1(scaled_images)))).detach()
-    elif encoder.__class__.__name__ == 'NatureCNN':
-        fmap = F.relu(encoder.main[4](F.relu(encoder.main[2](F.relu(encoder.main[0](input_obs_batch)))))).detach()
-    out_channels = fmap.shape[1]
-    # upsample and add a dummy channel dimension
-    fmap_upsampled = F.interpolate(fmap, size=input_obs_batch.shape[-2:], mode='bilinear').unsqueeze(dim=2)
-    for i in range(input_obs_batch.shape[0]):
-        fmap_grid = make_grid(fmap_upsampled[i], normalize=True)
-        img_grid = make_grid([scaled_images[i]] * out_channels)
-        plt.imshow(img_grid.cpu().numpy().transpose([1, 2, 0]))
-        plt.imshow(fmap_grid.cpu().numpy().transpose([1, 2, 0]), cmap='jet', alpha=0.5)
-        # plt.savefig('act_maps/' + 'file%02d.png' % i)
-        wandb.log({'actmap': wandb.Image(plt, caption='Activation Map')})
-    # generate_video()
 
 
 def generate_video():

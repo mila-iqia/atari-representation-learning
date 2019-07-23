@@ -7,7 +7,7 @@ import torch
 from src.global_infonce_stdim import GlobalInfoNCESpatioTemporalTrainer
 from src.global_local_infonce import GlobalLocalInfoNCESpatioTemporalTrainer
 from src.spatio_temporal import SpatioTemporalTrainer
-from src.utils import get_argparser, visualize_activation_maps
+from src.utils import get_argparser
 from src.encoders import NatureCNN, ImpalaCNN
 from src.cpc import CPCTrainer
 from src.vae import VAETrainer
