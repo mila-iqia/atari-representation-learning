@@ -1,4 +1,3 @@
-from gym.envs.registration import register
 import gym
 from .ram_annotations import atari_dict
 
@@ -27,11 +26,9 @@ class AARIWrapper(InfoWrapper):
 
         if self.env_name in atari_dict:
             self.ram_dict = atari_dict[self.env_name]
-            self.nclasses_dict = {k: 256 for k in self.ram_dict.keys()}
 
     def info(self, info):
         if self.env_name in atari_dict:
-            info["num_classes"] = self.nclasses_dict
             label_dict = self.labels()
             info["labels"] = label_dict
         return info
