@@ -1,9 +1,8 @@
 import cv2
-import torch
 from baselines.common.vec_env import SubprocVecEnv, DummyVecEnv
 from gym import spaces
 
-from a2c_ppo_acktr.envs import TimeLimitMask, MaskGoal, TransposeObs, TransposeImage, VecPyTorch, VecNormalize, \
+from a2c_ppo_acktr.envs import TimeLimitMask, TransposeImage, VecPyTorch, VecNormalize, \
     VecPyTorchFrameStack
 from pathlib import Path
 import os
