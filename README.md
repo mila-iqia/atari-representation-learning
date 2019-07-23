@@ -35,7 +35,7 @@ pip install -e .
 pip install -r requirements.txt
 ```
 
-To install our project: 
+To install the project: 
 
 ```bash
 git clone https://github.com/ankeshanand/atari-representation-learning.git
