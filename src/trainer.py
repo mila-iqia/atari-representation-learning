@@ -1,6 +1,4 @@
 import torch
-from .utils import calculate_accuracy
-
 
 class Trainer():
     def __init__(self, encoder, wandb, device=torch.device('cpu')):
