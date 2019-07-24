@@ -2,9 +2,10 @@ from collections import defaultdict
 import torch
 from sklearn.metrics import f1_score as compute_f1_score
 from pathlib import Path
-import wandb
+
 
 def download_run(args, checkpoint_step):
+    import wandb
     api = wandb.Api()
     runs = list(api.runs("curl-atari/pretrained-rl-agents-2", {"state": "finished",
                                                                "config.env_name": args.env_name}))
@@ -13,6 +14,7 @@ def download_run(args, checkpoint_step):
     run.files(names=[filename])[0].download(root='./trained_models_full/', replace=True)
     print('Downloaded ' + filename)
     return './trained_models_full/' + filename
+
 
 class appendabledict(defaultdict):
     def __init__(self, type_=list, *args, **kwargs):
@@ -119,19 +121,19 @@ class EarlyStopping(object):
         torch.save(model.state_dict(), str(self.save_dir) + "/" + self.name + ".pt")
 
 
-    def calculate_accuracy(preds, y):
-        preds = preds >= 0.5
-        labels = y >= 0.5
-        acc = preds.eq(labels).sum().float() / labels.numel()
-        return acc
+def calculate_accuracy(preds, y):
+    preds = preds >= 0.5
+    labels = y >= 0.5
+    acc = preds.eq(labels).sum().float() / labels.numel()
+    return acc
 
-    def calculate_multiclass_f1_score(preds, labels):
-        preds = torch.argmax(preds, dim=1).detach().numpy()
-        labels = labels.numpy()
-        f1score = compute_f1_score(labels, preds, average="weighted")
-        return f1score
+def calculate_multiclass_f1_score(preds, labels):
+    preds = torch.argmax(preds, dim=1).detach().numpy()
+    labels = labels.numpy()
+    f1score = compute_f1_score(labels, preds, average="weighted")
+    return f1score
 
-    def calculate_multiclass_accuracy(preds, labels):
-        preds = torch.argmax(preds, dim=1)
-        acc = float(torch.sum(torch.eq(labels, preds)).data) / labels.size(0)
-        return acc
+def calculate_multiclass_accuracy(preds, labels):
+    preds = torch.argmax(preds, dim=1)
+    acc = float(torch.sum(torch.eq(labels, preds)).data) / labels.size(0)
+    return acc
