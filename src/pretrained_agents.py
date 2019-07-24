@@ -12,6 +12,16 @@ from aari.envs import make_vec_envs
 from src.utils import get_argparser
 from aari.utils import download_run
 
+# elif collect_mode == "pretrained_representations":
+# # "episodes" are vectors from output of last layer of PPO agent
+# episodes, episode_labels = get_pretrained_rl_representations(args, steps)
+
+def get_pretrained_rl_representations(args, steps):
+    checkpoint = checkpointed_steps_full_sorted[args.checkpoint_index]
+    episodes, episode_labels, mean_reward = get_ppo_representations(args, steps, checkpoint)
+    wandb.log({"reward": mean_reward, "checkpoint": checkpoint})
+    return episodes, episode_labels
+
 
 def evaluate(actor_critic, env_name, seed, num_processes, eval_log_dir,
              device, num_evals):
