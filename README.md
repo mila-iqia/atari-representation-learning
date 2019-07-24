@@ -99,9 +99,11 @@ We'll call it "my_encoder"
 First, get episodes for train, val and, test:
 ```python
 from aari.episodes import get_episodes
-tr_eps, val_eps, tr_labels, val_labels, test_eps, test_labels = get_episodes(env_name = "PitfallNoFrameskip-v4", 
-                                                                             steps=50000, 
-                                                                             collect_mode="random_agent")
+tr_eps, val_eps,\
+tr_labels, val_labels,\
+test_eps, test_labels = get_episodes(env_name = "PitfallNoFrameskip-v4", 
+                                     steps=50000, 
+                                     collect_mode="random_agent")
 ```
 Then probe them using ProbeTrainer and your encoder:
 ```python
@@ -143,7 +145,7 @@ class MyEncoder(nn.Module):
 my_encoder = MyEncoder(input_channels=1,feature_size=256)
 
 # load in weights
-my_encoder.load_state_dict(torch.load(path_to_my_weights))```
+my_encoder.load_state_dict(torch.load(path_to_my_weights))
 ```
 
 ### Spatio-Temporal DeepInfoMax:
