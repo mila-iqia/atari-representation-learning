@@ -85,17 +85,9 @@ Now, `info` is a dictionary of the form:
 
 If you want the raw RAM annotations, check out [aari/ram_annotations.py](aari/ram_annotations.py)
 
-If don't use gym and want to get labels from ram use:
-```python
-from aari.wrapper import ram2label
-```
 
 ### Probing
-if you don't want to code up your own linear classifier to probe your representations, you can use our interface! 
-Pre-reqs for this is PyTorch 
-All you need is your own encoder!
-We'll call it "my_encoder"
-
+We provide an interface for the included probing tasks.
 
 First, get episodes for train, val and, test:
 ```python
@@ -106,14 +98,14 @@ test_eps, test_labels = get_episodes(env_name = "PitfallNoFrameskip-v4",
                                      steps=50000, 
                                      collect_mode="random_agent")
 ```
-Then probe them using ProbeTrainer and your encoder:
+Then probe them using ProbeTrainer and your encoder (`my_encoder`):
 ```python
 from aari.probe import ProbeTrainer
 probe_trainer = ProbeTrainer(my_encoder, representation_len=my_encoder.feature_size)
 probe_trainer.train(tr_eps, val_eps, tr_labels, val_labels)
 probe_trainer.test(test_eps, test_labels)
 ```
-To see how we use ProbeTrainer, see [scripts/run_probe.py](scripts/run_probe.py)
+To see how we use ProbeTrainer, check out [scripts/run_probe.py](scripts/run_probe.py)
 
 Here is an example of my_encoder:
 ```python 
@@ -150,6 +142,8 @@ my_encoder.load_state_dict(torch.load(path_to_my_weights))
 ```
 
 ### Spatio-Temporal DeepInfoMax:
+`src/` contains implementations of several representation learning methods, along with `ST-DIM`. Here's a sample usage: 
+
 ```bash
-python -m scripts.probe --method infonce-stdim --env-name {env_name}
+python -m scripts.run_probe --method infonce-stdim --env-name {env_name}
 ```
