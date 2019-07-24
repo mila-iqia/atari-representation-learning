@@ -1,5 +1,4 @@
-from src.pretrained_agents import get_ppo_representations
-from aari.label_preprocess import remove_duplicates, remove_low_entropy_labels
+from .label_preprocess import remove_duplicates, remove_low_entropy_labels
 from collections import deque
 from itertools import chain
 import numpy as np
@@ -7,8 +6,8 @@ import torch
 import wandb
 import time
 import os
-from aari.envs import make_vec_envs
-from aari.utils import download_run
+from .envs import make_vec_envs
+from .utils import download_run
 
 
 checkpointed_steps_full = [10753536, 1076736, 11828736, 12903936, 13979136, 15054336, 1536, 16129536, 17204736,
@@ -118,11 +117,6 @@ def get_pretrained_rl_episodes(args, steps):
     return episodes, episode_labels
 
 
-def get_pretrained_rl_representations(args, steps):
-    checkpoint = checkpointed_steps_full_sorted[args.checkpoint_index]
-    episodes, episode_labels, mean_reward = get_ppo_representations(args, steps, checkpoint)
-    wandb.log({"reward": mean_reward, "checkpoint": checkpoint})
-    return episodes, episode_labels
 
 
 def get_episodes(args, device, collect_mode="random_agent", train_mode="probe", seed=None):
@@ -137,9 +131,6 @@ def get_episodes(args, device, collect_mode="random_agent", train_mode="probe", 
         # List of episodes. Each episode is a list of 160x210 observations
         episodes, episode_labels = get_pretrained_rl_episodes(args, steps)
 
-    elif collect_mode == "pretrained_representations":
-        # "episodes" are vectors from output of last layer of PPO agent
-        episodes, episode_labels = get_pretrained_rl_representations(args, steps)
 
     ep_inds = [i for i in range(len(episodes)) if len(episodes[i]) > args.batch_size]
     episodes = [episodes[i] for i in ep_inds]
