@@ -18,7 +18,7 @@ def remove_duplicates(tr_eps, val_eps, test_eps, test_labels):
     test_len = len(list(chain.from_iterable(test_eps)))
     dups = len(flat_test) - test_len
     print('Duplicates: {}, Test Len: {}'.format(dups, test_len))
-    wandb.log({'Duplicates': dups, 'Test Len': test_len})
+    #wandb.log({'Duplicates': dups, 'Test Len': test_len})
     return test_eps, test_labels
 
 
@@ -46,5 +46,5 @@ def remove_low_entropy_labels(episode_labels, entropy_threshold=0.3):
         for obs in e:
             for key in low_entropy_labels:
                 del obs[key]
-    wandb.log(entropy_dict)
-    return episode_labels
+    # wandb.log(entropy_dict)
+    return episode_labels, entropy_dict
