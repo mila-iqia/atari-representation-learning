@@ -98,7 +98,9 @@ test_eps, test_labels = get_episodes(env_name = "PitfallNoFrameskip-v4",
                                      steps=50000, 
                                      collect_mode="random_agent")
 ```
+
 Then probe them using ProbeTrainer and your encoder (`my_encoder`):
+
 ```python
 from aari.probe import ProbeTrainer
 probe_trainer = ProbeTrainer(my_encoder, representation_len=my_encoder.feature_size)
@@ -107,7 +109,7 @@ probe_trainer.test(test_eps, test_labels)
 ```
 To see how we use ProbeTrainer, check out [scripts/run_probe.py](scripts/run_probe.py)
 
-Here is an example of my_encoder:
+Here is an example of `my_encoder`:
 ```python 
 # get your encoder
 import torch.nn as nn
