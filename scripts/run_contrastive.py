@@ -19,9 +19,18 @@ from aari.episodes import get_episodes
 
 def train_encoder(args):
     device = torch.device("cuda:" + str(args.cuda_id) if torch.cuda.is_available() else "cpu")
-    tr_eps, val_eps = get_episodes(args, device, collect_mode=args.collect_mode,
-                                     train_mode="train_encoder",
-                                     seed=args.seed)
+    tr_eps, val_eps = get_episodes(steps=args.probe_steps,
+                                 env_name=args.env_name,
+                                 seed=args.seed,
+                                 num_processes=args.num_processes,
+                                 num_frame_stack=args.num_frame_stack,
+                                 downsample=not args.no_downsample,
+                                 color=args.color,
+                                 entropy_threshold=args.entropy_threshold,
+                                 collect_mode=args.probe_collect_mode,
+                                 train_mode="train_encoder",
+                                 checkpoint_index=args.checkpoint_index,
+                                 min_episode_length=args.batch_size)
 
     observation_shape = tr_eps[0][0].shape
     if args.encoder_type == "Nature":
