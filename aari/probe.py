@@ -39,7 +39,8 @@ class ProbeTrainer():
                  device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
                  lr=5e-4,
                  epochs=100,
-                 batch_size=64):
+                 batch_size=64,
+                 representation_len=256):
 
         self.encoder = encoder
         self.wandb = wandb
@@ -53,7 +54,7 @@ class ProbeTrainer():
         self.patience = patience
         self.method = method_name
         self.device = device
-        self.feature_size = encoder.hidden_size
+        self.feature_size = representation_len
         self.loss_fn = nn.CrossEntropyLoss()
 
         # bad convention, but these get set in "create_probes"
