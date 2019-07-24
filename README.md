@@ -84,7 +84,67 @@ Now, `info` is a dictionary of the form:
 **Note:** In our experiments, we use additional preprocessing for Atari environments mainly following Minh et. al, 2014. See [aari/envs.py](aari/envs.py) for more info! 
 
 If you want the raw RAM annotations, check out [aari/ram_annotations.py](aari/ram_annotations.py)
+Also if don't use gym and want to get labels from ram use:
+```python
+from aari.wrapper import ram2label
+```
 
+### Probing
+if you don't want to code up your own linear classifier to probe your representations, you can use our interface! 
+Pre-reqs for this is PyTorch 
+All you need is your own encoder!
+We'll call it "my_encoder"
+
+
+First, get episodes for train, val and, test:
+```python
+from aari.episodes import get_episodes
+tr_eps, val_eps, tr_labels, val_labels, test_eps, test_labels = get_episodes(env_name = "PitfallNoFrameskip-v4", 
+                                                                             steps=50000, 
+                                                                             collect_mode="random_agent")
+```
+Then probe them using ProbeTrainer and your encoder:
+```python
+from aari.probe import ProbeTrainer
+probe_trainer = ProbeTrainer(my_encoder, representation_len=my_encoder.feature_size)
+probe_trainer.train(tr_eps, val_eps, tr_labels, val_labels)
+probe_trainer.test(test_eps, test_labels)
+```
+To see how we use ProbeTrainer, see [scripts/run_probe.py](scripts/run_probe.py)
+
+Here is an example of my_encoder:
+```python 
+# get your encoder
+import torch.nn as nn
+class MyEncoder(nn.Module):
+    def __init__(self, input_channels, feature_size):
+        super().__init__()
+        self.feature_size = feature_size
+        self.input_channels = input_channels
+        self.final_conv_size = 64 * 9 * 6
+        self.cnn = nn.Sequential(
+            nn.Conv2d(input_channels, 32, 8, stride=4),
+            nn.ReLU(),
+            nn.Conv2d(32, 64, 4, stride=2),
+            nn.ReLU(),
+            nn.Conv2d(64, 128, 4, stride=2),
+            nn.ReLU(),
+            nn.Conv2d(128, 64, 3, stride=1),
+            nn.ReLU()
+        )
+        self.fc = nn.Linear(self.final_conv_size, self.feature_size)
+
+    def forward(self, inputs):
+        x = self.cnn(inputs)
+        x = x.view(x.size(0), -1)
+        return self.fc(x)
+        
+
+my_encoder = MyEncoder(input_channels=1,feature_size=256)
+
+# load in weights
+my_encoder.load_state_dict(torch.load(path_to_my_weights))```
+```
 
 ### Spatio-Temporal DeepInfoMax:
 ```bash
