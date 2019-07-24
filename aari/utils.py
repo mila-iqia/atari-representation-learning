@@ -4,13 +4,13 @@ from sklearn.metrics import f1_score as compute_f1_score
 from pathlib import Path
 
 
-def download_run(args, checkpoint_step):
+def download_run(env_name, checkpoint_step):
     import wandb
     api = wandb.Api()
     runs = list(api.runs("curl-atari/pretrained-rl-agents-2", {"state": "finished",
-                                                               "config.env_name": args.env_name}))
+                                                               "config.env_name": env_name}))
     run = runs[0]
-    filename = args.env_name + '_' + str(checkpoint_step) + '.pt'
+    filename = env_name + '_' + str(checkpoint_step) + '.pt'
     run.files(names=[filename])[0].download(root='./trained_models_full/', replace=True)
     print('Downloaded ' + filename)
     return './trained_models_full/' + filename

@@ -3,11 +3,14 @@ from collections import deque
 from itertools import chain
 import numpy as np
 import torch
-import wandb
 import time
 import os
 from .envs import make_vec_envs
 from .utils import download_run
+try:
+    import wandb
+except:
+    pass
 
 
 checkpointed_steps_full = [10753536, 1076736, 11828736, 12903936, 13979136, 15054336, 1536, 16129536, 17204736,
@@ -27,18 +30,19 @@ checkpointed_steps_full_sorted = [1536, 1076736, 2151936, 3227136, 4302336, 5377
                                   36558336, 37633536, 38708736, 39783936, 40859136, 41934336, 43009536, 44084736,
                                   45159936, 46235136, 47310336, 48385536, 49460736, 49999872]
 
-def get_random_agent_rollouts(args, device, steps):
-    envs = make_vec_envs(args, args.num_processes)
-    obs = envs.reset()
+
+def get_random_agent_rollouts(env_name, steps, seed=42, num_processes=1, num_frame_stack=1, downsample=False, color=False):
+    envs = make_vec_envs(env_name, seed,  num_processes, num_frame_stack, downsample, color)
+    envs.reset();
     episode_rewards = deque(maxlen=10)
     print('-------Collecting samples----------')
-    episodes = [[[]] for _ in range(args.num_processes)]  # (n_processes * n_episodes * episode_len)
-    episode_labels = [[[]] for _ in range(args.num_processes)]
-    for step in range(steps // args.num_processes):
+    episodes = [[[]] for _ in range(num_processes)]  # (n_processes * n_episodes * episode_len)
+    episode_labels = [[[]] for _ in range(num_processes)]
+    for step in range(steps // num_processes):
         # Take action using a random policy
         action = torch.tensor(
-            np.array([np.random.randint(1, envs.action_space.n) for _ in range(args.num_processes)])) \
-            .unsqueeze(dim=1).to(device)
+            np.array([np.random.randint(1, envs.action_space.n) for _ in range(num_processes)])) \
+            .unsqueeze(dim=1)
         obs, reward, done, infos = envs.step(action)
         for i, info in enumerate(infos):
             if 'episode' in info.keys():
@@ -61,32 +65,30 @@ def get_random_agent_rollouts(args, device, steps):
     return episodes, episode_labels
 
 
-
-
-def get_ppo_rollouts(args, steps, checkpoint_step):
-    filepath = download_run(args, checkpoint_step)
+def get_ppo_rollouts(env_name, steps, seed=42, num_processes=1,
+                     num_frame_stack=1, downsample=False, color=False, checkpoint_index=-1):
+    checkpoint_step = checkpointed_steps_full_sorted[checkpoint_index]
+    filepath = download_run(env_name, checkpoint_step)
     while not os.path.exists(filepath):
         time.sleep(5)
 
-    envs = make_vec_envs(args, args.num_processes)
+    envs = make_vec_envs(env_name, seed,  num_processes, num_frame_stack, downsample, color)
 
-    actor_critic, ob_rms = \
-        torch.load(filepath, map_location=lambda storage, loc: storage)
+    actor_critic, ob_rms = torch.load(filepath, map_location=lambda storage, loc: storage)
 
-    episodes = [[[]] for _ in range(args.num_processes)]  # (n_processes * n_episodes * episode_len)
-    episode_labels = [[[]] for _ in range(args.num_processes)]
+    episodes = [[[]] for _ in range(num_processes)]  # (n_processes * n_episodes * episode_len)
+    episode_labels = [[[]] for _ in range(num_processes)]
     episode_rewards = deque(maxlen=10)
-
 
     masks = torch.zeros(1, 1)
     obs = envs.reset()
     entropies = []
-    for step in range(steps // args.num_processes):
+    for step in range(steps // num_processes):
         # Take action using a random policy
         with torch.no_grad():
             _, action, _, _, actor_features, dist_entropy = actor_critic.act(obs, None, masks, deterministic=False)
         action = torch.tensor([envs.action_space.sample() if np.random.uniform(0, 1) < 0.2 else action[i]
-                               for i in range(args.num_processes)]).unsqueeze(dim=1)
+                               for i in range(num_processes)]).unsqueeze(dim=1)
         entropies.append(dist_entropy.clone())
         obs, reward, done, infos = envs.step(action)
         for i, info in enumerate(infos):
@@ -107,55 +109,81 @@ def get_ppo_rollouts(args, steps, checkpoint_step):
     # Convert to 2d list from 3d list
     episode_labels = list(chain.from_iterable(episode_labels))
     mean_entropy = torch.stack(entropies).mean()
-    return episodes, episode_labels, np.mean(episode_rewards), mean_entropy
+    mean_episode_reward = np.mean(episode_rewards)
+    try:
+        wandb.log({'action_entropy': mean_entropy, 'mean_reward': mean_episode_reward})
+    except:
+        pass
 
-
-def get_pretrained_rl_episodes(args, steps):
-    checkpoint = checkpointed_steps_full_sorted[args.checkpoint_index]
-    episodes, episode_labels, mean_reward, mean_action_entropy = get_ppo_rollouts(args, steps, checkpoint)
-    wandb.log({'action_entropy': mean_action_entropy, 'mean_reward': mean_reward})
     return episodes, episode_labels
 
 
-
-
-def get_episodes(args, device, collect_mode="random_agent", train_mode="probe", seed=None):
-    seed = seed if seed else args.seed
-    steps = args.probe_steps if train_mode == "probe" else args.pretraining_steps
+def get_episodes(env_name,
+                 steps,
+                 seed=42,
+                 num_processes=1,
+                 num_frame_stack=1,
+                 downsample=False,
+                 color=False,
+                 entropy_threshold=0.6,
+                 collect_mode="random_agent",
+                 train_mode="probe",
+                 checkpoint_index=-1,
+                 min_episode_length=64):
 
     if collect_mode == "random_agent":
         # List of episodes. Each episode is a list of 160x210 observations
-        episodes, episode_labels = get_random_agent_rollouts(args, device, steps)
+        episodes, episode_labels = get_random_agent_rollouts(env_name=env_name,
+                                                             steps=steps,
+                                                             seed=seed,
+                                                             num_processes=num_processes,
+                                                             num_frame_stack=num_frame_stack,
+                                                             downsample=downsample, color=color)
 
     elif collect_mode == "pretrained_ppo":
+        import wandb
         # List of episodes. Each episode is a list of 160x210 observations
-        episodes, episode_labels = get_pretrained_rl_episodes(args, steps)
+        episodes, episode_labels = get_ppo_rollouts(env_name=env_name,
+                                                   steps=steps,
+                                                   seed=seed,
+                                                   num_processes=num_processes,
+                                                   num_frame_stack=num_frame_stack,
+                                                   downsample=downsample,
+                                                   color=color,
+                                                   checkpoint_index=checkpoint_index)
 
 
-    ep_inds = [i for i in range(len(episodes)) if len(episodes[i]) > args.batch_size]
+    else:
+        assert False, "Collect mode {} not recognized".format(collect_mode)
+
+    ep_inds = [i for i in range(len(episodes)) if len(episodes[i]) > min_episode_length]
     episodes = [episodes[i] for i in ep_inds]
+    episode_labels = [episode_labels[i] for i in ep_inds]
+    episode_labels, entropy_dict = remove_low_entropy_labels(episode_labels, entropy_threshold=entropy_threshold)
+
+    try:
+        wandb.log(entropy_dict)
+    except:
+        pass
+
     inds = np.arange(len(episodes))
     rng = np.random.RandomState(seed=seed)
     rng.shuffle(inds)
 
     if train_mode == "train_encoder":
-        assert len(ep_inds) > 1
+        assert len(inds) > 1, "Not enough episodes to split into train and val. You must specify enough steps to get at least two episodes"
         split_ind = int(0.8 * len(inds))
         tr_eps, val_eps = episodes[:split_ind], episodes[split_ind:]
         return tr_eps, val_eps
 
     if train_mode == "probe":
-        episode_labels = remove_low_entropy_labels(episode_labels, entropy_threshold=args.entropy_threshold)
-
-
         val_split_ind, te_split_ind = int(0.7 * len(inds)), int(0.8 * len(inds))
-        assert val_split_ind > 0
-        assert te_split_ind > val_split_ind
+        assert val_split_ind > 0 and te_split_ind > val_split_ind,\
+            "Not enough episodes to split into train, val and test. You must specify more steps"
         tr_eps, val_eps, test_eps = episodes[:val_split_ind], episodes[val_split_ind:te_split_ind], episodes[
                                                                                                     te_split_ind:]
-        tr_labels, val_labels, test_labels = episode_labels[:val_split_ind], episode_labels[
-                                                                             val_split_ind:te_split_ind], episode_labels[
-                                                                                                          te_split_ind:]
+        tr_labels, val_labels, test_labels = episode_labels[:val_split_ind], \
+                                             episode_labels[val_split_ind:te_split_ind], episode_labels[te_split_ind:]
         test_eps, test_labels = remove_duplicates(tr_eps, val_eps, test_eps, test_labels)
         test_ep_inds = [i for i in range(len(test_eps)) if len(test_eps[i]) > 1]
         test_eps = [test_eps[i] for i in test_ep_inds]

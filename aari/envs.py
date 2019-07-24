@@ -27,7 +27,6 @@ def make_env(env_id, seed, rank, log_dir, downsample=True, color=False):
 
         env.seed(seed + rank)
 
-        obs_shape = env.observation_space.shape
 
         if str(env.__class__.__name__).find('TimeLimit') >= 0:
             env = TimeLimitMask(env)
@@ -57,9 +56,9 @@ def make_env(env_id, seed, rank, log_dir, downsample=True, color=False):
     return _thunk
 
 
-def make_vec_envs(args, num_processes, gamma=0.99, log_dir='./tmp/', device=torch.device('cpu')):
+def make_vec_envs(env_name, seed,  num_processes, num_frame_stack=1, downsample=True, color=False, gamma=0.99, log_dir='./tmp/', device=torch.device('cpu')):
     Path(log_dir).mkdir(parents=True, exist_ok=True)
-    envs = [make_env(args.env_name, args.seed, i, log_dir, not args.no_downsample, args.color)
+    envs = [make_env(env_name, seed, i, log_dir, downsample, color)
             for i in range(num_processes)]
 
     if len(envs) > 1:
@@ -75,8 +74,8 @@ def make_vec_envs(args, num_processes, gamma=0.99, log_dir='./tmp/', device=torc
 
     envs = VecPyTorch(envs, device)
 
-    if args.num_frame_stack > 1:
-        envs = VecPyTorchFrameStack(envs, args.num_frame_stack, device)
+    if num_frame_stack > 1:
+        envs = VecPyTorchFrameStack(envs, num_frame_stack, device)
 
     return envs
 
