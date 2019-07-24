@@ -11,18 +11,26 @@ from aari.episodes import get_episodes
 
 
 def run_probe(args):
-    device = torch.device("cuda:" + str(args.cuda_id) if torch.cuda.is_available() else "cpu")
-    collect_mode = args.collect_mode if args.method != 'pretrained-rl-agent' else "pretrained_representations"
-    tr_eps, val_eps, tr_labels, val_labels, test_eps, test_labels = get_episodes(args,device, collect_mode=collect_mode,
-                                                                                 train_mode="probe")
+    tr_eps, val_eps, tr_labels, val_labels, test_eps, test_labels = get_episodes(steps=args.probe_steps,
+                                                                                 env_name=args.env_name,
+                                                                                 seed=args.seed,
+                                                                                 num_processes=args.num_processes,
+                                                                                 num_frame_stack=args.num_frame_stack,
+                                                                                 downsample=not args.no_downsample,
+                                                                                 color=args.color,
+                                                                                 entropy_threshold=args.entropy_threshold,
+                                                                                 collect_mode=args.probe_collect_mode,
+                                                                                 train_mode="probe",
+                                                                                 checkpoint_index=args.checkpoint_index,
+                                                                                 min_episode_length=args.batch_size)
     print("got episodes!")
-    wandb.config.update(vars(args))
 
     if args.train_encoder and args.method in train_encoder_methods:
         print("Training encoder from scratch")
         encoder = train_encoder(args)
         encoder.probing = True
         encoder.eval()
+
 
     elif args.method in ["pretrained-rl-agent", "majority"]:
         encoder = None
