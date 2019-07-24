@@ -1,9 +1,6 @@
 import torch
-from .utils import EarlyStopping
 from torch import nn
-from src.trainer import Trainer
-from .utils import appendabledict
-from src.utils import calculate_multiclass_accuracy, calculate_multiclass_f1_score
+from .utils import EarlyStopping, appendabledict, calculate_multiclass_accuracy, calculate_multiclass_f1_score
 from copy import deepcopy
 import numpy as np
 from torch.utils.data import RandomSampler, BatchSampler
@@ -30,7 +27,7 @@ class FullySupervisedLinearProbe(nn.Module):
         return self.probe(feature_vec)
 
 
-class ProbeTrainer(Trainer):
+class ProbeTrainer():
     def __init__(self,
                  encoder=None,
                  method_name="my_method",
@@ -44,7 +41,9 @@ class ProbeTrainer(Trainer):
                  epochs=100,
                  batch_size=64):
 
-        super().__init__(encoder, wandb, device)
+        self.encoder = encoder
+        self.wandb = wandb
+        self.device = device
         self.fully_supervised = fully_supervised
         self.save_dir = save_dir
         self.num_classes = num_classes
