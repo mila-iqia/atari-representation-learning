@@ -1,4 +1,16 @@
-from copy import deepcopy
+"""In gym, the RAM is represented as an 128-element array, where each element in the array can range from 0 to 255
+
+The atari_dict below is organized as so:
+    key: the name of the game
+    value: the game dictionary
+
+Game dictionary is organized as:
+    key: state variable name
+    value: the element in the RAM array where the value of that state variable is stored
+            e.g. the value of the x coordinate of the player in asteroids is stored in the 73rd (counting up from 0)
+            element of the RAM array (when the player in asteroids moves horizontally, ram_array[73] should change
+            in value correspondingly)
+"""
 
 atari_dict = {
     "asteroids": dict(enemy_asteroids_y=[3, 4, 5, 6, 7, 8, 9, 12, 13, 14, 15, 16, 17, 18, 19],
@@ -234,6 +246,7 @@ atari_dict = {
                         qotile_missile_y=46)
 }
 
+# break up any lists (e.g. dict(clock=[67, 69]) -> dict(clock_0=67, clock_1=69) )
 update_dict = {k: {} for k in atari_dict.keys()}
 
 remove_dict = {k: [] for k in atari_dict.keys()}
