@@ -83,7 +83,7 @@ Now, `info` is a dictionary of the form:
 
 **Note:** In our experiments, we use additional preprocessing for Atari environments mainly following Minh et. al, 2014. See [aari/envs.py](aari/envs.py) for more info! 
 
-If you want the raw RAM annotations, check out [aari/ram_annotations.py](aari/ram_annotations.py)
+If you want the raw RAM annotations (which parts of ram correspond to each state variable), check out [aari/ram_annotations.py](aari/ram_annotations.py)
 
 
 ### Probing
@@ -92,9 +92,10 @@ We provide an interface for the included probing tasks.
 First, get episodes for train, val and, test:
 ```python
 from aari.episodes import get_episodes
-tr_eps, val_eps,\
+
+tr_episodes, val_episodes,\
 tr_labels, val_labels,\
-test_eps, test_labels = get_episodes(env_name = "PitfallNoFrameskip-v4", 
+test_episodes, test_labels = get_episodes(env_name="PitfallNoFrameskip-v4", 
                                      steps=50000, 
                                      collect_mode="random_agent")
 ```
@@ -103,16 +104,20 @@ Then probe them using ProbeTrainer and your encoder (`my_encoder`):
 
 ```python
 from aari.probe import ProbeTrainer
+
 probe_trainer = ProbeTrainer(my_encoder, representation_len=my_encoder.feature_size)
-probe_trainer.train(tr_eps, val_eps, tr_labels, val_labels)
-probe_trainer.test(test_eps, test_labels)
+probe_trainer.train(tr_episodes, val_episodes,
+                     tr_labels, val_labels,)
+final_accuracies, final_f1_scores = probe_trainer.test(test_episodes, test_labels)
 ```
+
 To see how we use ProbeTrainer, check out [scripts/run_probe.py](scripts/run_probe.py)
 
 Here is an example of `my_encoder`:
 ```python 
 # get your encoder
 import torch.nn as nn
+import torch
 class MyEncoder(nn.Module):
     def __init__(self, input_channels, feature_size):
         super().__init__()
@@ -138,9 +143,8 @@ class MyEncoder(nn.Module):
         
 
 my_encoder = MyEncoder(input_channels=1,feature_size=256)
-
 # load in weights
-my_encoder.load_state_dict(torch.load(path_to_my_weights))
+my_encoder.load_state_dict(torch.load(open("path/to/my/weights.pt", "rb")))
 ```
 
 ### Spatio-Temporal DeepInfoMax:
