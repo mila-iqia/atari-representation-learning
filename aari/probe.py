@@ -113,7 +113,7 @@ class ProbeTrainer():
         elif not self.encoder:
             # if encoder is None then inputs are vectors
             f = batch.detach()
-            assert len(f.squeeze().shape) == 2
+            assert len(f.squeeze().shape) == 2, "if input is a batch of vectors you must specify an encoder!"
             preds = probe(f)
 
         else:
@@ -179,6 +179,8 @@ class ProbeTrainer():
         return accuracy_dict, f1_score_dict
 
     def train(self, tr_eps, val_eps, tr_labels, val_labels):
+        # if not self.encoder:
+        #     assert len(tr_eps[0][0].squeeze().shape) == 2, "if input is a batch of vectors you must specify an encoder!"
         sample_label = tr_labels[0][0]
         self.create_probes(sample_label)
         e = 0
@@ -235,3 +237,5 @@ class ProbeTrainer():
         print("\t --")
         for k in acc_dict.keys():
             print("\t {}: {:8.4f}%".format(k, 100 * acc_dict[k]))
+
+torch.save()
