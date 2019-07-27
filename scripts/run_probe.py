@@ -22,8 +22,7 @@ def run_probe(args):
                                                                                  collect_mode=args.probe_collect_mode,
                                                                                  train_mode="probe",
                                                                                  checkpoint_index=args.checkpoint_index,
-                                                                                 min_episode_length=args.batch_size,
-                                                                                 representation_len=args.feature_size)
+                                                                                 min_episode_length=args.batch_size)
     print("got episodes!")
 
     if args.train_encoder and args.method in train_encoder_methods:
