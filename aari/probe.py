@@ -237,5 +237,3 @@ class ProbeTrainer():
         print("\t --")
         for k in acc_dict.keys():
             print("\t {}: {:8.4f}%".format(k, 100 * acc_dict[k]))
-
-torch.save()
