@@ -103,7 +103,6 @@ class ProbeTrainer():
             yield torch.stack(xs).to(self.device) / 255., labels
 
     def probe(self, batch, k):
-        [probe.to("cpu") for probe in self.probes.values()]
         probe = self.probes[k]
         probe.to(self.device)
         if self.fully_supervised:
