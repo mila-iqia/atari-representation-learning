@@ -33,7 +33,6 @@ def run_probe(args):
         encoder.probing = True
         encoder.eval()
 
-
     elif args.method in ["pretrained-rl-agent", "majority"]:
         encoder = None
 
@@ -56,7 +55,7 @@ def run_probe(args):
     torch.set_num_threads(1)
 
     if args.method == 'majority':
-        test_acc, test_f1score = majority_baseline(tr_labels, test_labels, wandb)
+        test_acc, test_f1score, test_mse = majority_baseline(tr_labels, test_labels, wandb, regression=args.regression)
 
     else:
         trainer = ProbeTrainer(encoder=encoder,
@@ -67,12 +66,13 @@ def run_probe(args):
                                patience=args.patience,
                                wandb=wandb,
                                fully_supervised=(args.method == "supervised"),
-                               save_dir=wandb.run.dir)
+                               save_dir=wandb.run.dir,
+                               regression=args.regression)
 
         trainer.train(tr_eps, val_eps, tr_labels, val_labels)
-        test_acc, test_f1score = trainer.test(test_eps, test_labels)
+        test_acc, test_f1score, test_mse = trainer.test(test_eps, test_labels)
 
-    print(test_acc, test_f1score)
+    print(test_acc, test_f1score, test_mse)
     wandb.log(test_acc)
     wandb.log(test_f1score)
 

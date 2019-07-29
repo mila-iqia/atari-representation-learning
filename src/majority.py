@@ -1,9 +1,13 @@
 from itertools import chain
+
+from aari.categorization import localization_keys
 from src.utils import calculate_multiclass_accuracy, calculate_multiclass_f1_score
 import numpy as np
 import torch
+import torch.nn.functional as F
 
-def majority_baseline(tr_labels, test_labels, wandb):
+
+def majority_baseline(tr_labels, test_labels, wandb, regression=False):
     tr_labels = list(chain.from_iterable(tr_labels))
     test_labels = list(chain.from_iterable(test_labels))
     counts, maj_dict, test_counts = {}, {}, {}
@@ -18,19 +22,24 @@ def majority_baseline(tr_labels, test_labels, wandb):
     for label in counts:
         maj_dict[label] = max(counts[label], key=counts[label].get)
 
-    accuracy_dict = {}
-    f1_score_dict = {}
+    accuracy_dict, f1_score_dict, mse_dict = {}, {}, {}
     for k in test_labels[0]:
         labels = torch.tensor([label_d[k] for label_d in test_labels]).long()
         preds = torch.zeros(len(test_labels), 256)
         preds[:, maj_dict[k]] = 1
-        accuracy = calculate_multiclass_accuracy(preds, labels)
-        f1score = calculate_multiclass_f1_score(preds, labels)
-        accuracy_dict[k + "_test_acc"] = accuracy
-        f1_score_dict[k + "_f1score"] = f1score
+        if k in localization_keys and regression:
+            mse = torch.sqrt(F.mse_loss(preds, labels.unsqueeze(-1).float()))
+            mse_dict[k + 'test_mse'] = mse
+        else:
+            accuracy = calculate_multiclass_accuracy(preds, labels)
+            f1score = calculate_multiclass_f1_score(preds, labels)
+            accuracy_dict[k + "_test_acc"] = accuracy
+            f1_score_dict[k + "_f1score"] = f1score
 
     accuracy_dict['mean_test_acc'] = np.mean(list(accuracy_dict.values()))
     f1_score_dict["mean_f1score"] = np.mean(list(f1_score_dict.values()))
+    accuracy_dict['mean_test_mse'] = np.mean(list(mse_dict.values()))
     wandb.log(accuracy_dict)
     wandb.log(f1_score_dict)
-    return accuracy_dict, f1_score_dict
+    wandb.log(mse_dict)
+    return accuracy_dict, f1_score_dict, mse_dict

@@ -86,6 +86,7 @@ def get_argparser():
 
     parser.add_argument("--beta", default=1.0)
     # probe arguments
+    parser.add_argument("--regression", action='store_true', default=False)
     parser.add_argument("--weights-path", type=str, default="None")
     parser.add_argument("--train-encoder", action='store_true', default=True)
     parser.add_argument('--probe-lr', type=float, default=3e-4)

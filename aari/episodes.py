@@ -33,7 +33,7 @@ checkpointed_steps_full_sorted = [1536, 1076736, 2151936, 3227136, 4302336, 5377
 
 def get_random_agent_rollouts(env_name, steps, seed=42, num_processes=1, num_frame_stack=1, downsample=False, color=False):
     envs = make_vec_envs(env_name, seed,  num_processes, num_frame_stack, downsample, color)
-    envs.reset();
+    envs.reset()
     episode_rewards = deque(maxlen=10)
     print('-------Collecting samples----------')
     episodes = [[[]] for _ in range(num_processes)]  # (n_processes * n_episodes * episode_len)
@@ -159,7 +159,9 @@ def get_episodes(env_name,
     ep_inds = [i for i in range(len(episodes)) if len(episodes[i]) > min_episode_length]
     episodes = [episodes[i] for i in ep_inds]
     episode_labels = [episode_labels[i] for i in ep_inds]
-    episode_labels, entropy_dict = remove_low_entropy_labels(episode_labels, entropy_threshold=entropy_threshold)
+
+    if train_mode == 'probe':
+        episode_labels, entropy_dict = remove_low_entropy_labels(episode_labels, entropy_threshold=entropy_threshold)
 
     try:
         wandb.log(entropy_dict)
