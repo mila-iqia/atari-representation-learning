@@ -11,6 +11,7 @@ from aari.episodes import get_episodes
 
 
 def run_probe(args):
+    wandb.config.update(vars(args))
     tr_eps, val_eps, tr_labels, val_labels, test_eps, test_labels = get_episodes(steps=args.probe_steps,
                                                                                  env_name=args.env_name,
                                                                                  seed=args.seed,
@@ -23,6 +24,7 @@ def run_probe(args):
                                                                                  train_mode="probe",
                                                                                  checkpoint_index=args.checkpoint_index,
                                                                                  min_episode_length=args.batch_size)
+
     print("got episodes!")
 
     if args.train_encoder and args.method in train_encoder_methods:
