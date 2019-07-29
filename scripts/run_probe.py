@@ -75,6 +75,7 @@ def run_probe(args):
     print(test_acc, test_f1score, test_mse)
     wandb.log(test_acc)
     wandb.log(test_f1score)
+    wandb.log(test_mse)
 
 
 if __name__ == "__main__":
