@@ -28,22 +28,12 @@ class DIMTrainer(Trainer):
         super().__init__(encoder, wandb, device)
         self.config = config
         self.patience = self.config["patience"]
-        self.use_multiple_predictors = config.get("use_multiple_predictors", False)
-        print("Using multiple predictors" if self.use_multiple_predictors else "Using shared classifier")
         self.epochs = config['epochs']
         self.batch_size = config['batch_size']
         self.device = device
-        if self.use_multiple_predictors:
-            # todo remove the hard coded 11x8
-            self.classifiers = [nn.Linear(self.encoder.hidden_size, 128).to(device) for _ in range(11*8)]
-        else:
-            self.classifier1 = nn.Linear(self.encoder.hidden_size, 128).to(device)
+        self.classifier1 = nn.Linear(self.encoder.hidden_size, 128).to(device)
         self.params = list(self.encoder.parameters())
-        if self.use_multiple_predictors:
-            for classifier in self.classifiers:
-                self.params += list(classifier.parameters())
-        else:
-            self.params += list(self.classifier1.parameters())
+        self.params += list(self.classifier1.parameters())
         self.optimizer = torch.optim.Adam(self.params, lr=config['lr'], eps=1e-5)
         self.early_stopper = EarlyStopping(patience=self.patience, verbose=False, wandb=self.wandb, name="encoder")
         self.transform = transforms.Compose([Cutout(n_holes=1, length=80)])
@@ -99,11 +89,7 @@ class DIMTrainer(Trainer):
             classifier_index = 0
             for y in range(sy):
                 for x in range(sx):
-                    if self.use_multiple_predictors:
-                        predictions = self.classifiers[classifier_index](f_t)
-                        classifier_index += 1
-                    else:
-                        predictions = self.classifier1(f_t)
+                    predictions = self.classifier1(f_t)
 
                     positive = f_t_local[:, y, x, :]
                     logits = torch.matmul(predictions, positive.t())
@@ -131,19 +117,11 @@ class DIMTrainer(Trainer):
     def train(self, tr_eps, val_eps):
         for e in range(self.epochs):
             self.encoder.train()
-            if self.use_multiple_predictors:
-                for c in self.classifiers:
-                  c.train()
-            else:
-                self.classifier1.train()
+            self.classifier1.train()
             self.do_one_epoch(e, tr_eps)
 
             self.encoder.eval()
-            if self.use_multiple_predictors:
-                for c in self.classifiers:
-                  c.eval()
-            else:
-                self.classifier1.eval()
+            self.classifier1.eval()
             self.do_one_epoch(e, val_eps)
 
             if self.early_stopper.early_stop:
