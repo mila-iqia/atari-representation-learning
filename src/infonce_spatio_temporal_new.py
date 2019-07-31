@@ -23,7 +23,7 @@ class Classifier(nn.Module):
         return self.network(x1, x2)
 
 
-class InfoNCESpatioTemporalTrainer(Trainer):
+class InfoNCESpatioTemporalTrainer2(Trainer):
     def __init__(self, encoder, config, device=torch.device('cpu'), wandb=None):
         super().__init__(encoder, wandb, device)
         self.config = config
@@ -44,20 +44,16 @@ class InfoNCESpatioTemporalTrainer(Trainer):
         print('Total Steps: {}'.format(total_steps))
         # Episode sampler
         # Sample `num_samples` episodes then batchify them with `self.batch_size` episodes per batch
-        sampler = BatchSampler(RandomSampler(range(len(episodes)),
-                                             replacement=True, num_samples=total_steps),
-                               self.batch_size, drop_last=True)
-        for indices in sampler:
-            episodes_batch = [episodes[x] for x in indices]
+        for i in range(total_steps // self.batch_size):
+            episode = episodes[np.random.randint(0, len(episodes) - 1)]
             x_t, x_tprev, x_that, ts, thats = [], [], [], [], []
-            for episode in episodes_batch:
+            for j in range(self.batch_size):
                 # Get one sample from this episode
                 t, t_hat = 0, 0
                 t, t_hat = np.random.randint(0, len(episode)), np.random.randint(0, len(episode))
                 x_t.append(episode[t])
 
                 x_tprev.append(episode[t - 1])
-                ts.append([t])
             yield torch.stack(x_t).to(self.device) / 255., torch.stack(x_tprev).to(self.device) / 255.
 
     def do_one_epoch(self, epoch, episodes):

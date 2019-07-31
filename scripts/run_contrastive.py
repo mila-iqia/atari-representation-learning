@@ -8,6 +8,7 @@ import torch
 from src.dim_baseline import DIMTrainer
 from src.global_infonce_stdim import GlobalInfoNCESpatioTemporalTrainer
 from src.global_local_infonce import GlobalLocalInfoNCESpatioTemporalTrainer
+from src.infonce_spatio_temporal_new import InfoNCESpatioTemporalTrainer2
 from src.spatio_temporal import SpatioTemporalTrainer
 from src.utils import get_argparser
 from src.encoders import NatureCNN, ImpalaCNN
@@ -61,6 +62,8 @@ def train_encoder(args):
         trainer = GlobalLocalInfoNCESpatioTemporalTrainer(encoder, config, device=device, wandb=wandb)
     elif args.method == "dim":
         trainer = DIMTrainer(encoder, config, device=device, wandb=wandb)
+    elif args.method == "stdim-2":
+        trainer = InfoNCESpatioTemporalTrainer2(encoder, config, device=device, wandb=wandb)
     else:
         assert False, "method {} has no trainer".format(args.method)
 
