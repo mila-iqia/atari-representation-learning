@@ -12,7 +12,7 @@ from collections import defaultdict
 
 # methods that need encoder trained before
 train_encoder_methods = ['cpc', 'spatial-appo', 'vae', "naff", "infonce-stdim", "global-infonce-stdim",
-                         "global-local-infonce-stdim", "dim", "stdim-2"]
+                         "global-local-infonce-stdim", "dim", "stdim-2", "stdim-3"]
 probe_only_methods = ["supervised", "random-cnn", "majority", "pretrained-rl-agent"]
 
 

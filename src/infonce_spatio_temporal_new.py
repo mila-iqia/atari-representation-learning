@@ -23,7 +23,7 @@ class Classifier(nn.Module):
         return self.network(x1, x2)
 
 
-class InfoNCESpatioTemporalTrainer2(Trainer):
+class InfoNCESpatioTemporalTrainer3(Trainer):
     def __init__(self, encoder, config, device=torch.device('cpu'), wandb=None):
         super().__init__(encoder, wandb, device)
         self.config = config
@@ -81,19 +81,7 @@ class InfoNCESpatioTemporalTrainer2(Trainer):
                     loss1 += step_loss
             loss1 = loss1 / (sx * sy)
 
-            # Loss 2: f5 patches at time t, with f5 patches at time t-1
-            f_t = f_t_maps['f5']
-            loss2 = 0.
-            for y in range(sy):
-                for x in range(sx):
-                    predictions = self.classifier2(f_t[:, y, x, :])
-                    positive = f_t_prev[:, y, x, :]
-                    logits = torch.matmul(predictions, positive.t())
-                    step_loss = F.cross_entropy(logits, torch.arange(N).to(self.device))
-                    loss2 += step_loss
-            loss2 = loss2 / (sx * sy)
-            loss = loss1 + loss2
-
+            loss = loss1
             if mode == "train":
                 self.optimizer.zero_grad()
                 loss.backward()
@@ -101,7 +89,6 @@ class InfoNCESpatioTemporalTrainer2(Trainer):
 
             epoch_loss += loss.detach().item()
             epoch_loss1 += loss1.detach().item()
-            epoch_loss2 += loss2.detach().item()
             #preds1 = torch.sigmoid(self.classifier1(x1, x2).squeeze())
             #accuracy1 += calculate_accuracy(preds1, target)
             #preds2 = torch.sigmoid(self.classifier2(x1_p, x2_p).squeeze())
