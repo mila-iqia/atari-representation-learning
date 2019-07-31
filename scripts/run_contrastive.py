@@ -9,6 +9,7 @@ from src.dim_baseline import DIMTrainer
 from src.static_dim import StaticDIMTrainer
 from src.global_infonce_stdim import GlobalInfoNCESpatioTemporalTrainer
 from src.global_local_infonce import GlobalLocalInfoNCESpatioTemporalTrainer
+from src.infonce_spatio_temporal_new import InfoNCESpatioTemporalTrainer3
 from src.spatio_temporal import SpatioTemporalTrainer
 from src.utils import get_argparser
 from src.encoders import NatureCNN, ImpalaCNN
@@ -64,6 +65,8 @@ def train_encoder(args):
         trainer = DIMTrainer(encoder, config, device=device, wandb=wandb)
     elif args.method == "static-dim":
         trainer = StaticDIMTrainer(encoder, config, device=device, wandb=wandb)
+    elif args.method == "stdim-3":
+        trainer = InfoNCESpatioTemporalTrainer3(encoder, config, device=device, wandb=wandb)
     else:
         assert False, "method {} has no trainer".format(args.method)
 
