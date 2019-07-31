@@ -92,7 +92,7 @@ class StaticDIMTrainer(Trainer):
                 pre_activation = f_t_local.reshape(-1, 88, 128) # 64,88,128
                 logits = torch.matmul(pre_activation, prediction).squeeze()
                 target = clf_in * torch.ones(N).long().to(self.device)
-                step_loss = F.cross_entropy(logits, clf_in * target).to(self.device)
+                step_loss = F.cross_entropy(logits, target).to(self.device)
                 loss += step_loss
             loss = loss / (self.num_classifiers)
 
@@ -102,7 +102,6 @@ class StaticDIMTrainer(Trainer):
                 self.optimizer.step()
 
             epoch_loss += loss.detach().item()
-
 
             steps += 1
         self.log_results(epoch, epoch_loss / steps, epoch_loss / steps, prefix=mode)
