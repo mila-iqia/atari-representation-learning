@@ -66,16 +66,14 @@ def run_probe(args):
                                patience=args.patience,
                                wandb=wandb,
                                fully_supervised=(args.method == "supervised"),
-                               save_dir=wandb.run.dir,
-                               regression=args.regression)
+                               save_dir=wandb.run.dir)
 
         trainer.train(tr_eps, val_eps, tr_labels, val_labels)
-        test_acc, test_f1score, test_mse = trainer.test(test_eps, test_labels)
+        test_acc, test_f1score = trainer.test(test_eps, test_labels)
 
-    print(test_acc, test_f1score, test_mse)
+    print(test_acc, test_f1score)
     wandb.log(test_acc)
     wandb.log(test_f1score)
-    wandb.log(test_mse)
 
 
 if __name__ == "__main__":
