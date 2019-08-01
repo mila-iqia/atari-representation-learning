@@ -11,6 +11,7 @@ from src.global_infonce_stdim import GlobalInfoNCESpatioTemporalTrainer
 from src.global_local_infonce import GlobalLocalInfoNCESpatioTemporalTrainer
 from src.infonce_spatio_temporal_new import InfoNCESpatioTemporalTrainer3
 from src.spatio_temporal import SpatioTemporalTrainer
+from src.static_dim2 import StaticDIMTrainer2
 from src.utils import get_argparser
 from src.encoders import NatureCNN, ImpalaCNN
 from src.cpc import CPCTrainer
@@ -23,20 +24,41 @@ from aari.episodes import get_episodes
 
 def train_encoder(args):
     device = torch.device("cuda:" + str(args.cuda_id) if torch.cuda.is_available() else "cpu")
-    tr_eps, val_eps = get_episodes(steps=args.pretraining_steps,
-                                 env_name=args.env_name,
-                                 seed=args.seed,
-                                 num_processes=args.num_processes,
-                                 num_frame_stack=args.num_frame_stack,
-                                 downsample=not args.no_downsample,
-                                 color=args.color,
-                                 entropy_threshold=args.entropy_threshold,
-                                 collect_mode=args.probe_collect_mode,
-                                 train_mode="train_encoder",
-                                 checkpoint_index=args.checkpoint_index,
-                                 min_episode_length=args.batch_size)
+    envs = ['AsteroidsNoFrameskip-v4', 'BerzerkNoFrameskip-v4', 'BowlingNoFrameskip-v4', 'BoxingNoFrameskip-v4',
+            'BreakoutNoFrameskip-v4', 'DemonAttackNoFrameskip-v4', 'FreewayNoFrameskip-v4', 'FrostbiteNoFrameskip-v4',
+            'HeroNoFrameskip-v4', 'MontezumaRevengeNoFrameskip-v4', 'MsPacmanNoFrameskip-v4', 'PitfallNoFrameskip-v4',
+            'PongNoFrameskip-v4', 'PrivateEyeNoFrameskip-v4', 'QbertNoFrameskip-v4', 'RiverraidNoFrameskip-v4',
+            'SeaquestNoFrameskip-v4', 'SpaceInvadersNoFrameskip-v4', 'TennisNoFrameskip-v4', 'VentureNoFrameskip-v4',
+            'VideoPinballNoFrameskip-v4', 'YarsRevengeNoFrameskip-v4']
 
-    observation_shape = tr_eps[0][0].shape
+    all_tr_episodes, all_val_episodes = [], []
+    pos_tr_eps, pos_val_eps = [], []
+    for env in envs:
+        steps = 5000
+        if env == args.env_name:
+            steps = 50000
+        tr_eps, val_eps = get_episodes(steps=steps,
+                                       env_name=env,
+                                       seed=args.seed,
+                                       num_processes=args.num_processes,
+                                       num_frame_stack=args.num_frame_stack,
+                                       downsample=not args.no_downsample,
+                                       color=args.color,
+                                       entropy_threshold=args.entropy_threshold,
+                                       collect_mode=args.probe_collect_mode,
+                                       train_mode="train_encoder",
+                                       checkpoint_index=args.checkpoint_index,
+                                       min_episode_length=args.batch_size)
+        if env == args.env_name:
+            pos_tr_eps = tr_eps
+            pos_val_eps = val_eps
+        else:
+            all_tr_episodes.append(tr_eps)
+            all_val_episodes.append(val_eps)
+
+    all_tr_episodes = list(chain.from_iterable(all_tr_episodes))
+    all_val_episodes = list(chain.from_iterable(all_val_episodes))
+    observation_shape = pos_tr_eps[0][0].shape
     if args.encoder_type == "Nature":
         encoder = NatureCNN(observation_shape[0], args)
     elif args.encoder_type == "Impala":
@@ -67,10 +89,12 @@ def train_encoder(args):
         trainer = StaticDIMTrainer(encoder, config, device=device, wandb=wandb)
     elif args.method == "stdim-3":
         trainer = InfoNCESpatioTemporalTrainer3(encoder, config, device=device, wandb=wandb)
+    elif args.method == "static-dim-2":
+        trainer = StaticDIMTrainer2(encoder, config, device=device, wandb=wandb)
     else:
         assert False, "method {} has no trainer".format(args.method)
 
-    trainer.train(tr_eps, val_eps)
+    trainer.train(pos_tr_eps, pos_val_eps, all_tr_episodes, all_val_episodes)
 
     return encoder
 
