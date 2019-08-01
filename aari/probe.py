@@ -1,89 +1,62 @@
 import torch
+from src.utils import EarlyStopping
 from torch import nn
-
-from aari.categorization import localization_keys
-from .utils import EarlyStopping, appendabledict, calculate_multiclass_accuracy, calculate_multiclass_f1_score
+from src.trainer import Trainer
+from src.utils import appendabledict
+from src.utils import calculate_multiclass_accuracy, calculate_multiclass_f1_score
 from copy import deepcopy
 import numpy as np
 from torch.utils.data import RandomSampler, BatchSampler
+from src.encoders import Flatten
 
 
 class LinearProbe(nn.Module):
-    def __init__(self, input_dim, out_size=255, regression=False):
+    def __init__(self, input_dim, num_classes=255):
         super().__init__()
-        if regression:
-            out_size = 1
-        self.model = nn.Linear(in_features=input_dim, out_features=out_size)
+        self.model = nn.Linear(in_features=input_dim, out_features=num_classes)
 
     def forward(self, feature_vectors):
         return self.model(feature_vectors)
 
 
 class FullySupervisedLinearProbe(nn.Module):
-    def __init__(self, encoder, num_classes=255, regression=False):
+    def __init__(self, encoder, num_classes=255):
         super().__init__()
         self.encoder = deepcopy(encoder)
-        self.probe = LinearProbe(input_dim=self.encoder.hidden_size, regression=regression)
+        self.probe = LinearProbe(input_dim=self.encoder.hidden_size,
+                                 num_classes=num_classes)
 
     def forward(self, x):
         feature_vec = self.encoder(x)
         return self.probe(feature_vec)
 
 
-class ProbeTrainer():
-    def __init__(self,
-                 encoder=None,
-                 method_name="my_method",
-                 wandb=None,
-                 patience=15,
-                 num_classes=256,
-                 fully_supervised=False,
-                 save_dir=".models",
-                 device=torch.device("cuda" if torch.cuda.is_available() else "cpu"),
-                 lr=5e-4,
-                 epochs=100,
+class ProbeTrainer(Trainer):
+    def __init__(self, encoder, wandb, sample_label,
+                 device=torch.device('cpu'),
+                 epochs=100, lr=5e-4,
                  batch_size=64,
-                 representation_len=256,
-                 regression=False):
-
-        self.encoder = encoder
-        self.wandb = wandb
-        self.device = device
-        self.fully_supervised = fully_supervised
-        self.save_dir = save_dir
-        self.num_classes = num_classes
+                 patience=15, log=True):
+        super().__init__(encoder, wandb, device)
+        self.sample_label = sample_label
+        self.num_classes = 256
         self.epochs = epochs
         self.lr = lr
         self.batch_size = batch_size
         self.patience = patience
-        self.method = method_name
-        self.device = device
-        self.feature_size = representation_len
-        self.loss_fn = nn.CrossEntropyLoss()
-        self.reg_loss_fn = nn.MSELoss()
-        self.regression = regression
+        self.method = wandb.config["method"]
 
-        # bad convention, but these get set in "create_probes"
-        self.probes = self.early_stoppers = self.optimizers = self.schedulers = None
-
-    def create_probes(self, sample_label):
-        self.probes = {}
-        if self.fully_supervised:
-            assert self.encoder != None, "for fully supervised you must provide an encoder!"
-            for k in sample_label.keys():
-                if k in localization_keys and self.regression:
-                    self.probes[k] = FullySupervisedLinearProbe(encoder=self.encoder, regression=True).to(self.device)
-                else:
-                    self.probes[k] = FullySupervisedLinearProbe(encoder=self.encoder, regression=False).to(self.device)
-
+        self.feature_size = 256 if self.method == "pretrained-rl-agent" else encoder.hidden_size
+        self.log = log
+        if self.method == "supervised":
+            self.probes = {k: FullySupervisedLinearProbe(encoder=self.encoder,
+                                                         num_classes=self.num_classes).to(device) for k in
+                           sample_label.keys()}
         else:
-            for k in sample_label.keys():
-                if k in localization_keys and self.regression:
-                    self.probes[k] = LinearProbe(input_dim=self.feature_size, regression=True).to(self.device)
-                else:
-                    self.probes[k] = LinearProbe(input_dim=self.feature_size, regression=False).to(self.device)
+            self.probes = {k: LinearProbe(input_dim=self.feature_size,
+                                          num_classes=self.num_classes).to(device) for k in sample_label.keys()}
 
-        self.early_stoppers = {k: EarlyStopping(patience=self.patience, verbose=False, name=k + "_probe", save_dir=self.save_dir)
+        self.early_stoppers = {k: EarlyStopping(patience=patience, verbose=False, wandb=self.wandb, name=k + "_probe")
                                for k in sample_label.keys()}
 
         self.optimizers = {k: torch.optim.Adam(list(self.probes[k].parameters()),
@@ -91,6 +64,7 @@ class ProbeTrainer():
         self.schedulers = {
             k: torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizers[k], patience=5, factor=0.2, verbose=True,
                                                           mode='max', min_lr=1e-5) for k in sample_label.keys()}
+        self.loss_fn = nn.CrossEntropyLoss()
 
     def generate_batch(self, episodes, episode_labels):
         total_steps = sum([len(e) for e in episodes])
@@ -114,17 +88,17 @@ class ProbeTrainer():
             yield torch.stack(xs).to(self.device) / 255., labels
 
     def probe(self, batch, k):
+        [probe.to("cpu") for probe in self.probes.values()]
         probe = self.probes[k]
         probe.to(self.device)
-        if self.fully_supervised:
-            #if method is supervised batch is a batch of frames and probe is a full encoder + linear or nonlinear probe
+        if self.method in ["pretrained-rl-agent"]:
+            batch = batch.detach()
+        if self.method in ["supervised", "pretrained-rl-agent"]:
+            '''
+            if method is supervised batch is a batch of frames and probe is a full encoder + linear or nonlinear probe
+            if method is pretrained-rl-agent, then batch is a batch of feature vectors and probe is just a linear or nonlinear probe
+            '''
             preds = probe(batch)
-
-        elif not self.encoder:
-            # if encoder is None then inputs are vectors
-            f = batch.detach()
-            assert len(f.squeeze().shape) == 2, "if input is a batch of vectors you must specify an encoder!"
-            preds = probe(f)
 
         else:
             with torch.no_grad():
@@ -134,11 +108,10 @@ class ProbeTrainer():
         return preds
 
     def do_one_epoch(self, episodes, label_dicts):
-        sample_label = label_dicts[0][0]
-        epoch_loss, accuracy = {k + "_loss": [] for k in sample_label.keys() if
-                                (not self.early_stoppers[k].early_stop) and ((k in localization_keys and self.regression) == True)}, \
-                               {k + "_acc": [] for k in sample_label.keys() if
-                                (not self.early_stoppers[k].early_stop) and ((k in localization_keys and self.regression) == False)}
+        epoch_loss, accuracy = {k + "_loss": [] for k in self.sample_label.keys() if
+                                not self.early_stoppers[k].early_stop}, \
+                               {k + "_acc": [] for k in self.sample_label.keys() if
+                                not self.early_stoppers[k].early_stop}
 
         data_generator = self.generate_batch(episodes, label_dicts)
         for step, (x, labels_batch) in enumerate(data_generator):
@@ -150,13 +123,10 @@ class ProbeTrainer():
 
                 label = torch.tensor(label).long().to(self.device)
                 preds = self.probe(x, k)
-                if k in localization_keys and self.regression:
-                    loss = torch.sqrt(self.reg_loss_fn(preds, label.unsqueeze(-1).float()))
-                    epoch_loss[k + "_loss"].append(loss.detach().item())
-                else:
-                    loss = self.loss_fn(preds, label)
-                    accuracy[k + "_acc"].append(calculate_multiclass_accuracy(preds, label))
+                loss = self.loss_fn(preds, label)
 
+                epoch_loss[k + "_loss"].append(loss.detach().item())
+                accuracy[k + "_acc"].append(calculate_multiclass_accuracy(preds, label))
                 if self.probes[k].training:
                     loss.backward()
                     optim.step()
@@ -167,12 +137,11 @@ class ProbeTrainer():
         return epoch_loss, accuracy
 
     def do_test_epoch(self, episodes, label_dicts):
-        sample_label = label_dicts[0][0]
-        accuracy_dict, f1_score_dict, mse_dict = {}, {}, {}
-        pred_dict, all_label_dict = {k: [] for k in sample_label.keys()}, \
-                                    {k: [] for k in sample_label.keys()}
+        accuracy_dict, f1_score_dict = {}, {}
+        pred_dict, all_label_dict = {k: [] for k in self.sample_label.keys()}, \
+                                    {k: [] for k in self.sample_label.keys()}
 
-        # collect all predictions first
+        # collect all predicitons first
         data_generator = self.generate_batch(episodes, label_dicts)
         for step, (x, labels_batch) in enumerate(data_generator):
             for k, label in labels_batch.items():
@@ -183,44 +152,29 @@ class ProbeTrainer():
 
         for k in all_label_dict.keys():
             preds, labels = torch.cat(pred_dict[k]), torch.cat(all_label_dict[k])
-            if k in localization_keys and self.regression:
-                mse = torch.sqrt(self.reg_loss_fn(preds, labels.unsqueeze(-1).float()))
-                mse_dict[k + "_test_mse"] = mse
-            else:
-                accuracy = calculate_multiclass_accuracy(preds, labels)
-                f1score = calculate_multiclass_f1_score(preds, labels)
-                accuracy_dict[k + "_test_acc"] = accuracy
-                f1_score_dict[k + "_f1score"] = f1score
 
-        return accuracy_dict, f1_score_dict, mse_dict
+            accuracy = calculate_multiclass_accuracy(preds, labels)
+            f1score = calculate_multiclass_f1_score(preds, labels)
+            accuracy_dict[k + "_test_acc"] = accuracy
+            f1_score_dict[k + "_f1score"] = f1score
+
+        return accuracy_dict, f1_score_dict
 
     def train(self, tr_eps, val_eps, tr_labels, val_labels):
-        # if not self.encoder:
-        #     assert len(tr_eps[0][0].squeeze().shape) == 2, "if input is a batch of vectors you must specify an encoder!"
-        sample_label = tr_labels[0][0]
-        self.create_probes(sample_label)
         e = 0
         all_probes_stopped = np.all([early_stopper.early_stop for early_stopper in self.early_stoppers.values()])
-        while (not all_probes_stopped) and e < self.epochs:
+        while (not all_probes_stopped) and e < 100:
             epoch_loss, accuracy = self.do_one_epoch(tr_eps, tr_labels)
             self.log_results(e, epoch_loss, accuracy)
 
             val_loss, val_accuracy = self.evaluate(val_eps, val_labels, epoch=e)
             # update all early stoppers
-            for k in sample_label.keys():
-                if self.early_stoppers[k].early_stop:
-                    continue
-                if k in localization_keys and self.regression:
-                    self.early_stoppers[k](-val_loss["val_" + k + "_loss"], self.probes[k])
-                else:
+            for k in self.sample_label.keys():
+                if not self.early_stoppers[k].early_stop:
                     self.early_stoppers[k](val_accuracy["val_" + k + "_acc"], self.probes[k])
 
             for k, scheduler in self.schedulers.items():
-                if self.early_stoppers[k].early_stop:
-                    continue
-                if k in localization_keys and self.regression:
-                    scheduler.step(-val_loss['val_' + k + '_loss'])
-                else:
+                if not self.early_stoppers[k].early_stop:
                     scheduler.step(val_accuracy['val_' + k + '_acc'])
             e += 1
             all_probes_stopped = np.all([early_stopper.early_stop for early_stopper in self.early_stoppers.values()])
@@ -242,10 +196,11 @@ class ProbeTrainer():
             self.early_stoppers[k].early_stop = False
         for k, probe in self.probes.items():
             probe.eval()
-        accuracy_dict, f1_score_dict, mse_dict = self.do_test_epoch(test_episodes, test_label_dicts)
+        accuracy_dict, f1_score_dict = self.do_test_epoch(test_episodes, test_label_dicts)
         accuracy_dict['mean_test_acc'] = np.mean(list(accuracy_dict.values()))
         f1_score_dict["mean_f1score"] = np.mean(list(f1_score_dict.values()))
-        mse_dict['mean_mse'] = np.mean(list(mse_dict.values()))
+        self.wandb.log(f1_score_dict)
+        self.wandb.log(accuracy_dict)
         print("F1 scores")
         for k in f1_score_dict.keys():
             print("\t  {}: {:8.4f}".format(k, f1_score_dict[k]))
@@ -253,10 +208,7 @@ class ProbeTrainer():
         print("Accuracy")
         for k in accuracy_dict.keys():
             print("\t {}: {:8.4f}%".format(k, 100 * accuracy_dict[k]))
-        print("\t --")
-        for k in mse_dict.keys():
-            print("\t  {}: {:8.4f}".format(k, mse_dict[k]))
-        return accuracy_dict, f1_score_dict, mse_dict
+        return accuracy_dict, f1_score_dict
 
     def log_results(self, epoch_idx, loss_dict, acc_dict):
         print("Epoch: {}".format(epoch_idx))
