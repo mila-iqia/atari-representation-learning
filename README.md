@@ -4,7 +4,8 @@ Ankesh Anand*, Evan Racah*, Sherjil Ozair*, Yoshua Bengio, Marc-Alexandre Côté
 
 Paper is available at https://arxiv.org/abs/1906.08226
 
-```@article{anand2019unsupervised,
+```
+@article{anand2019unsupervised,
   title={Unsupervised State Representation Learning in Atari},
   author={Anand, Ankesh and Racah, Evan and Ozair, Sherjil and Bengio, Yoshua and C{\^o}t{\'e}, Marc-Alexandre and Hjelm, R Devon},
   journal={arXiv preprint arXiv:1906.08226},
