@@ -23,7 +23,6 @@ cd atari-representation-learning
 pip install -e .
 ```
 This just requires `gym[atari]` and it gives you the ability to play around with the aari wrapper.
-
 If you want access to more complex features, you can install the other dependencies below:
 
 ### Probing Interface
@@ -37,17 +36,7 @@ conda install pytorch torchvision -c pytorch
 conda install sklearn
 ```
 
-### Loading Episodes
-If you want access to the code that loads episodes using AARI wrapper and additional standard preprocessing for Atari environments
-#### Dependencies:
-* PyTorch 
-* OpenAI Baselines (for vectorized environments and Atari wrappers)
-* pytorch-a2c-ppo-acktr (for actor-critic algorithms)
-* gym[atari]
-* opencv-python
-* wandb (logging tool) (optional)
-
-To install the requirements, follow these steps:
+### Full installation (AARI Wrapper + Training & Probing Code)
 
 ```bash
 # PyTorch
@@ -63,6 +52,7 @@ git clone https://github.com/ankeshanand/pytorch-a2c-ppo-acktr-gail
 cd pytorch-a2c-ppo-acktr-gail
 pip install -e .
 
+git clone https://github.com/ankeshanand/atari-representation-learning.git
 cd atari-representation-learning
 pip install -e .
 ```
