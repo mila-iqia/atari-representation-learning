@@ -188,5 +188,11 @@ def get_episodes(env_name,
         test_ep_inds = [i for i in range(len(test_eps)) if len(test_eps[i]) > 1]
         test_eps = [test_eps[i] for i in test_ep_inds]
         test_labels = [test_labels[i] for i in test_ep_inds]
-
         return tr_eps, val_eps, tr_labels, val_labels, test_eps, test_labels
+
+    if train_mode == "dry_run":
+        return episodes, episode_labels
+
+
+
+
