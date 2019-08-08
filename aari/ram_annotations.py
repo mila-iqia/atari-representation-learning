@@ -123,7 +123,7 @@ atari_dict = {
                              score_1=20,
                              score_2=21),
 
-    "mspacman": dict(sue_x=6,
+    "mspacman": dict(enemy_sue_x=6,
                      enemy_inky_x=7,
                      enemy_pinky_x=8,
                      enemy_blinky_x=9,
