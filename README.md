@@ -53,6 +53,7 @@ git clone https://github.com/ankeshanand/pytorch-a2c-ppo-acktr-gail
 cd pytorch-a2c-ppo-acktr-gail
 pip install -e .
 
+pip install -r requirements.txt
 git clone https://github.com/ankeshanand/atari-representation-learning.git
 cd atari-representation-learning
 pip install -e .
