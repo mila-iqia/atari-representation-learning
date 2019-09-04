@@ -4,7 +4,8 @@ Ankesh Anand*, Evan Racah*, Sherjil Ozair*, Yoshua Bengio, Marc-Alexandre Côté
 
 Paper is available at https://arxiv.org/abs/1906.08226
 
-```@article{anand2019unsupervised,
+```
+@article{anand2019unsupervised,
   title={Unsupervised State Representation Learning in Atari},
   author={Anand, Ankesh and Racah, Evan and Ozair, Sherjil and Bengio, Yoshua and C{\^o}t{\'e}, Marc-Alexandre and Hjelm, R Devon},
   journal={arXiv preprint arXiv:1906.08226},
@@ -23,7 +24,6 @@ cd atari-representation-learning
 pip install -e .
 ```
 This just requires `gym[atari]` and it gives you the ability to play around with the aari wrapper.
-
 If you want access to more complex features, you can install the other dependencies below:
 
 ### Probing Interface
@@ -37,17 +37,7 @@ conda install pytorch torchvision -c pytorch
 conda install sklearn
 ```
 
-### Loading Episodes
-If you want access to the code that loads episodes using AARI wrapper and additional standard preprocessing for Atari environments
-#### Dependencies:
-* PyTorch 
-* OpenAI Baselines (for vectorized environments and Atari wrappers)
-* pytorch-a2c-ppo-acktr (for actor-critic algorithms)
-* gym[atari]
-* opencv-python
-* wandb (logging tool) (optional)
-
-To install the requirements, follow these steps:
+### Full installation (AARI Wrapper + Training & Probing Code)
 
 ```bash
 # PyTorch
@@ -63,6 +53,8 @@ git clone https://github.com/ankeshanand/pytorch-a2c-ppo-acktr-gail
 cd pytorch-a2c-ppo-acktr-gail
 pip install -e .
 
+pip install -r requirements.txt
+git clone https://github.com/ankeshanand/atari-representation-learning.git
 cd atari-representation-learning
 pip install -e .
 ```
