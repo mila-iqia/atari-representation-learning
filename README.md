@@ -12,8 +12,10 @@ Paper is available at https://arxiv.org/abs/1906.08226
   year={2019}
 }
 ```
+1. [ Installation. ](#install)
+2. [ Usage ](#usage)
 
-
+<a name="install"></a>
 ## Installation
 ### AARI Wrapper
 You can do a minimal install to get just the aari wrapper by doing:
@@ -59,7 +61,7 @@ cd atari-representation-learning
 pip install -e .
 ```
 
-
+<a name="usage"></a>
 ## Usage 
 ### Atari Annotated RAM Interface (AARI): 
 
