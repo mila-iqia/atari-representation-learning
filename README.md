@@ -67,7 +67,6 @@ pip install -e .
 
 ![AARI](aari/aari.png?raw=true)
 
-
 AARI exposes the ground truth labels for different state variables for each observation. We have made AARI available as a Gym wrapper, to use it simply wrap an Atari gym env with `AARIWrapper`. 
 
 ```python
@@ -100,13 +99,14 @@ Now, `info` is a dictionary of the form:
   'player_score': 0,
   'num_lives': 2}}
 ```
-
 **Note:** In our experiments, we use additional preprocessing for Atari environments mainly following Minh et. al, 2014. See [aari/envs.py](aari/envs.py) for more info! 
 
 If you want the raw RAM annotations (which parts of ram correspond to each state variable), check out [aari/ram_annotations.py](aari/ram_annotations.py)
 
 
 ### Probing
+**Important**: The RAM labels are meant for full-sized Atari observations (210 * 160). Probing results won't be accurate if you downsample the observations.
+
 We provide an interface for the included probing tasks.
 
 First, get episodes for train, val and, test:
