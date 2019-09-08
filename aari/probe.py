@@ -109,18 +109,33 @@ class ProbeTrainer():
             #if method is supervised batch is a batch of frames and probe is a full encoder + linear or nonlinear probe
             preds = probe(batch)
 
-        elif not self.encoder:
-            # if encoder is None then inputs are vectors
+        #elif not self.encoder:             # if encoder is None then inputs are vectors
+        else:
             f = batch.detach()
             assert len(f.squeeze().shape) == 2, "if input is a batch of vectors you must specify an encoder!"
             preds = probe(f)
 
-        else:
+        # else:
+        #     with torch.no_grad():
+        #         self.encoder.to(self.device)
+        #         f = self.encoder(batch).detach()
+        #     preds = probe(f)
+        return preds
+
+    def get_vectors(self, episodes, label_dicts):
+        fs = []
+        labels = []
+        data_generator = self.generate_batch(episodes, label_dicts)
+        for step, (x, labels_batch) in enumerate(data_generator):
             with torch.no_grad():
                 self.encoder.to(self.device)
-                f = self.encoder(batch).detach()
-            preds = probe(f)
-        return preds
+                f = self.encoder(x).detach()
+                fs.append(f)
+                labels.append(labels_batch)
+        vectors = torch.cat(fs, dim=0)
+        label_dicts = torch.cat(labels, dim=0)
+        return vectors, label_dicts
+
 
     def do_one_epoch(self, episodes, label_dicts):
         sample_label = label_dicts[0][0]
@@ -178,6 +193,9 @@ class ProbeTrainer():
         return accuracy_dict, f1_score_dict
 
     def train(self, tr_eps, val_eps, tr_labels, val_labels):
+        if self.encoder and not self.fully_supervised:
+            tr_eps, tr_labels = self.get_vectors(tr_eps,tr_labels)
+            val_eps, val_labels = self.get_vectors(val_eps, val_labels)
         # if not self.encoder:
         #     assert len(tr_eps[0][0].squeeze().shape) == 2, "if input is a batch of vectors you must specify an encoder!"
         sample_label = tr_labels[0][0]
@@ -213,6 +231,8 @@ class ProbeTrainer():
         return epoch_loss, accuracy
 
     def test(self, test_episodes, test_label_dicts, epoch=None):
+        if self.encoder and not self.fully_supervised:
+            test_episodes, test_label_dicts = self.get_vectors(test_episodes, test_label_dicts)
         for k in self.early_stoppers.keys():
             self.early_stoppers[k].early_stop = False
         for k, probe in self.probes.items():

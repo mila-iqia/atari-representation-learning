@@ -38,7 +38,16 @@ class AARIWrapper(InfoWrapper):
 def ram2label(env_name, ram):
     game_name = env_name.split("-")[0].split("No")[0].split("Deterministic")[0]
     if game_name.lower() in atari_dict:
-        label_dict = {k: ram[ind] for k, ind in atari_dict[game_name.lower()].items()}
+        game_dict = atari_dict[game_name.lower()]
+        if "common" in game_dict.keys():
+            common_dict = game_dict["common"]
+            room_num = ram[common_dict["room_number"]]
+            room_dict = game_dict["room_" + str(room_num)]
+
+            common_dict.update(room_dict)
+            label_dict = {k: ram[ind] for k, ind in common_dict.items()}
+        else:
+            label_dict = {k: ram[ind] for k, ind in game_dict.items()}
     else:
         assert False, "{} is not currently supported by AARI. It's either not an Atari game or we don't have the ram annotations yet!".format(game_name)
     return label_dict
