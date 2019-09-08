@@ -105,7 +105,8 @@ If you want the raw RAM annotations (which parts of ram correspond to each state
 
 
 ### Probing
-**Important**: The RAM labels are meant for full-sized Atari observations (210 * 160). Probing results won't be accurate if you downsample the observations.
+----
+⚠️ **Important** ⚠️: The RAM labels are meant for full-sized Atari observations (210 * 160). Probing results won't be accurate if you downsample the observations.
 
 We provide an interface for the included probing tasks.
 
