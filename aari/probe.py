@@ -220,6 +220,9 @@ class ProbeTrainer():
         accuracy_dict, f1_score_dict = self.do_test_epoch(test_episodes, test_label_dicts)
         accuracy_dict['mean_test_acc'] = np.mean(list(accuracy_dict.values()))
         f1_score_dict["mean_f1score"] = np.mean(list(f1_score_dict.values()))
+        print("""We report the F1 score across averaged across each probe here. \n
+              In our scores reported in the paper, we average across each category instead. \n
+              We will merge the category wise averaging code here soon!""")
         print("F1 scores")
         for k in f1_score_dict.keys():
             print("\t  {}: {:8.4f}".format(k, f1_score_dict[k]))
