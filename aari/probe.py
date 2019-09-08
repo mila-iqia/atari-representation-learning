@@ -4,6 +4,7 @@ from .utils import EarlyStopping, appendabledict, calculate_multiclass_accuracy,
 from copy import deepcopy
 import numpy as np
 from torch.utils.data import RandomSampler, BatchSampler
+from aari.categorization import summary_key_dict
 
 
 class LinearProbe(nn.Module):
@@ -172,8 +173,8 @@ class ProbeTrainer():
 
             accuracy = calculate_multiclass_accuracy(preds, labels)
             f1score = calculate_multiclass_f1_score(preds, labels)
-            accuracy_dict[k + "_test_acc"] = accuracy
-            f1_score_dict[k + "_f1score"] = f1score
+            accuracy_dict[k] = accuracy
+            f1_score_dict[k] = f1score
 
         return accuracy_dict, f1_score_dict
 
@@ -217,25 +218,63 @@ class ProbeTrainer():
             self.early_stoppers[k].early_stop = False
         for k, probe in self.probes.items():
             probe.eval()
-        accuracy_dict, f1_score_dict = self.do_test_epoch(test_episodes, test_label_dicts)
-        accuracy_dict['mean_test_acc'] = np.mean(list(accuracy_dict.values()))
-        f1_score_dict["mean_f1score"] = np.mean(list(f1_score_dict.values()))
-        print("""We report the F1 score across averaged across each probe here. \n
-              In our scores reported in the paper, we average across each category instead. \n
-              We will merge the category wise averaging code here soon!""")
-        print("F1 scores")
-        for k in f1_score_dict.keys():
-            print("\t  {}: {:8.4f}".format(k, f1_score_dict[k]))
-        print("\t --")
-        print("Accuracy")
-        for k in accuracy_dict.keys():
-            print("\t {}: {:8.4f}%".format(k, 100 * accuracy_dict[k]))
-        return accuracy_dict, f1_score_dict
+        acc_dict, f1_dict = self.do_test_epoch(test_episodes, test_label_dicts)
 
-    def log_results(self, epoch_idx, loss_dict, acc_dict):
+        acc_dict, f1_dict = postprocess_raw_metrics(acc_dict, f1_dict)
+
+
+        print("""In the original paper we report f1 scores and accuracies averaged across each category.
+              That is we comoute the average score for each state variable in a category to get an average score for a given category.
+              Then we average all the category averages to get the final score that we report per game per method.
+              These scores are called \'across_categories_avg_acc\' and \'across_categories_avg_f1\' respectively""")
+        self.log_results("Test", acc_dict, f1_dict)
+        return acc_dict, f1_dict
+
+    def log_results(self, epoch_idx, *dictionaries):
         print("Epoch: {}".format(epoch_idx))
-        for k in loss_dict.keys():
-            print("\t {}: {:7.4f}".format(k, loss_dict[k]))
-        print("\t --")
-        for k in acc_dict.keys():
-            print("\t {}: {:8.4f}%".format(k, 100 * acc_dict[k]))
+        for dictionary in dictionaries:
+            for k,v in dictionary.items():
+                print("\t {}: {:8.4f}".format(k, v))
+            print("\t --")
+
+
+
+
+def postprocess_raw_metrics(acc_dict, f1_dict):
+    acc_overall_avg, f1_overall_avg = compute_dict_average(acc_dict),\
+                                      compute_dict_average(f1_dict)
+    acc_category_avgs_dict, f1_category_avgs_dict = compute_category_avgs(acc_dict), \
+                                                    compute_category_avgs(f1_dict)
+    acc_avg_across_categories, f1_avg_across_categories = compute_dict_average(acc_category_avgs_dict),\
+                                                          compute_dict_average(f1_category_avgs_dict)
+    acc_dict.update(acc_category_avgs_dict)
+    f1_dict.update(f1_category_avgs_dict)
+
+    acc_dict["overall_avg"], f1_dict["overall_avg"] = acc_overall_avg, f1_overall_avg
+    acc_dict["across_categories_avg"], f1_dict["across_categories_avg"] = [acc_avg_across_categories,
+                                                                           f1_avg_across_categories]
+
+    acc_dict = append_suffix(acc_dict, "_acc")
+    f1_dict = append_suffix(f1_dict,"_f1")
+
+    return acc_dict, f1_dict
+
+
+def compute_dict_average(metric_dict):
+    return np.mean(list(metric_dict.values()))
+
+def compute_category_avgs(metric_dict):
+    category_dict = {}
+    for category_name, category_keys in summary_key_dict.items():
+        category_values = [v for k,v in metric_dict.items() if k in category_keys]
+        if len(category_values) < 1:
+            continue
+        category_mean = np.mean(category_values)
+        category_dict[category_name + "_avg"] = category_mean
+    return category_dict
+
+def append_suffix(dictionary,suffix):
+    new_dict = {}
+    for k,v in dictionary.items():
+        new_dict[k + suffix] = v
+    return new_dict
