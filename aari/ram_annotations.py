@@ -79,8 +79,6 @@ atari_dict = {
                         enemy_y3=71,
                         num_lives=114),
 
-
-
     "freeway": dict(player_y=14,
                     score=103,
                     enemy_car_x=range(108, 118)),  # which lane the car collided with player
@@ -190,8 +188,6 @@ atari_dict = {
                      score=[57, 58],
                      num_lives=59,
                      divers_collected_count=62),
-
-
 
     "spaceinvaders": dict(invaders_left_count=17,
                           player_score=104,
