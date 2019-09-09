@@ -61,7 +61,6 @@ class ProbeTrainer():
         # bad convention, but these get set in "create_probes"
         self.probes = self.early_stoppers = self.optimizers = self.schedulers = None
 
-
     def create_probes(self, sample_label):
         if self.fully_supervised:
             assert self.encoder != None, "for fully supervised you must provide an encoder!"
@@ -72,15 +71,15 @@ class ProbeTrainer():
             self.probes = {k: LinearProbe(input_dim=self.feature_size,
                                           num_classes=self.num_classes).to(self.device) for k in sample_label.keys()}
 
-        self.early_stoppers = {k: EarlyStopping(patience=self.patience, verbose=False, name=k + "_probe", save_dir=self.save_dir)
-                               for k in sample_label.keys()}
+        self.early_stoppers = {
+            k: EarlyStopping(patience=self.patience, verbose=False, name=k + "_probe", save_dir=self.save_dir)
+            for k in sample_label.keys()}
 
         self.optimizers = {k: torch.optim.Adam(list(self.probes[k].parameters()),
                                                eps=1e-5, lr=self.lr) for k in sample_label.keys()}
         self.schedulers = {
             k: torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizers[k], patience=5, factor=0.2, verbose=True,
                                                           mode='max', min_lr=1e-5) for k in sample_label.keys()}
-
 
     def generate_batch(self, episodes, episode_labels):
         total_steps = sum([len(e) for e in episodes])
@@ -107,7 +106,7 @@ class ProbeTrainer():
         probe = self.probes[k]
         probe.to(self.device)
         if self.fully_supervised:
-            #if method is supervised batch is a batch of frames and probe is a full encoder + linear or nonlinear probe
+            # if method is supervised batch is a batch of frames and probe is a full encoder + linear or nonlinear probe
             preds = probe(batch)
 
         elif not self.encoder:
@@ -222,30 +221,29 @@ class ProbeTrainer():
 
         acc_dict, f1_dict = postprocess_raw_metrics(acc_dict, f1_dict)
 
-
-        print("""In the original paper we report f1 scores and accuracies averaged across each category.
-              That is we comoute the average score for each state variable in a category to get an average score for a given category.
-              Then we average all the category averages to get the final score that we report per game per method.
-              These scores are called \'across_categories_avg_acc\' and \'across_categories_avg_f1\' respectively""")
+        print("""In our paper, we report F1 scores and accuracies averaged across each category. 
+              That is, we take a mean across all state variables in a category to get the average score for that category.
+              Then we average all the category averages to get the final score that we report per game for each method. 
+              These scores are called \'across_categories_avg_acc\' and \'across_categories_avg_f1\' respectively
+              We do this to prevent categories with large number of state variables dominating the mean F1 score.
+              """)
         self.log_results("Test", acc_dict, f1_dict)
         return acc_dict, f1_dict
 
     def log_results(self, epoch_idx, *dictionaries):
         print("Epoch: {}".format(epoch_idx))
         for dictionary in dictionaries:
-            for k,v in dictionary.items():
+            for k, v in dictionary.items():
                 print("\t {}: {:8.4f}".format(k, v))
             print("\t --")
 
 
-
-
 def postprocess_raw_metrics(acc_dict, f1_dict):
-    acc_overall_avg, f1_overall_avg = compute_dict_average(acc_dict),\
+    acc_overall_avg, f1_overall_avg = compute_dict_average(acc_dict), \
                                       compute_dict_average(f1_dict)
     acc_category_avgs_dict, f1_category_avgs_dict = compute_category_avgs(acc_dict), \
                                                     compute_category_avgs(f1_dict)
-    acc_avg_across_categories, f1_avg_across_categories = compute_dict_average(acc_category_avgs_dict),\
+    acc_avg_across_categories, f1_avg_across_categories = compute_dict_average(acc_category_avgs_dict), \
                                                           compute_dict_average(f1_category_avgs_dict)
     acc_dict.update(acc_category_avgs_dict)
     f1_dict.update(f1_category_avgs_dict)
@@ -255,7 +253,7 @@ def postprocess_raw_metrics(acc_dict, f1_dict):
                                                                            f1_avg_across_categories]
 
     acc_dict = append_suffix(acc_dict, "_acc")
-    f1_dict = append_suffix(f1_dict,"_f1")
+    f1_dict = append_suffix(f1_dict, "_f1")
 
     return acc_dict, f1_dict
 
@@ -263,18 +261,20 @@ def postprocess_raw_metrics(acc_dict, f1_dict):
 def compute_dict_average(metric_dict):
     return np.mean(list(metric_dict.values()))
 
+
 def compute_category_avgs(metric_dict):
     category_dict = {}
     for category_name, category_keys in summary_key_dict.items():
-        category_values = [v for k,v in metric_dict.items() if k in category_keys]
+        category_values = [v for k, v in metric_dict.items() if k in category_keys]
         if len(category_values) < 1:
             continue
         category_mean = np.mean(category_values)
         category_dict[category_name + "_avg"] = category_mean
     return category_dict
 
-def append_suffix(dictionary,suffix):
+
+def append_suffix(dictionary, suffix):
     new_dict = {}
-    for k,v in dictionary.items():
+    for k, v in dictionary.items():
         new_dict[k + suffix] = v
     return new_dict
