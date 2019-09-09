@@ -2,18 +2,12 @@
 
 Ankesh Anand*, Evan Racah*, Sherjil Ozair*, Yoshua Bengio, Marc-Alexandre Côté, R Devon Hjelm
 
-Paper is available at https://arxiv.org/abs/1906.08226
+Arxiv: https://arxiv.org/abs/1906.08226
 
-```
-@article{anand2019unsupervised,
-  title={Unsupervised State Representation Learning in Atari},
-  author={Anand, Ankesh and Racah, Evan and Ozair, Sherjil and Bengio, Yoshua and C{\^o}t{\'e}, Marc-Alexandre and Hjelm, R Devon},
-  journal={arXiv preprint arXiv:1906.08226},
-  year={2019}
-}
-```
+1. [ Installation. ](#install)
+2. [ Usage ](#usage)
 
-
+<a name="install"></a>
 ## Installation
 ### AARI Wrapper
 You can do a minimal install to get just the aari wrapper by doing:
@@ -59,12 +53,11 @@ cd atari-representation-learning
 pip install -e .
 ```
 
-
+<a name="usage"></a>
 ## Usage 
 ### Atari Annotated RAM Interface (AARI): 
 
 ![AARI](aari/aari.png?raw=true)
-
 
 AARI exposes the ground truth labels for different state variables for each observation. We have made AARI available as a Gym wrapper, to use it simply wrap an Atari gym env with `AARIWrapper`. 
 
@@ -98,13 +91,15 @@ Now, `info` is a dictionary of the form:
   'player_score': 0,
   'num_lives': 2}}
 ```
-
 **Note:** In our experiments, we use additional preprocessing for Atari environments mainly following Minh et. al, 2014. See [aari/envs.py](aari/envs.py) for more info! 
 
 If you want the raw RAM annotations (which parts of ram correspond to each state variable), check out [aari/ram_annotations.py](aari/ram_annotations.py)
 
 
 ### Probing
+----
+⚠️ **Important** ⚠️: The RAM labels are meant for full-sized Atari observations (210 * 160). Probing results won't be accurate if you downsample the observations.
+
 We provide an interface for the included probing tasks.
 
 First, get episodes for train, val and, test:
@@ -172,4 +167,15 @@ my_encoder.load_state_dict(torch.load(open("path/to/my/weights.pt", "rb")))
 
 ```bash
 python -m scripts.run_probe --method infonce-stdim --env-name {env_name}
+```
+
+### Citation
+
+```
+@article{anand2019unsupervised,
+  title={Unsupervised State Representation Learning in Atari},
+  author={Anand, Ankesh and Racah, Evan and Ozair, Sherjil and Bengio, Yoshua and C{\^o}t{\'e}, Marc-Alexandre and Hjelm, R Devon},
+  journal={arXiv preprint arXiv:1906.08226},
+  year={2019}
+}
 ```

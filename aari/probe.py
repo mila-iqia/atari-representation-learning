@@ -4,6 +4,8 @@ from .utils import EarlyStopping, appendabledict, calculate_multiclass_accuracy,
 from copy import deepcopy
 import numpy as np
 from torch.utils.data import RandomSampler, BatchSampler
+from aari.categorization import summary_key_dict
+from itertools import chain
 
 
 class LinearProbe(nn.Module):
@@ -61,27 +63,28 @@ class ProbeTrainer():
         self.probes = self.early_stoppers = self.optimizers = self.schedulers = None
 
 
-    def create_probes(self, sample_label):
+    def create_probes(self, all_sv_keys):
         if self.fully_supervised:
             assert self.encoder != None, "for fully supervised you must provide an encoder!"
             self.probes = {k: FullySupervisedLinearProbe(encoder=self.encoder,
                                                          num_classes=self.num_classes).to(self.device) for k in
-                           sample_label.keys()}
+                           all_sv_keys}
         else:
             self.probes = {k: LinearProbe(input_dim=self.feature_size,
-                                          num_classes=self.num_classes).to(self.device) for k in sample_label.keys()}
+                                          num_classes=self.num_classes).to(self.device) for k in all_sv_keys}
 
         self.early_stoppers = {k: EarlyStopping(patience=self.patience, verbose=False, name=k + "_probe", save_dir=self.save_dir)
-                               for k in sample_label.keys()}
+                               for k in all_sv_keys}
 
         self.optimizers = {k: torch.optim.Adam(list(self.probes[k].parameters()),
-                                               eps=1e-5, lr=self.lr) for k in sample_label.keys()}
+                                               eps=1e-5, lr=self.lr) for k in all_sv_keys}
         self.schedulers = {
             k: torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizers[k], patience=5, factor=0.2, verbose=True,
-                                                          mode='max', min_lr=1e-5) for k in sample_label.keys()}
+                                                          mode='max', min_lr=1e-5) for k in all_sv_keys}
 
 
     def generate_batch(self, episodes, episode_labels):
+        all_label_keys = get_all_unique_state_variable_keys(episode_labels)
         total_steps = sum([len(e) for e in episodes])
         assert total_steps > self.batch_size
         print('Total Steps: {}'.format(total_steps))
@@ -94,68 +97,56 @@ class ProbeTrainer():
         for indices in sampler:
             episodes_batch = [episodes[x] for x in indices]
             episode_labels_batch = [episode_labels[x] for x in indices]
-            xs, labels = [], appendabledict()
+            xs, labels = [], {k:[] for k in all_label_keys}
             for ep_ind, episode in enumerate(episodes_batch):
                 # Get one sample from this episode
                 t = np.random.randint(len(episode))
                 xs.append(episode[t])
-                labels.append_update(episode_labels_batch[ep_ind][t])
-            yield torch.stack(xs).to(self.device) / 255., labels
+                label = episode_labels_batch[ep_ind][t]
+                for k in all_label_keys:
+                    if k in label:
+                        labels[k].append(label[k])
+                    else:
+                        labels[k].append(None)
 
-    def probe(self, batch, k):
+            inputs = torch.stack(xs).to(self.device) / 255.
+
+            if not self.fully_supervised and self.encoder:
+                with torch.no_grad():
+                    self.encoder.to(self.device)
+                    inputs = self.encoder(inputs).detach()
+            yield inputs, labels
+
+    def probe_input(self, inp, label, k):
+
+        # filter only labels and input where the kth state variable is present
+        inds = np.arange(len(label))
+        inds = [ind for ind in inds if label[ind] is not None]
+        label = [label[ind] for ind in inds]
+        inp_k = torch.stack([inp[ind] for ind in inds])
+        label = torch.tensor(label).long().to(self.device)
         probe = self.probes[k]
         probe.to(self.device)
-        if self.fully_supervised:
-            #if method is supervised batch is a batch of frames and probe is a full encoder + linear or nonlinear probe
-            preds = probe(batch)
-
-        #elif not self.encoder:             # if encoder is None then inputs are vectors
-        else:
-            f = batch.detach()
-            assert len(f.squeeze().shape) == 2, "if input is a batch of vectors you must specify an encoder!"
-            preds = probe(f)
-
-        # else:
-        #     with torch.no_grad():
-        #         self.encoder.to(self.device)
-        #         f = self.encoder(batch).detach()
-        #     preds = probe(f)
-        return preds
-
-    def get_vectors(self, episodes, label_dicts):
-        fs = []
-        labels = []
-        data_generator = self.generate_batch(episodes, label_dicts)
-        for step, (x, labels_batch) in enumerate(data_generator):
-            with torch.no_grad():
-                self.encoder.to(self.device)
-                f = self.encoder(x).detach()
-                fs.append(f)
-                labels.append(labels_batch)
-        vectors = torch.cat(fs, dim=0)
-        label_dicts = torch.cat(labels, dim=0)
-        return vectors, label_dicts
-
+        preds = probe(inp_k)
+        return preds, label
 
     def do_one_epoch(self, episodes, label_dicts):
-        sample_label = label_dicts[0][0]
-        epoch_loss, accuracy = {k + "_loss": [] for k in sample_label.keys() if
+        epoch_loss, accuracy = {k + "_loss": [] for k in self.early_stoppers.keys() if
                                 not self.early_stoppers[k].early_stop}, \
-                               {k + "_acc": [] for k in sample_label.keys() if
+                               {k + "_acc": [] for k in self.early_stoppers.keys() if
                                 not self.early_stoppers[k].early_stop}
 
         data_generator = self.generate_batch(episodes, label_dicts)
-        for step, (x, labels_batch) in enumerate(data_generator):
+        for step, (inp, labels_batch) in enumerate(data_generator):
             for k, label in labels_batch.items():
                 if self.early_stoppers[k].early_stop:
                     continue
                 optim = self.optimizers[k]
                 optim.zero_grad()
 
-                label = torch.tensor(label).long().to(self.device)
-                preds = self.probe(x, k)
-                loss = self.loss_fn(preds, label)
+                preds, label = self.probe_input(inp,label, k)
 
+                loss = self.loss_fn(preds, label)
                 epoch_loss[k + "_loss"].append(loss.detach().item())
                 accuracy[k + "_acc"].append(calculate_multiclass_accuracy(preds, label))
                 if self.probes[k].training:
@@ -168,38 +159,36 @@ class ProbeTrainer():
         return epoch_loss, accuracy
 
     def do_test_epoch(self, episodes, label_dicts):
-        sample_label = label_dicts[0][0]
+        all_label_keys = get_all_unique_state_variable_keys(label_dicts)
         accuracy_dict, f1_score_dict = {}, {}
-        pred_dict, all_label_dict = {k: [] for k in sample_label.keys()}, \
-                                    {k: [] for k in sample_label.keys()}
+        pred_dict, all_label_dict = {k: [] for k in all_label_keys}, \
+                                    {k: [] for k in all_label_keys}
 
         # collect all predictions first
         data_generator = self.generate_batch(episodes, label_dicts)
-        for step, (x, labels_batch) in enumerate(data_generator):
+        for step, (inp, labels_batch) in enumerate(data_generator):
             for k, label in labels_batch.items():
-                label = torch.tensor(label).long().cpu()
-                all_label_dict[k].append(label)
-                preds = self.probe(x, k).detach().cpu()
-                pred_dict[k].append(preds)
+                preds, label = self.probe_input(inp, label, k)
+
+                all_label_dict[k].append(label.cpu())
+                pred_dict[k].append(preds.detach().cpu())
 
         for k in all_label_dict.keys():
             preds, labels = torch.cat(pred_dict[k]), torch.cat(all_label_dict[k])
 
             accuracy = calculate_multiclass_accuracy(preds, labels)
             f1score = calculate_multiclass_f1_score(preds, labels)
-            accuracy_dict[k + "_test_acc"] = accuracy
-            f1_score_dict[k + "_f1score"] = f1score
+            accuracy_dict[k] = accuracy
+            f1_score_dict[k] = f1score
 
         return accuracy_dict, f1_score_dict
 
     def train(self, tr_eps, val_eps, tr_labels, val_labels):
-        if self.encoder and not self.fully_supervised:
-            tr_eps, tr_labels = self.get_vectors(tr_eps,tr_labels)
-            val_eps, val_labels = self.get_vectors(val_eps, val_labels)
-        # if not self.encoder:
-        #     assert len(tr_eps[0][0].squeeze().shape) == 2, "if input is a batch of vectors you must specify an encoder!"
-        sample_label = tr_labels[0][0]
-        self.create_probes(sample_label)
+        tr_label_keys = get_all_unique_state_variable_keys(tr_labels)
+        val_label_keys = get_all_unique_state_variable_keys(val_labels)
+        label_keys = list(set(tr_label_keys).union(set(val_label_keys)))
+
+        self.create_probes(label_keys)
         e = 0
         all_probes_stopped = np.all([early_stopper.early_stop for early_stopper in self.early_stoppers.values()])
         while (not all_probes_stopped) and e < self.epochs:
@@ -208,7 +197,7 @@ class ProbeTrainer():
 
             val_loss, val_accuracy = self.evaluate(val_eps, val_labels, epoch=e)
             # update all early stoppers
-            for k in sample_label.keys():
+            for k in label_keys:
                 if not self.early_stoppers[k].early_stop:
                     self.early_stoppers[k](val_accuracy["val_" + k + "_acc"], self.probes[k])
 
@@ -231,28 +220,74 @@ class ProbeTrainer():
         return epoch_loss, accuracy
 
     def test(self, test_episodes, test_label_dicts, epoch=None):
-        if self.encoder and not self.fully_supervised:
-            test_episodes, test_label_dicts = self.get_vectors(test_episodes, test_label_dicts)
         for k in self.early_stoppers.keys():
             self.early_stoppers[k].early_stop = False
         for k, probe in self.probes.items():
             probe.eval()
-        accuracy_dict, f1_score_dict = self.do_test_epoch(test_episodes, test_label_dicts)
-        accuracy_dict['mean_test_acc'] = np.mean(list(accuracy_dict.values()))
-        f1_score_dict["mean_f1score"] = np.mean(list(f1_score_dict.values()))
-        print("F1 scores")
-        for k in f1_score_dict.keys():
-            print("\t  {}: {:8.4f}".format(k, f1_score_dict[k]))
-        print("\t --")
-        print("Accuracy")
-        for k in accuracy_dict.keys():
-            print("\t {}: {:8.4f}%".format(k, 100 * accuracy_dict[k]))
-        return accuracy_dict, f1_score_dict
+        acc_dict, f1_dict = self.do_test_epoch(test_episodes, test_label_dicts)
 
-    def log_results(self, epoch_idx, loss_dict, acc_dict):
+        acc_dict, f1_dict = postprocess_raw_metrics(acc_dict, f1_dict)
+
+
+        print("""In the original paper we report f1 scores and accuracies averaged across each category.
+              That is we comoute the average score for each state variable in a category to get an average score for a given category.
+              Then we average all the category averages to get the final score that we report per game per method.
+              These scores are called \'across_categories_avg_acc\' and \'across_categories_avg_f1\' respectively""")
+        self.log_results("Test", acc_dict, f1_dict)
+        return acc_dict, f1_dict
+
+    def log_results(self, epoch_idx, *dictionaries):
         print("Epoch: {}".format(epoch_idx))
-        for k in loss_dict.keys():
-            print("\t {}: {:7.4f}".format(k, loss_dict[k]))
-        print("\t --")
-        for k in acc_dict.keys():
-            print("\t {}: {:8.4f}%".format(k, 100 * acc_dict[k]))
+        for dictionary in dictionaries:
+            for k,v in dictionary.items():
+                print("\t {}: {:8.4f}".format(k, v))
+            print("\t --")
+
+
+
+
+def get_all_unique_state_variable_keys(label_dict):
+    labels = list(chain.from_iterable(label_dict))
+    sv_set = set()
+    for dictionary in labels:
+        sv_set = sv_set.union(list(dictionary.keys()))
+    return list(sv_set)
+
+def postprocess_raw_metrics(acc_dict, f1_dict):
+    acc_overall_avg, f1_overall_avg = compute_dict_average(acc_dict),\
+                                      compute_dict_average(f1_dict)
+    acc_category_avgs_dict, f1_category_avgs_dict = compute_category_avgs(acc_dict), \
+                                                    compute_category_avgs(f1_dict)
+    acc_avg_across_categories, f1_avg_across_categories = compute_dict_average(acc_category_avgs_dict),\
+                                                          compute_dict_average(f1_category_avgs_dict)
+    acc_dict.update(acc_category_avgs_dict)
+    f1_dict.update(f1_category_avgs_dict)
+
+    acc_dict["overall_avg"], f1_dict["overall_avg"] = acc_overall_avg, f1_overall_avg
+    acc_dict["across_categories_avg"], f1_dict["across_categories_avg"] = [acc_avg_across_categories,
+                                                                           f1_avg_across_categories]
+
+    acc_dict = append_suffix(acc_dict, "_acc")
+    f1_dict = append_suffix(f1_dict,"_f1")
+
+    return acc_dict, f1_dict
+
+
+def compute_dict_average(metric_dict):
+    return np.mean(list(metric_dict.values()))
+
+def compute_category_avgs(metric_dict):
+    category_dict = {}
+    for category_name, category_keys in summary_key_dict.items():
+        category_values = [v for k,v in metric_dict.items() if k in category_keys]
+        if len(category_values) < 1:
+            continue
+        category_mean = np.mean(category_values)
+        category_dict[category_name + "_avg"] = category_mean
+    return category_dict
+
+def append_suffix(dictionary,suffix):
+    new_dict = {}
+    for k,v in dictionary.items():
+        new_dict[k + suffix] = v
+    return new_dict

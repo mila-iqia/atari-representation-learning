@@ -1,10 +1,15 @@
 from copy import deepcopy
 from .ram_annotations import atari_dict
 
-list_of_keys = [list(v.keys()) for v in atari_dict.values()]
 all_keys = []
-for a in list_of_keys:
-    all_keys.extend(a)
+for game, dictionary in atari_dict.items():
+    for key, value in dictionary.items():
+        if isinstance(value,dict):
+            all_keys.extend(list(value.keys()))
+        else:
+            all_keys.append(key)
+
+
 
 small_object_names = ["ball", "missile"]
 agent_names = ["agent", "player"]
