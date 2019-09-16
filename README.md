@@ -43,7 +43,7 @@ cd baselines
 pip install -e .
 
 # pytorch-a2c-ppo-acktr for RL utils
-git clone https://github.com/mila-iqia/pytorch-a2c-ppo-acktr-gail
+git clone https://github.com/ankeshanand/pytorch-a2c-ppo-acktr-gail
 cd pytorch-a2c-ppo-acktr-gail
 pip install -e .
 
