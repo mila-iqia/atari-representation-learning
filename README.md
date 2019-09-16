@@ -13,7 +13,7 @@ Arxiv: https://arxiv.org/abs/1906.08226
 You can do a minimal install to get just the aari wrapper by doing:
 
 ```bash
-git clone https://github.com/ankeshanand/atari-representation-learning.git
+git clone https://github.com/mila-iqia/atari-representation-learning.git
 cd atari-representation-learning
 pip install -e .
 ```
@@ -43,12 +43,12 @@ cd baselines
 pip install -e .
 
 # pytorch-a2c-ppo-acktr for RL utils
-git clone https://github.com/ankeshanand/pytorch-a2c-ppo-acktr-gail
+git clone https://github.com/mila-iqia/pytorch-a2c-ppo-acktr-gail
 cd pytorch-a2c-ppo-acktr-gail
 pip install -e .
 
 pip install -r requirements.txt
-git clone https://github.com/ankeshanand/atari-representation-learning.git
+git clone https://github.com/mila-iqia/atari-representation-learning.git
 cd atari-representation-learning
 pip install -e .
 ```
