@@ -15,7 +15,7 @@ You can do a minimal install to get just the aari wrapper by doing:
 ```bash
 git clone https://github.com/mila-iqia/atari-representation-learning.git
 cd atari-representation-learning
-pip install -e .
+python setup.py install
 ```
 This just requires `gym[atari]` and it gives you the ability to play around with the aari wrapper.
 If you want access to more complex features, you can install the other dependencies below:
@@ -50,7 +50,7 @@ pip install -e .
 pip install -r requirements.txt
 git clone https://github.com/mila-iqia/atari-representation-learning.git
 cd atari-representation-learning
-pip install -e .
+python setup.py install
 ```
 
 <a name="usage"></a>
