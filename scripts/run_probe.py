@@ -1,5 +1,5 @@
 from scripts.run_contrastive import train_encoder
-from aari.probe import ProbeTrainer
+from atariari.probe import ProbeTrainer
 
 import torch
 from src.utils import get_argparser, train_encoder_methods, probe_only_methods
@@ -7,7 +7,7 @@ from src.encoders import NatureCNN, ImpalaCNN
 import wandb
 import sys
 from src.majority import majority_baseline
-from aari.episodes import get_episodes
+from atariari.episodes import get_episodes
 
 
 def run_probe(args):

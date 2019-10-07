@@ -4,7 +4,7 @@ from .utils import EarlyStopping, appendabledict, calculate_multiclass_accuracy,
 from copy import deepcopy
 import numpy as np
 from torch.utils.data import RandomSampler, BatchSampler
-from aari.categorization import summary_key_dict
+from atariari.categorization import summary_key_dict
 
 
 class LinearProbe(nn.Module):
