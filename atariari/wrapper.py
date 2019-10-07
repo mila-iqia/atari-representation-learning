@@ -17,7 +17,7 @@ class InfoWrapper(gym.Wrapper):
         raise NotImplementedError
 
 
-class AARIWrapper(InfoWrapper):
+class AtariARIWrapper(InfoWrapper):
     def __init__(self, env):
         super().__init__(env)
         self.env_name = self.env.spec.id

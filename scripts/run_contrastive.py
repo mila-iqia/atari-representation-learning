@@ -16,7 +16,7 @@ from src.vae import VAETrainer
 from src.no_action_feedforward_predictor import NaFFPredictorTrainer
 from src.infonce_spatio_temporal import InfoNCESpatioTemporalTrainer
 import wandb
-from aari.episodes import get_episodes
+from atariari.episodes import get_episodes
 
 
 def train_encoder(args):

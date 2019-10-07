@@ -8,9 +8,9 @@ import wandb
 import time
 import os
 
-from aari.envs import make_vec_envs
+from atariari.envs import make_vec_envs
 from src.utils import get_argparser
-from aari.utils import download_run
+from atariari.utils import download_run
 
 # elif collect_mode == "pretrained_representations":
 # # "episodes" are vectors from output of last layer of PPO agent
