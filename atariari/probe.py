@@ -6,47 +6,7 @@ import numpy as np
 from torch.utils.data import RandomSampler, BatchSampler
 from atariari.categorization import summary_key_dict
 from sklearn.linear_model import SGDClassifier
-
-
-class SKLearnProbeTrainer(object):
-    def __init__(self,
-                 encoder=None,
-                 method_name="my_method",
-                 wandb=None,
-                 patience=15,
-                 num_classes=256,
-                 save_dir=".models",
-                 num_processes=4,
-                 lr=5e-4,
-                 epochs=100,
-                 batch_size=64,
-                 representation_len=256):
-
-        self.encoder = encoder
-        self.wandb = wandb
-        self.save_dir = save_dir
-        self.num_classes = num_classes
-        self.epochs = epochs
-        self.lr = lr
-        self.batch_size = batch_size
-        self.patience = patience
-        self.method = method_name
-        self.feature_size = representation_len
-        self.num_processes = num_processes
-
-        self.estimator = SGDClassifier(loss='log',
-                                       n_jobs=self.num_processes,
-                                       penalty='none',
-                                       l1_ratio=0.0,
-                                       alpha=0,
-                                       learning_rate='constant',
-                                       eta0=self.lr,
-                                       max_iter=self.epochs,
-                                       early_stopping=True,
-                                       n_iter_no_change=self.patience)
-
-
-
+from sklearn.base import clone
 
 class LinearProbe(nn.Module):
     def __init__(self, input_dim, num_classes=255):
@@ -179,10 +139,15 @@ class ProbeTrainer():
 
                 label = torch.tensor(label).long().to(self.device)
                 preds = self.probe(x, k)
+
                 loss = self.loss_fn(preds, label)
 
                 epoch_loss[k + "_loss"].append(loss.detach().item())
-                accuracy[k + "_acc"].append(calculate_multiclass_accuracy(preds, label))
+                preds = preds.cpu().detach().numpy()
+                preds = np.argmax(preds, axis=1)
+                label = label.cpu().detach().numpy()
+                accuracy[k + "_acc"].append(calculate_multiclass_accuracy(preds,
+                                                                          label))
                 if self.probes[k].training:
                     loss.backward()
                     optim.step()
@@ -208,8 +173,10 @@ class ProbeTrainer():
                 pred_dict[k].append(preds)
 
         for k in all_label_dict.keys():
-            preds, labels = torch.cat(pred_dict[k]), torch.cat(all_label_dict[k])
+            preds, labels = torch.cat(pred_dict[k]).cpu().detach().numpy(),\
+                            torch.cat(all_label_dict[k]).cpu().detach().numpy()
 
+            preds = np.argmax(preds, axis=1)
             accuracy = calculate_multiclass_accuracy(preds, labels)
             f1score = calculate_multiclass_f1_score(preds, labels)
             accuracy_dict[k] = accuracy
@@ -276,6 +243,86 @@ class ProbeTrainer():
             for k, v in dictionary.items():
                 print("\t {}: {:8.4f}".format(k, v))
             print("\t --")
+
+
+class SKLearnProbeTrainer(object):
+    def __init__(self,
+                 encoder=None,
+                 patience=15,
+                 num_processes=4,
+                 lr=5e-4,
+                 epochs=100):
+
+        self.encoder = encoder
+        self.epochs = epochs
+        self.lr = lr
+        self.patience = patience
+        self.num_processes = num_processes
+        self.encoder.cpu()
+
+        self.estimator = SGDClassifier(loss='log',
+                                       n_jobs=self.num_processes,
+                                       penalty='none',
+                                       l1_ratio=0.0,
+                                       alpha=0,
+                                       learning_rate='constant',
+                                       eta0=self.lr,
+                                       max_iter=self.epochs,
+                                       early_stopping=True,
+                                       n_iter_no_change=self.patience,
+                                       validation_fraction=0.2)
+
+    def get_feature_vectors(self, episodes, episode_labels):
+        vectors = []
+        labels = appendabledict()
+        for ep_ind in range(len(episodes)):
+            x = torch.stack(episodes[ep_ind]).cpu() / 255.
+            y = episode_labels[ep_ind]
+            for label in y:
+                labels.append_update(label)
+            z = self.encoder(x).detach().cpu().numpy()
+            vectors.append(z)
+        vectors = np.concatenate(vectors)
+        return vectors, labels
+
+    def train_test(self, tr_eps, val_eps, tr_labels, val_labels, test_eps, test_labels):
+        tr_eps.extend(val_eps)
+        tr_labels.extend(val_labels)
+        del val_eps
+        del val_labels
+        f_tr, y_tr = self.get_feature_vectors(tr_eps, tr_labels)
+        f_test, y_test = self.get_feature_vectors(test_eps, test_labels)
+        del tr_eps
+        del tr_labels
+        del test_eps
+        del test_labels
+
+        acc_dict, f1_dict = {}, {}
+        for label_name in y_tr.keys():
+            print(label_name)
+            tr_labels = y_tr[label_name]
+            test_labels = y_test[label_name]
+            x_tr = deepcopy(f_tr)
+
+            # sklearn is annoying about classes that only appear once or twice
+            inds = [i for i, v in enumerate(tr_labels) if 0.2 * tr_labels.count(v) >= 3]
+            tr_labels = [tr_labels[ind] for ind in inds]
+            x_tr = np.stack([x_tr[ind] for ind in inds])
+            self.estimator.fit(x_tr, tr_labels )
+            y_pred = self.estimator.predict(f_test)
+            accuracy = calculate_multiclass_accuracy(y_pred, test_labels)
+            f1score = calculate_multiclass_f1_score(y_pred, test_labels)
+            print("\t Acc: {}\n\t f1: {}".format(accuracy, f1score))
+            acc_dict[label_name] = accuracy
+            f1_dict[label_name] = f1score
+
+            # reset estimator
+            self.estimator = clone(self.estimator)
+
+        acc_dict, f1_dict = postprocess_raw_metrics(acc_dict, f1_dict)
+
+        return acc_dict, f1_dict
+
 
 
 def postprocess_raw_metrics(acc_dict, f1_dict):
