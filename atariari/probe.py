@@ -5,6 +5,47 @@ from copy import deepcopy
 import numpy as np
 from torch.utils.data import RandomSampler, BatchSampler
 from atariari.categorization import summary_key_dict
+from sklearn.linear_model import SGDClassifier
+
+
+class SKLearnProbeTrainer(object):
+    def __init__(self,
+                 encoder=None,
+                 method_name="my_method",
+                 wandb=None,
+                 patience=15,
+                 num_classes=256,
+                 save_dir=".models",
+                 num_processes=4,
+                 lr=5e-4,
+                 epochs=100,
+                 batch_size=64,
+                 representation_len=256):
+
+        self.encoder = encoder
+        self.wandb = wandb
+        self.save_dir = save_dir
+        self.num_classes = num_classes
+        self.epochs = epochs
+        self.lr = lr
+        self.batch_size = batch_size
+        self.patience = patience
+        self.method = method_name
+        self.feature_size = representation_len
+        self.num_processes = num_processes
+
+        self.estimator = SGDClassifier(loss='log',
+                                       n_jobs=self.num_processes,
+                                       penalty='none',
+                                       l1_ratio=0.0,
+                                       alpha=0,
+                                       learning_rate='constant',
+                                       eta0=self.lr,
+                                       max_iter=self.epochs,
+                                       early_stopping=True,
+                                       n_iter_no_change=self.patience)
+
+
 
 
 class LinearProbe(nn.Module):
@@ -54,7 +95,6 @@ class ProbeTrainer():
         self.batch_size = batch_size
         self.patience = patience
         self.method = method_name
-        self.device = device
         self.feature_size = representation_len
         self.loss_fn = nn.CrossEntropyLoss()
 
