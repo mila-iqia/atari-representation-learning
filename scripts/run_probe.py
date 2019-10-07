@@ -10,6 +10,7 @@ from src.majority import majority_baseline
 from atariari.episodes import get_episodes
 
 
+
 def run_probe(args):
     wandb.config.update(vars(args))
     tr_eps, val_eps, tr_labels, val_labels, test_eps, test_labels = get_episodes(steps=args.probe_steps,
