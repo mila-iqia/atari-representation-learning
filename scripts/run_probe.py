@@ -1,5 +1,5 @@
 from scripts.run_contrastive import train_encoder
-from atariari.probe import ProbeTrainer
+from atariari.probe import ProbeTrainer, SKLearnProbeTrainer
 
 import torch
 from src.utils import get_argparser, train_encoder_methods, probe_only_methods
@@ -72,6 +72,9 @@ def run_probe(args):
 
         trainer.train(tr_eps, val_eps, tr_labels, val_labels)
         test_acc, test_f1score = trainer.test(test_eps, test_labels)
+        # trainer = SKLearnProbeTrainer(encoder=encoder)
+        # test_acc, test_f1score = trainer.train_test(tr_eps, val_eps, tr_labels, val_labels,
+        #                                             test_eps, test_labels)
 
     print(test_acc, test_f1score)
     wandb.log(test_acc)
