@@ -1,5 +1,5 @@
 from scripts.run_contrastive import train_encoder
-from aari.probe import ProbeTrainer
+from atariari.probe import ProbeTrainer, SKLearnProbeTrainer
 
 import torch
 from src.utils import get_argparser, train_encoder_methods, probe_only_methods
@@ -7,7 +7,8 @@ from src.encoders import NatureCNN, ImpalaCNN
 import wandb
 import sys
 from src.majority import majority_baseline
-from aari.episodes import get_episodes
+from atariari.episodes import get_episodes
+
 
 
 def run_probe(args):
@@ -71,6 +72,9 @@ def run_probe(args):
 
         trainer.train(tr_eps, val_eps, tr_labels, val_labels)
         test_acc, test_f1score = trainer.test(test_eps, test_labels)
+        # trainer = SKLearnProbeTrainer(encoder=encoder)
+        # test_acc, test_f1score = trainer.train_test(tr_eps, val_eps, tr_labels, val_labels,
+        #                                             test_eps, test_labels)
 
     print(test_acc, test_f1score)
     wandb.log(test_acc)

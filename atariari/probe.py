@@ -1,11 +1,13 @@
 import torch
 from torch import nn
-from .utils import EarlyStopping, appendabledict, calculate_multiclass_accuracy, calculate_multiclass_f1_score
+from .utils import EarlyStopping, appendabledict, \
+    calculate_multiclass_accuracy, calculate_multiclass_f1_score,\
+    append_suffix, compute_dict_average
+
 from copy import deepcopy
 import numpy as np
 from torch.utils.data import RandomSampler, BatchSampler
-from aari.categorization import summary_key_dict
-
+from atariari.categorization import summary_key_dict
 
 class LinearProbe(nn.Module):
     def __init__(self, input_dim, num_classes=255):
@@ -54,7 +56,6 @@ class ProbeTrainer():
         self.batch_size = batch_size
         self.patience = patience
         self.method = method_name
-        self.device = device
         self.feature_size = representation_len
         self.loss_fn = nn.CrossEntropyLoss()
 
@@ -139,10 +140,15 @@ class ProbeTrainer():
 
                 label = torch.tensor(label).long().to(self.device)
                 preds = self.probe(x, k)
+
                 loss = self.loss_fn(preds, label)
 
                 epoch_loss[k + "_loss"].append(loss.detach().item())
-                accuracy[k + "_acc"].append(calculate_multiclass_accuracy(preds, label))
+                preds = preds.cpu().detach().numpy()
+                preds = np.argmax(preds, axis=1)
+                label = label.cpu().detach().numpy()
+                accuracy[k + "_acc"].append(calculate_multiclass_accuracy(preds,
+                                                                          label))
                 if self.probes[k].training:
                     loss.backward()
                     optim.step()
@@ -168,8 +174,10 @@ class ProbeTrainer():
                 pred_dict[k].append(preds)
 
         for k in all_label_dict.keys():
-            preds, labels = torch.cat(pred_dict[k]), torch.cat(all_label_dict[k])
+            preds, labels = torch.cat(pred_dict[k]).cpu().detach().numpy(),\
+                            torch.cat(all_label_dict[k]).cpu().detach().numpy()
 
+            preds = np.argmax(preds, axis=1)
             accuracy = calculate_multiclass_accuracy(preds, labels)
             f1score = calculate_multiclass_f1_score(preds, labels)
             accuracy_dict[k] = accuracy
@@ -238,6 +246,9 @@ class ProbeTrainer():
             print("\t --")
 
 
+
+
+
 def postprocess_raw_metrics(acc_dict, f1_dict):
     acc_overall_avg, f1_overall_avg = compute_dict_average(acc_dict), \
                                       compute_dict_average(f1_dict)
@@ -258,8 +269,6 @@ def postprocess_raw_metrics(acc_dict, f1_dict):
     return acc_dict, f1_dict
 
 
-def compute_dict_average(metric_dict):
-    return np.mean(list(metric_dict.values()))
 
 
 def compute_category_avgs(metric_dict):
@@ -273,8 +282,4 @@ def compute_category_avgs(metric_dict):
     return category_dict
 
 
-def append_suffix(dictionary, suffix):
-    new_dict = {}
-    for k, v in dictionary.items():
-        new_dict[k + suffix] = v
-    return new_dict
+

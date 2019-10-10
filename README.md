@@ -4,20 +4,20 @@ Ankesh Anand*, Evan Racah*, Sherjil Ozair*, Yoshua Bengio, Marc-Alexandre Côté
 
 Arxiv: https://arxiv.org/abs/1906.08226
 
-1. [ Installation. ](#install)
+1. [ Installation ](#install)
 2. [ Usage ](#usage)
 
 <a name="install"></a>
 ## Installation
-### AARI Wrapper
-You can do a minimal install to get just the aari wrapper by doing:
+### AtariARI Wrapper
+You can do a minimal install to get just the AtariARI wrapper by doing:
 
 ```bash
 git clone https://github.com/mila-iqia/atari-representation-learning.git
 cd atari-representation-learning
 python setup.py install
 ```
-This just requires `gym[atari]` and it gives you the ability to play around with the aari wrapper.
+This just requires `gym[atari]` and it gives you the ability to play around with the AtariARI wrapper.
 If you want access to more complex features, you can install the other dependencies below:
 
 ### Probing Interface
@@ -31,7 +31,7 @@ conda install pytorch torchvision -c pytorch
 conda install sklearn
 ```
 
-### Full installation (AARI Wrapper + Training & Probing Code)
+### Full installation (AtariARI Wrapper + Training & Probing Code)
 
 ```bash
 # PyTorch
@@ -55,16 +55,16 @@ python setup.py install
 
 <a name="usage"></a>
 ## Usage 
-### Atari Annotated RAM Interface (AARI): 
+### Atari Annotated RAM Interface (AtariARI): 
 
-![AARI](aari/aari.png?raw=true)
+![AtariARI](atariari/atariari.png?raw=true)
 
-AARI exposes the ground truth labels for different state variables for each observation. We have made AARI available as a Gym wrapper, to use it simply wrap an Atari gym env with `AARIWrapper`. 
+AtariARI exposes the ground truth labels for different state variables for each observation. We have made AtariARI available as a Gym wrapper, to use it simply wrap an Atari gym env with `AtariARIWrapper`. 
 
 ```python
 import gym
-from aari.wrapper import AARIWrapper
-env = AARIWrapper(gym.make('MsPacmanNoFrameskip-v4'))
+from atariari.wrapper import AtariARIWrapper
+env = AtariARIWrapper(gym.make('MsPacmanNoFrameskip-v4'))
 obs = env.reset()
 obs, reward, done, info = env.step(1)
 ```
@@ -91,9 +91,9 @@ Now, `info` is a dictionary of the form:
   'player_score': 0,
   'num_lives': 2}}
 ```
-**Note:** In our experiments, we use additional preprocessing for Atari environments mainly following Minh et. al, 2014. See [aari/envs.py](aari/envs.py) for more info! 
+**Note:** In our experiments, we use additional preprocessing for Atari environments mainly following Minh et. al, 2014. See [atariari/envs.py](atariari/envs.py) for more info! 
 
-If you want the raw RAM annotations (which parts of ram correspond to each state variable), check out [aari/ram_annotations.py](aari/ram_annotations.py)
+If you want the raw RAM annotations (which parts of ram correspond to each state variable), check out [atariari/ram_annotations.py](atariari/ram_annotations.py)
 
 
 ### Probing
@@ -105,7 +105,7 @@ We provide an interface for the included probing tasks.
 First, get episodes for train, val and, test:
 
 ```python
-from aari.episodes import get_episodes
+from atariari.episodes import get_episodes
 
 tr_episodes, val_episodes,\
 tr_labels, val_labels,\
@@ -117,7 +117,7 @@ test_episodes, test_labels = get_episodes(env_name="PitfallNoFrameskip-v4",
 Then probe them using ProbeTrainer and your encoder (`my_encoder`):
 
 ```python
-from aari.probe import ProbeTrainer
+from atariari.probe import ProbeTrainer
 
 probe_trainer = ProbeTrainer(my_encoder, representation_len=my_encoder.feature_size)
 probe_trainer.train(tr_episodes, val_episodes,

@@ -12,7 +12,7 @@ import torch
 from baselines import bench
 from baselines.common.atari_wrappers import make_atari, EpisodicLifeEnv, FireResetEnv, WarpFrame, ScaledFloatFrame, \
     ClipRewardEnv, FrameStack
-from .wrapper import AARIWrapper
+from .wrapper import AtariARIWrapper
 
 
 def make_env(env_id, seed, rank, log_dir, downsample=True, color=False):
@@ -23,7 +23,7 @@ def make_env(env_id, seed, rank, log_dir, downsample=True, color=False):
             env.unwrapped, gym.envs.atari.atari_env.AtariEnv)
         if is_atari:
             env = make_atari(env_id)
-            env = AARIWrapper(env)
+            env = AtariARIWrapper(env)
 
         env.seed(seed + rank)
 
