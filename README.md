@@ -57,7 +57,7 @@ python setup.py install
 ## Usage 
 ### Atari Annotated RAM Interface (AtariARI): 
 
-![AtariARI](atariari/atariari.png?raw=true)
+![AtariARI](atariari/benchmark/atariari.png?raw=true)
 
 AtariARI exposes the ground truth labels for different state variables for each observation. We have made AtariARI available as a Gym wrapper, to use it simply wrap an Atari gym env with `AtariARIWrapper`. 
 
