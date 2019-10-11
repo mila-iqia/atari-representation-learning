@@ -11,7 +11,7 @@ from a2c_ppo_acktr.utils import get_vec_normalize
 from collections import defaultdict
 
 # methods that need encoder trained before
-train_encoder_methods = ['cpc', 'spatial-appo', 'vae', "naff", "infonce-stdim", "global-infonce-stdim",
+train_encoder_methods = ['cpc', 'jsd-stdim', 'vae', "naff", "infonce-stdim", "global-infonce-stdim",
                          "global-local-infonce-stdim", "dim"]
 probe_only_methods = ["supervised", "random-cnn", "majority", "pretrained-rl-agent"]
 
@@ -187,6 +187,7 @@ def generate_video():
         'video_name.mp4'
     ])
 
+
 class appendabledict(defaultdict):
     def __init__(self, type_=list, *args, **kwargs):
         self.type_ = type_
@@ -285,7 +286,6 @@ class EarlyStopping(object):
         save_dir = self.wandb.run.dir
         torch.save(model.state_dict(), save_dir + "/" + self.name + ".pt")
         self.val_acc_max = val_acc
-
 
 
 class Cutout(object):

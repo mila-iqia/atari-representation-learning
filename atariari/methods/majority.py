@@ -1,5 +1,5 @@
 from itertools import chain
-from src.utils import calculate_multiclass_accuracy, calculate_multiclass_f1_score
+from .utils import calculate_multiclass_accuracy, calculate_multiclass_f1_score
 import numpy as np
 import torch
 

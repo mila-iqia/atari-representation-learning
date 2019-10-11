@@ -8,9 +8,10 @@ import wandb
 import time
 import os
 
-from atariari.envs import make_vec_envs
-from src.utils import get_argparser
-from atariari.utils import download_run
+from atariari.benchmark.envs import make_vec_envs
+from atariari.benchmark.episodes import checkpointed_steps_full_sorted
+from .utils import get_argparser
+from atariari.benchmark.utils import download_run
 
 # elif collect_mode == "pretrained_representations":
 # # "episodes" are vectors from output of last layer of PPO agent

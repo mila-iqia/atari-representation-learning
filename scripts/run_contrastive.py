@@ -5,18 +5,18 @@ from itertools import chain
 import numpy as np
 import torch
 
-from src.dim_baseline import DIMTrainer
-from src.global_infonce_stdim import GlobalInfoNCESpatioTemporalTrainer
-from src.global_local_infonce import GlobalLocalInfoNCESpatioTemporalTrainer
-from src.spatio_temporal import SpatioTemporalTrainer
-from src.utils import get_argparser
-from src.encoders import NatureCNN, ImpalaCNN
-from src.cpc import CPCTrainer
-from src.vae import VAETrainer
-from src.no_action_feedforward_predictor import NaFFPredictorTrainer
-from src.infonce_spatio_temporal import InfoNCESpatioTemporalTrainer
+from atariari.methods.dim_baseline import DIMTrainer
+from atariari.methods.global_infonce_stdim import GlobalInfoNCESpatioTemporalTrainer
+from atariari.methods.global_local_infonce import GlobalLocalInfoNCESpatioTemporalTrainer
+from atariari.methods.jsd_stdim import SpatioTemporalTrainer
+from atariari.methods.utils import get_argparser
+from atariari.methods.encoders import NatureCNN, ImpalaCNN
+from atariari.methods.cpc import CPCTrainer
+from atariari.methods.vae import VAETrainer
+from atariari.methods.no_action_feedforward_predictor import NaFFPredictorTrainer
+from atariari.methods.stdim import InfoNCESpatioTemporalTrainer
 import wandb
-from atariari.episodes import get_episodes
+from atariari.benchmark.episodes import get_episodes
 
 
 def train_encoder(args):
@@ -47,7 +47,7 @@ def train_encoder(args):
     config['obs_space'] = observation_shape  # weird hack
     if args.method == 'cpc':
         trainer = CPCTrainer(encoder, config, device=device, wandb=wandb)
-    elif args.method == 'spatial-appo':
+    elif args.method == 'jsd-stdim':
         trainer = SpatioTemporalTrainer(encoder, config, device=device, wandb=wandb)
     elif args.method == 'vae':
         trainer = VAETrainer(encoder, config, device=device, wandb=wandb)

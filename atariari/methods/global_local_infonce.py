@@ -9,7 +9,7 @@ import numpy as np
 from torch.utils.data import RandomSampler, BatchSampler
 from .utils import calculate_accuracy, Cutout
 from .trainer import Trainer
-from src.utils import EarlyStopping
+from .utils import EarlyStopping
 from torchvision import transforms
 import torchvision.transforms.functional as TF
 
@@ -23,17 +23,27 @@ class Classifier(nn.Module):
         return self.network(x1, x2)
 
 
-class DIMTrainer(Trainer):
+class GlobalLocalInfoNCESpatioTemporalTrainer(Trainer):
     def __init__(self, encoder, config, device=torch.device('cpu'), wandb=None):
         super().__init__(encoder, wandb, device)
         self.config = config
         self.patience = self.config["patience"]
+        self.use_multiple_predictors = config.get("use_multiple_predictors", False)
+        print("Using multiple predictors" if self.use_multiple_predictors else "Using shared classifier")
         self.epochs = config['epochs']
         self.batch_size = config['batch_size']
         self.device = device
-        self.classifier1 = nn.Linear(self.encoder.hidden_size, 128).to(device)
+        if self.use_multiple_predictors:
+            # todo remove the hard coded 11x8
+            self.classifiers = [nn.Linear(self.encoder.hidden_size, 128).to(device) for _ in range(11*8)]
+        else:
+            self.classifier1 = nn.Linear(self.encoder.hidden_size, 128).to(device)
         self.params = list(self.encoder.parameters())
-        self.params += list(self.classifier1.parameters())
+        if self.use_multiple_predictors:
+            for classifier in self.classifiers:
+                self.params += list(classifier.parameters())
+        else:
+            self.params += list(self.classifier1.parameters())
         self.optimizer = torch.optim.Adam(self.params, lr=config['lr'], eps=1e-5)
         self.early_stopper = EarlyStopping(patience=self.patience, verbose=False, wandb=self.wandb, name="encoder")
         self.transform = transforms.Compose([Cutout(n_holes=1, length=80)])
@@ -78,10 +88,10 @@ class DIMTrainer(Trainer):
             f_t_maps, f_t_prev_maps = self.encoder(x_t, fmaps=True), self.encoder(x_tprev, fmaps=True)
 
             # Loss 1: Global at time t, f5 patches at time t-1
-            f_t, f_t_local = f_t_maps['out'], f_t_maps['f5']
+            f_t, f_t_prev = f_t_maps['out'], f_t_prev_maps['f5']
             # print(f_t.size(), f_t_prev.size())
-            sy = f_t_local.size(1)
-            sx = f_t_local.size(2)
+            sy = f_t_prev.size(1)
+            sx = f_t_prev.size(2)
 
             N = f_t.size(0)
             loss1 = 0.
@@ -89,9 +99,13 @@ class DIMTrainer(Trainer):
             classifier_index = 0
             for y in range(sy):
                 for x in range(sx):
-                    predictions = self.classifier1(f_t)
+                    if self.use_multiple_predictors:
+                        predictions = self.classifiers[classifier_index](f_t)
+                        classifier_index += 1
+                    else:
+                        predictions = self.classifier1(f_t)
 
-                    positive = f_t_local[:, y, x, :]
+                    positive = f_t_prev[:, y, x, :]
                     logits = torch.matmul(predictions, positive.t())
                     step_loss = F.cross_entropy(logits, torch.arange(N).to(self.device))
                     loss1 += step_loss
@@ -115,13 +129,22 @@ class DIMTrainer(Trainer):
             self.early_stopper(-epoch_loss / steps, self.encoder)
 
     def train(self, tr_eps, val_eps):
+        # TODO: Make it work for all modes, right now only it defaults to pcl.
         for e in range(self.epochs):
             self.encoder.train()
-            self.classifier1.train()
+            if self.use_multiple_predictors:
+                for c in self.classifiers:
+                  c.train()
+            else:
+                self.classifier1.train()
             self.do_one_epoch(e, tr_eps)
 
             self.encoder.eval()
-            self.classifier1.eval()
+            if self.use_multiple_predictors:
+                for c in self.classifiers:
+                  c.eval()
+            else:
+                self.classifier1.eval()
             self.do_one_epoch(e, val_eps)
 
             if self.early_stopper.early_stop:

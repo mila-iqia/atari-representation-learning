@@ -6,7 +6,8 @@ import numpy as np
 from torch.utils.data import RandomSampler, BatchSampler
 from .utils import calculate_accuracy
 from .trainer import Trainer
-from src.utils import EarlyStopping
+from .utils import EarlyStopping
+
 
 class CPCTrainer(Trainer):
     # TODO: Make it work for all modes, right now only it defaults to pcl.

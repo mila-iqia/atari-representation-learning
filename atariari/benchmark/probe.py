@@ -7,7 +7,8 @@ from .utils import EarlyStopping, appendabledict, \
 from copy import deepcopy
 import numpy as np
 from torch.utils.data import RandomSampler, BatchSampler
-from atariari.categorization import summary_key_dict
+from .categorization import summary_key_dict
+
 
 class LinearProbe(nn.Module):
     def __init__(self, input_dim, num_classes=255):
@@ -246,9 +247,6 @@ class ProbeTrainer():
             print("\t --")
 
 
-
-
-
 def postprocess_raw_metrics(acc_dict, f1_dict):
     acc_overall_avg, f1_overall_avg = compute_dict_average(acc_dict), \
                                       compute_dict_average(f1_dict)
@@ -267,8 +265,6 @@ def postprocess_raw_metrics(acc_dict, f1_dict):
     f1_dict = append_suffix(f1_dict, "_f1")
 
     return acc_dict, f1_dict
-
-
 
 
 def compute_category_avgs(metric_dict):

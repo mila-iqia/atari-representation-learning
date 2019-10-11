@@ -4,12 +4,11 @@ import torch
 import os
 import torch
 import torch.nn as nn
-import torch.nn.functional as F
 import numpy as np
 from torch.utils.data import RandomSampler, BatchSampler
 from .utils import calculate_accuracy, Cutout
 from .trainer import Trainer
-from src.utils import EarlyStopping
+from .utils import EarlyStopping
 from torchvision import transforms
 import torchvision.transforms.functional as TF
 
@@ -23,17 +22,20 @@ class Classifier(nn.Module):
         return self.network(x1, x2)
 
 
-class GlobalInfoNCESpatioTemporalTrainer(Trainer):
+class SpatioTemporalTrainer(Trainer):
     def __init__(self, encoder, config, device=torch.device('cpu'), wandb=None):
         super().__init__(encoder, wandb, device)
         self.config = config
         self.patience = self.config["patience"]
-        self.classifier1 = nn.Linear(self.encoder.hidden_size, 256).to(device)
+        self.classifier1 = Classifier(self.encoder.hidden_size, 128).to(device)
+        self.classifier2 = Classifier(128, 128).to(device)
         self.epochs = config['epochs']
         self.batch_size = config['batch_size']
         self.device = device
-        self.optimizer = torch.optim.Adam(list(self.classifier1.parameters()) + list(self.encoder.parameters()),
+        self.optimizer = torch.optim.Adam(list(self.classifier1.parameters()) + list(self.encoder.parameters()) +
+                                          list(self.classifier2.parameters()),
                                           lr=config['lr'], eps=1e-5)
+        self.loss_fn = nn.BCEWithLogitsLoss()
         self.early_stopper = EarlyStopping(patience=self.patience, verbose=False, wandb=self.wandb, name="encoder")
         self.transform = transforms.Compose([Cutout(n_holes=1, length=80)])
 
@@ -61,59 +63,65 @@ class GlobalInfoNCESpatioTemporalTrainer(Trainer):
                 # np.random.seed(seed)
                 x_tprev.append(episode[t - 1])
                 # np.random.seed(seed)
-                #x_that.append(episode[t_hat])
+                x_that.append(episode[t_hat])
 
                 ts.append([t])
-                #thats.append([t_hat])
-            yield torch.stack(x_t).to(self.device) / 255., torch.stack(x_tprev).to(self.device) / 255.
+                thats.append([t_hat])
+            yield torch.stack(x_t).to(self.device) / 255., torch.stack(x_tprev).to(self.device) / 255., \
+                  torch.stack(x_that).to(self.device) / 255., torch.Tensor(ts).to(self.device), \
+                  torch.Tensor(thats).to(self.device)
 
     def do_one_epoch(self, epoch, episodes):
         mode = "train" if self.encoder.training and self.classifier1.training else "val"
         epoch_loss, accuracy, steps = 0., 0., 0
-        accuracy1, accuracy2 = 0., 0.
-        epoch_loss1, epoch_loss2 = 0., 0.
+        accuracy1 = 0.
+        epoch_loss1 = 0.
         data_generator = self.generate_batch(episodes)
-        for x_t, x_tprev in data_generator:
+        for x_t, x_tprev, x_that, ts, thats in data_generator:
             f_t_maps, f_t_prev_maps = self.encoder(x_t, fmaps=True), self.encoder(x_tprev, fmaps=True)
+            f_t_hat_maps = self.encoder(x_that, fmaps=True)
 
             # Loss 1: Global at time t, f5 patches at time t-1
-            f_t, f_t_prev = f_t_maps['out'], f_t_prev_maps['out']
+            f_t, f_t_prev = f_t_maps['out'], f_t_prev_maps['f5']
+            f_t_hat = f_t_hat_maps['f5']
+            f_t = f_t.unsqueeze(1).unsqueeze(1).expand(-1, f_t_prev.size(1), f_t_prev.size(2), self.encoder.hidden_size)
 
-            N = f_t.size(0)
-            predictions = self.classifier1(f_t)
-            logits = torch.matmul(predictions, f_t_prev.t())
-            step_loss = F.cross_entropy(logits, torch.arange(N).to(self.device))
-            loss = step_loss
+            target = torch.cat((torch.ones_like(f_t[:, :, :, 0]),
+                                torch.zeros_like(f_t[:, :, :, 0])), dim=0).to(self.device)
 
+            x1, x2 = torch.cat([f_t, f_t], dim=0), torch.cat([f_t_prev, f_t_hat], dim=0)
+            shuffled_idxs = torch.randperm(len(target))
+            x1, x2, target = x1[shuffled_idxs], x2[shuffled_idxs], target[shuffled_idxs]
             self.optimizer.zero_grad()
+            loss1 = self.loss_fn(self.classifier1(x1, x2).squeeze(), target)
+
             if mode == "train":
-                loss.backward()
+                loss1.backward()
                 self.optimizer.step()
 
-            epoch_loss += loss.detach().item()
-            #preds1 = torch.sigmoid(self.classifier1(x1, x2).squeeze())
-            #accuracy1 += calculate_accuracy(preds1, target)
-            #preds2 = torch.sigmoid(self.classifier2(x1_p, x2_p).squeeze())
-            #accuracy2 += calculate_accuracy(preds2, target)
+            epoch_loss1 += loss1.detach().item()
+            preds1 = torch.sigmoid(self.classifier1(x1, x2).squeeze())
+            accuracy1 += calculate_accuracy(preds1, target)
             steps += 1
-        self.log_results(epoch, epoch_loss / steps, prefix=mode)
+        self.log_results(epoch, epoch_loss1 / steps,
+                         accuracy1 / steps, prefix=mode)
         if mode == "val":
-            self.early_stopper(-epoch_loss / steps, self.encoder)
+            self.early_stopper(accuracy1 / steps, self.encoder)
 
     def train(self, tr_eps, val_eps):
         # TODO: Make it work for all modes, right now only it defaults to pcl.
         for e in range(self.epochs):
-            self.encoder.train(), self.classifier1.train()
+            self.encoder.train(), self.classifier1.train(), self.classifier2.train()
             self.do_one_epoch(e, tr_eps)
 
-            self.encoder.eval(), self.classifier1.eval()
+            self.encoder.eval(), self.classifier1.eval(), self.classifier2.eval()
             self.do_one_epoch(e, val_eps)
 
             if self.early_stopper.early_stop:
                 break
         torch.save(self.encoder.state_dict(), os.path.join(self.wandb.run.dir, self.config['env_name'] + '.pt'))
 
-    def log_results(self, epoch_idx, epoch_loss, prefix=""):
-        print("{} Epoch: {}, Epoch Loss: {}, {}".format(prefix.capitalize(), epoch_idx, epoch_loss,
-                                                                     prefix.capitalize()))
-        self.wandb.log({prefix + '_loss': epoch_loss}, step=epoch_idx)
+    def log_results(self, epoch_idx, epoch_loss1, accuracy1, prefix=""):
+        print("{} Epoch: {}, Epoch Loss: {}, {} Accuracy: {}".format(prefix.capitalize(), epoch_idx, epoch_loss1,
+                                                                     prefix.capitalize(), accuracy1))
+        self.wandb.log({prefix + '_loss': epoch_loss1, prefix + '_accuracy': accuracy1}, step=epoch_idx)

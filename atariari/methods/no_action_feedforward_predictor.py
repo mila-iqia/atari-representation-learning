@@ -8,10 +8,10 @@ import torch
 import torch.nn as nn
 import numpy as np
 from torch.utils.data import RandomSampler, BatchSampler
-from src.utils import calculate_accuracy
-from src.trainer import Trainer
-from src.vae import Decoder
-from src.utils import EarlyStopping
+from .utils import calculate_accuracy
+from .trainer import Trainer
+from .vae import Decoder
+from .utils import EarlyStopping
 import sys
 
 

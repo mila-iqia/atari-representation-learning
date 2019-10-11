@@ -6,9 +6,8 @@ from a2c_ppo_acktr.utils import init
 import os
 import numpy as np
 from torch.utils.data import RandomSampler, BatchSampler
-from src.utils import calculate_accuracy
-from src.trainer import Trainer
-from src.utils import EarlyStopping
+from .trainer import Trainer
+from .utils import EarlyStopping
 
 
 class Unflatten(nn.Module):

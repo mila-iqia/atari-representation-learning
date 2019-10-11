@@ -4,14 +4,17 @@ from sklearn.metrics import f1_score as compute_f1_score
 from pathlib import Path
 import numpy as np
 
+
 def compute_dict_average(metric_dict):
     return np.mean(list(metric_dict.values()))
+
 
 def append_suffix(dictionary, suffix):
     new_dict = {}
     for k, v in dictionary.items():
         new_dict[k + suffix] = v
     return new_dict
+
 
 def download_run(env_name, checkpoint_step):
     import wandb
@@ -74,8 +77,6 @@ class appendabledict(defaultdict):
             self.__getitem__(k).append(v)
 
 
-
-
 # Thanks Bjarten! (https://github.com/Bjarten/early-stopping-pytorch)
 class EarlyStopping(object):
     """Early stops the training if validation loss doesn't improve after a given patience."""
@@ -99,9 +100,7 @@ class EarlyStopping(object):
         self.save_dir = Path(save_dir)
         self.save_dir.mkdir(exist_ok=True)
 
-
     def __call__(self, val_acc, model):
-
         score = val_acc
 
         if self.best_score is None:
@@ -138,9 +137,11 @@ def calculate_accuracy(preds, y):
     acc = preds.eq(labels).sum().float() / labels.numel()
     return acc
 
+
 def calculate_multiclass_f1_score(preds, labels):
     f1score = compute_f1_score(labels, preds, average="weighted")
     return f1score
+
 
 def calculate_multiclass_accuracy(preds, labels):
     acc = float(np.sum((preds == labels).astype(int)) / len(labels))

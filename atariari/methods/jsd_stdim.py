@@ -8,7 +8,7 @@ import numpy as np
 from torch.utils.data import RandomSampler, BatchSampler
 from .utils import calculate_accuracy, Cutout
 from .trainer import Trainer
-from src.utils import EarlyStopping
+from .utils import EarlyStopping
 from torchvision import transforms
 import torchvision.transforms.functional as TF
 
