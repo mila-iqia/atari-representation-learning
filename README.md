@@ -152,6 +152,8 @@ my_encoder.load_state_dict(torch.load(open("path/to/my/weights.pt", "rb")))
 ```
 
 ### Spatio-Temporal DeepInfoMax:
+![AtariARI](atariari/methods/STDIM.png?raw=true)
+
 `src/` contains implementations of several representation learning methods, along with `ST-DIM`. Here's a sample usage: 
 
 ```bash
