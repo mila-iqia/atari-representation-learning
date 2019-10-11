@@ -35,6 +35,7 @@ pip install git+git://github.com/openai/baselines
 # pytorch-a2c-ppo-acktr for RL utils
 pip install git+git://github.com/ankeshanand/pytorch-a2c-ppo-acktr-gail
 
+# Clone and install our package
 pip install -r requirements.txt
 git clone https://github.com/mila-iqia/atari-representation-learning.git
 cd atari-representation-learning
