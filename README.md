@@ -20,32 +20,20 @@ python setup.py install
 This just requires `gym[atari]` and it gives you the ability to play around with the AtariARI wrapper.
 If you want access to more complex features, you can install the other dependencies below:
 
-### Probing Interface
-If you want to use the code that probes the representations
-#### Dependencies:
-* PyTorch
-* Scikit-Learn
-
-```bash
-conda install pytorch torchvision -c pytorch
-conda install sklearn
-```
-
 ### Full installation (AtariARI Wrapper + Training & Probing Code)
 
 ```bash
-# PyTorch
+# PyTorch and scikit learn
 conda install pytorch torchvision -c pytorch
+conda install scikit-learn
 
 # Baselines for Atari preprocessing
-git clone https://github.com/openai/baselines.git
-cd baselines
-pip install -e .
+# Tensorflow is a dependency, but you don't need to install the GPU version
+conda install tensorflow
+pip install git+git://github.com/openai/baselines
 
 # pytorch-a2c-ppo-acktr for RL utils
-git clone https://github.com/ankeshanand/pytorch-a2c-ppo-acktr-gail
-cd pytorch-a2c-ppo-acktr-gail
-pip install -e .
+pip install git+git://github.com/ankeshanand/pytorch-a2c-ppo-acktr-gail
 
 pip install -r requirements.txt
 git clone https://github.com/mila-iqia/atari-representation-learning.git
