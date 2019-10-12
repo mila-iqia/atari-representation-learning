@@ -10,7 +10,7 @@ Arxiv: https://arxiv.org/abs/1906.08226
 <a name="install"></a>
 ## Installation
 ### AtariARI Wrapper
-You can do a minimal install to get just the AtariARI wrapper by doing:
+You can do a minimal install to get just the AtariARI (Atari Annotated RAM Interface) wrapper by doing:
 
 ```bash
 git clone https://github.com/mila-iqia/atari-representation-learning.git
