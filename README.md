@@ -18,7 +18,7 @@ cd atari-representation-learning
 python setup.py install
 ```
 This just requires `gym[atari]` and it gives you the ability to play around with the AtariARI wrapper.
-If you want access to more complex features, you can install the other dependencies below:
+If you want to use the code for training representation learning methods and probing them, you will need a full installation:
 
 ### Full installation (AtariARI Wrapper + Training & Probing Code)
 
