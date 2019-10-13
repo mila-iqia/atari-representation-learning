@@ -46,7 +46,9 @@ python setup.py install
 ## Usage 
 ### Atari Annotated RAM Interface (AtariARI): 
 
-![AtariARI](atariari/benchmark/atariari.png?raw=true)
+<p align="center">
+ <img src="https://raw.githubusercontent.com/mila-iqia/atari-representation-learning/master/atariari/benchmark/atariari.png" width=700>
+</p>
 
 AtariARI exposes the ground truth labels for different state variables for each observation. We have made AtariARI available as a Gym wrapper, to use it simply wrap an Atari gym env with `AtariARIWrapper`. 
 
@@ -152,7 +154,10 @@ my_encoder.load_state_dict(torch.load(open("path/to/my/weights.pt", "rb")))
 ```
 
 ### Spatio-Temporal DeepInfoMax:
-![AtariARI](atariari/methods/STDIM.png?raw=true)
+<p align="center">
+ <img src="https://raw.githubusercontent.com/mila-iqia/atari-representation-learning/master/atariari/methods/STDIM.png" width=700>
+</p>
+
 
 `src/` contains implementations of several representation learning methods, along with `ST-DIM`. Here's a sample usage: 
 
