@@ -2,13 +2,12 @@
 
 Ankesh Anand*, Evan Racah*, Sherjil Ozair*, Yoshua Bengio, Marc-Alexandre Côté, R Devon Hjelm
 
-Arxiv: https://arxiv.org/abs/1906.08226
+This repo provides code for the benchmark and techniques introduced in the paper [Unsupervised State Representation Learning in Atari](https://arxiv.org/abs/1906.08226)
 
-1. [ Installation ](#install)
-2. [ Usage ](#usage)
+* [📦 Install ](#install) -- Install relevant dependencies and the project
+* [🔧 Usage ](#usage) -- Learn how to use AtariARI and train representations with Spatio-Temporal DeepInfomax (ST-DIM)
 
-<a name="install"></a>
-## Installation
+## Install
 ### AtariARI Wrapper
 You can do a minimal install to get just the AtariARI (Atari Annotated RAM Interface) wrapper by doing:
 
@@ -42,7 +41,6 @@ cd atari-representation-learning
 python setup.py install
 ```
 
-<a name="usage"></a>
 ## Usage 
 ### Atari Annotated RAM Interface (AtariARI): 
 
