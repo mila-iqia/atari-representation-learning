@@ -7,6 +7,7 @@ This repo provides code for the benchmark and techniques introduced in the paper
 * [📦 Install ](#install) -- Install relevant dependencies and the project
 * [🔧 Usage ](#usage) -- Learn how to use AtariARI and train representations with Spatio-Temporal DeepInfomax (ST-DIM)
 * [📜 Poster](Poster.pdf) -- Summary of the paper in a poster format
+* [🎞️ Slides](Slides.pdf) -- Slides describing the paper
 
 ## Install
 ### AtariARI Wrapper
