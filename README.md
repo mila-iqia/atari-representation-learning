@@ -6,15 +6,14 @@ This repo provides code for the benchmark and techniques introduced in the paper
 
 * [📦 Install ](#install) -- Install relevant dependencies and the project
 * [🔧 Usage ](#usage) -- Learn how to use AtariARI and train representations with Spatio-Temporal DeepInfomax (ST-DIM)
+* [📜 Poster](Poster.pdf) -- Summary of the paper in a poster format
 
 ## Install
 ### AtariARI Wrapper
 You can do a minimal install to get just the AtariARI (Atari Annotated RAM Interface) wrapper by doing:
 
 ```bash
-git clone https://github.com/mila-iqia/atari-representation-learning.git
-cd atari-representation-learning
-python setup.py install
+pip install git+git://github.com/mila-iqia/atari-representation-learning.git
 ```
 This just requires `gym[atari]` and it gives you the ability to play around with the AtariARI wrapper.
 If you want to use the code for training representation learning methods and probing them, you will need a full installation:
@@ -36,9 +35,7 @@ pip install git+git://github.com/ankeshanand/pytorch-a2c-ppo-acktr-gail
 
 # Clone and install our package
 pip install -r requirements.txt
-git clone https://github.com/mila-iqia/atari-representation-learning.git
-cd atari-representation-learning
-python setup.py install
+pip install git+git://github.com/mila-iqia/atari-representation-learning.git
 ```
 
 ## Usage 
@@ -52,7 +49,7 @@ AtariARI exposes the ground truth labels for different state variables for each 
 
 ```python
 import gym
-from atariari.wrapper import AtariARIWrapper
+from atariari.benchmark.wrapper import AtariARIWrapper
 env = AtariARIWrapper(gym.make('MsPacmanNoFrameskip-v4'))
 obs = env.reset()
 obs, reward, done, info = env.step(1)
@@ -94,7 +91,7 @@ We provide an interface for the included probing tasks.
 First, get episodes for train, val and, test:
 
 ```python
-from atariari.episodes import get_episodes
+from atariari.benchmark.episodes import get_episodes
 
 tr_episodes, val_episodes,\
 tr_labels, val_labels,\
@@ -106,7 +103,7 @@ test_episodes, test_labels = get_episodes(env_name="PitfallNoFrameskip-v4",
 Then probe them using ProbeTrainer and your encoder (`my_encoder`):
 
 ```python
-from atariari.probe import ProbeTrainer
+from atariari.benchmark.probe import ProbeTrainer
 
 probe_trainer = ProbeTrainer(my_encoder, representation_len=my_encoder.feature_size)
 probe_trainer.train(tr_episodes, val_episodes,
