@@ -13,6 +13,7 @@ This repo provides code for the benchmark and techniques introduced in the paper
 You can do a minimal install to get just the AtariARI (Atari Annotated RAM Interface) wrapper by doing:
 
 ```bash
+pip install 'gym[atari]'
 pip install git+git://github.com/mila-iqia/atari-representation-learning.git
 ```
 This just requires `gym[atari]` and it gives you the ability to play around with the AtariARI wrapper.
