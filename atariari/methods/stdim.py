@@ -28,8 +28,8 @@ class InfoNCESpatioTemporalTrainer(Trainer):
         super().__init__(encoder, wandb, device)
         self.config = config
         self.patience = self.config["patience"]
-        self.classifier1 = nn.Linear(self.encoder.hidden_size, 128).to(device)  # x1 = global, x2=patch, n_channels = 32
-        self.classifier2 = nn.Linear(128, 128).to(device)
+        self.classifier1 = nn.Linear(self.encoder.hidden_size, self.encoder.local_layer_depth).to(device)  # x1 = global, x2=patch, n_channels = 32
+        self.classifier2 = nn.Linear(self.encoder.local_layer_depth, self.encoder.local_layer_depth).to(device)
         self.epochs = config['epochs']
         self.batch_size = config['batch_size']
         self.device = device
