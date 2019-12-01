@@ -49,11 +49,11 @@ def get_random_agent_rollouts(env_name, steps, seed=42, num_processes=1, num_fra
                 episode_rewards.append(info['episode']['r'])
 
             if done[i] != 1:
-                episodes[i][-1].append(obs[i].clone())
+                episodes[i][-1].append(obs[i].clone().type(torch.uint8))
                 if "labels" in info.keys():
                     episode_labels[i][-1].append(info["labels"])
             else:
-                episodes[i].append([obs[i].clone()])
+                episodes[i].append([obs[i].clone().type(torch.uint8)])
                 if "labels" in info.keys():
                     episode_labels[i].append([info["labels"]])
 
@@ -96,11 +96,11 @@ def get_ppo_rollouts(env_name, steps, seed=42, num_processes=1,
                 episode_rewards.append(info['episode']['r'])
 
             if done[i] != 1:
-                episodes[i][-1].append(obs[i].clone())
+                episodes[i][-1].append(obs[i].clone().type(torch.uint8))
                 if "labels" in info.keys():
                     episode_labels[i][-1].append(info["labels"])
             else:
-                episodes[i].append([obs[i].clone()])
+                episodes[i].append([obs[i].clone().type(torch.uint8)])
                 if "labels" in info.keys():
                     episode_labels[i].append([info["labels"]])
 
