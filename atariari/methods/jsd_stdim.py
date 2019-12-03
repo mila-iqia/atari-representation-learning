@@ -27,8 +27,8 @@ class SpatioTemporalTrainer(Trainer):
         super().__init__(encoder, wandb, device)
         self.config = config
         self.patience = self.config["patience"]
-        self.classifier1 = Classifier(self.encoder.hidden_size, 128).to(device)
-        self.classifier2 = Classifier(128, 128).to(device)
+        self.classifier1 = Classifier(self.encoder.hidden_size, self.encoder.local_layer_depth).to(device)
+        self.classifier2 = Classifier(self.encoder.local_layer_depth, self.encoder.local_layer_depth).to(device)
         self.epochs = config['epochs']
         self.batch_size = config['batch_size']
         self.device = device

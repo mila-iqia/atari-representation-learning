@@ -68,16 +68,30 @@ class ImpalaCNN(nn.Module):
             ResidualBlock(depth, depth)
         )
 
-    def forward(self, inputs):
-        out = inputs
-        if self.downsample:
-            out = self.layer3(self.layer2(self.layer1(out)))
-        else:
-            out = self.layer4(self.layer3(self.layer2(self.layer1(out))))
-        return F.relu(self.final_linear(self.flatten(out)))
+    @property
+    def local_layer_depth(self):
+        return self.depths[-2]
 
+    def forward(self, inputs, fmaps=False):
+        f5 = self.layer3(self.layer2(self.layer1(inputs)))
+
+        if not self.downsample:
+            out = self.layer4(f5)
+        else:
+            out = f5
+
+        out = F.relu(self.final_linear(self.flatten(out)))
+
+        if fmaps:
+            return {
+                'f5': f5.permute(0, 2, 3, 1),
+                'out': out
+            }
+
+        return out
 
 class NatureCNN(nn.Module):
+
     def __init__(self, input_channels, args):
         super().__init__()
         self.feature_size = args.feature_size
@@ -123,6 +137,10 @@ class NatureCNN(nn.Module):
                 #nn.ReLU()
             )
         self.train()
+
+    @property
+    def local_layer_depth(self):
+        return self.main[4].out_channels
 
     def forward(self, inputs, fmaps=False):
         f5 = self.main[:6](inputs)
