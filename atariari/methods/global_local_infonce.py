@@ -76,7 +76,7 @@ class GlobalLocalInfoNCESpatioTemporalTrainer(Trainer):
 
                 ts.append([t])
                 #thats.append([t_hat])
-            yield torch.stack(x_t).to(self.device) / 255., torch.stack(x_tprev).to(self.device) / 255.
+            yield torch.stack(x_t).float().to(self.device) / 255., torch.stack(x_tprev).float().to(self.device) / 255.
 
     def do_one_epoch(self, epoch, episodes):
         mode = "train" if self.encoder.training else "val"

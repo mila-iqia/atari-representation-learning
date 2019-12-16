@@ -135,7 +135,7 @@ class VAETrainer(Trainer):
                 t, t_hat = 0, 0
                 t, t_hat = np.random.randint(0, len(episode)), np.random.randint(0, len(episode))
                 x_t.append(episode[t])
-            yield torch.stack(x_t).to(self.device) / 255.
+            yield torch.stack(x_t).float().to(self.device) / 255.
 
     def do_one_epoch(self, epoch, episodes):
         mode = "train" if self.VAE.training else "val"

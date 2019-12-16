@@ -67,8 +67,8 @@ class SpatioTemporalTrainer(Trainer):
 
                 ts.append([t])
                 thats.append([t_hat])
-            yield torch.stack(x_t).to(self.device) / 255., torch.stack(x_tprev).to(self.device) / 255., \
-                  torch.stack(x_that).to(self.device) / 255., torch.Tensor(ts).to(self.device), \
+            yield torch.stack(x_t).float().to(self.device) / 255., torch.stack(x_tprev).float().to(self.device) / 255., \
+                  torch.stack(x_that).float().to(self.device) / 255., torch.Tensor(ts).to(self.device), \
                   torch.Tensor(thats).to(self.device)
 
     def do_one_epoch(self, epoch, episodes):

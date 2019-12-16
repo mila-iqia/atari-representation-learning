@@ -102,7 +102,7 @@ class ProbeTrainer():
                 t = np.random.randint(len(episode))
                 xs.append(episode[t])
                 labels.append_update(episode_labels_batch[ep_ind][t])
-            yield torch.stack(xs).to(self.device) / 255., labels
+            yield torch.stack(xs).float().to(self.device) / 255., labels
 
     def probe(self, batch, k):
         probe = self.probes[k]

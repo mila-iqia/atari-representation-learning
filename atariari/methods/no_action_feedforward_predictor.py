@@ -75,8 +75,8 @@ class NaFFPredictorTrainer(Trainer):
 
                 x_t.append(episode[t])
                 x_tn.append(episode[t_n])
-            yield torch.stack(x_t).to(self.device) / 255., \
-                  torch.stack(x_tn).to(self.device) / 255.
+            yield torch.stack(x_t).float().to(self.device) / 255., \
+                  torch.stack(x_tn).float().to(self.device) / 255.
 
     def do_one_epoch(self, epoch, episodes):
         mode = "train" if self.naff.training else "val"
