@@ -149,7 +149,9 @@ atari_dict = {
                     ),
 
     "pong": dict(player_y=51,
+                 player_x=46,
                  enemy_y=50,
+                 enemy_x=45,
                  ball_x=49,
                  ball_y=54,
                  enemy_score=13,
