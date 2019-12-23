@@ -6,6 +6,7 @@ This repo provides code for the benchmark and techniques introduced in the paper
 
 * [📦 Install ](#install) -- Install relevant dependencies and the project
 * [🔧 Usage ](#usage) -- Learn how to use AtariARI and train representations with Spatio-Temporal DeepInfomax (ST-DIM)
+* [🕹️ RAM Annotations ](atariari/benchmark/ram_annotations.py) -- Mapping of RAM indexes to semantic state variables
 * [📜 Poster](Poster.pdf) -- Summary of the paper in a poster format
 * [🎞️ Slides](Slides.pdf) -- Slides describing the paper
 
@@ -81,7 +82,7 @@ Now, `info` is a dictionary of the form:
 ```
 **Note:** In our experiments, we use additional preprocessing for Atari environments mainly following Minh et. al, 2014. See [atariari/benchmark/envs.py](atariari/envs.py) for more info! 
 
-If you want the raw RAM annotations (which parts of ram correspond to each state variable), check out [atariari/benchmark/ram_annotations.py](atariari/ram_annotations.py)
+If you want the raw RAM annotations (which parts of ram correspond to each state variable), check out [atariari/benchmark/ram_annotations.py](atariari/benchmark/ram_annotations.py)
 
 
 ### Probing
