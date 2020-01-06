@@ -193,7 +193,7 @@ atari_dict = {
 
     "spaceinvaders": dict(invaders_left_count=17,
                           player_score=104,
-                          num_lives=125,
+                          num_lives=73,
                           player_x=28,
                           enemies_x=26,
                           missiles_y=9,
