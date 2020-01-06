@@ -107,8 +107,15 @@ atari_dict = {
 
     "montezumarevenge": dict(room_number=3,
                              player_x=42,
-                             player_y=43,
-                             player_direction=52,  # 72 if facing left, 128 if facing right
+                             player_y=43,                             
+                             """ player_direction values:
+                                     72:  facing left, 
+                                     40:  facing left, climbing down ladder/rope
+                                     24:  facing left, climbing up ladder/rope
+                                     128: facing right
+                                     32:  facing right, climbing down ladder/rope
+                                     16:  facing right climbing up ladder/rope """
+                             player_direction=52,  
                              enemy_skull_x=47,
                              enemy_skull_y=46,
                              key_monster_x=44,
