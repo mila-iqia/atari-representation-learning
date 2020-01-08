@@ -11,6 +11,13 @@ Game dictionary is organized as:
             element of the RAM array (when the player in asteroids moves horizontally, ram_array[73] should change
             in value correspondingly)
 """
+""" player_direction values:
+         72:  facing left, 
+         40:  facing left, climbing down ladder/rope
+         24:  facing left, climbing up ladder/rope
+         128: facing right
+         32:  facing right, climbing down ladder/rope
+         16:  facing right climbing up ladder/rope """
 
 atari_dict = {
     "asteroids": dict(enemy_asteroids_y=[3, 4, 5, 6, 7, 8, 9, 12, 13, 14, 15, 16, 17, 18, 19],
@@ -105,17 +112,12 @@ atari_dict = {
                  dynamite_count=50,
                  score=[56, 57]),
 
+
+
     "montezumarevenge": dict(room_number=3,
                              player_x=42,
-                             player_y=43,                             
-                             """ player_direction values:
-                                     72:  facing left, 
-                                     40:  facing left, climbing down ladder/rope
-                                     24:  facing left, climbing up ladder/rope
-                                     128: facing right
-                                     32:  facing right, climbing down ladder/rope
-                                     16:  facing right climbing up ladder/rope """
-                             player_direction=52,  
+                             player_y=43,
+                             player_direction=52, # 72:  facing left, 40:  facing left, climbing down ladder/rope 24:  facing left, climbing up ladder/rope 128: facing right 32:  facing right, climbing down ladder/rope, 16: facing right climbing up ladder/rope
                              enemy_skull_x=47,
                              enemy_skull_y=46,
                              key_monster_x=44,
