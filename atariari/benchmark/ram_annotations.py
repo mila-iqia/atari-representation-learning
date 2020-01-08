@@ -11,7 +11,7 @@ Game dictionary is organized as:
             element of the RAM array (when the player in asteroids moves horizontally, ram_array[73] should change
             in value correspondingly)
 """
-""" player_direction values:
+""" MZR player_direction values:
          72:  facing left, 
          40:  facing left, climbing down ladder/rope
          24:  facing left, climbing up ladder/rope
@@ -33,6 +33,22 @@ atari_dict = {
                       player_missile_y2=87,
                       player_missile1_direction=89,
                       player_missile2_direction=90),
+
+    "battlezone": dict(  # red_enemy_x=75,
+        blue_tank_facing_direction=46,  # 17 left 21 forward 29 right
+        blue_tank_size_y=47,  # tank gets larger as it gets closer
+        blue_tank_x=48,
+        blue_tank2_facing_direction=52,
+        blue_tank2_size_y=53,
+        blue_tank2_x=54,
+        num_lives=58,
+        missile_y=105,
+        compass_needles_angle=84,
+        angle_of_tank=4,  # as shown by what the mountains look like
+        left_tread_position=59,  # got to mod this number by 8 to get unique values
+        right_tread_position=60,  # got to mod this number by 8 to get unique values
+        crosshairs_color=108,  # 0 if black 46 if yellow
+        score=29),
 
     "berzerk": dict(player_x=19,
                     player_y=11,
@@ -155,6 +171,8 @@ atari_dict = {
                     # player_y_on_ladder= 108, # 0-20
                     # player_collided_with_rope= 5, #yes if bit 6 is 1
                     bottom_of_rope_y=18,  # 0-20 varies even when you can't see rope
+                    clock_sec=89,
+                    clock_min=88
                     ),
 
     "pong": dict(player_y=51,
@@ -199,6 +217,13 @@ atari_dict = {
                      score=[57, 58],
                      num_lives=59,
                      divers_collected_count=62),
+
+    "skiing": dict(player_x=25,
+                   clock_m=104,
+                   clock_s=105,
+                   clock_ms=106,
+                   score=107,
+                   object_y=range(87, 94)),  # object_y_1 is y position of whatever topmost object on the screen is
 
     "spaceinvaders": dict(invaders_left_count=17,
                           player_score=104,
