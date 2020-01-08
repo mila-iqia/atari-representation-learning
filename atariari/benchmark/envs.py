@@ -98,7 +98,7 @@ def wrap_deepmind(env, downsample=True, episode_life=True, clip_rewards=True, fr
                   color=False):
     """Configure environment for DeepMind-style Atari.
     """
-    if ("videopinball" in str(env.spec.id).lower()) or ('tennis' in str(env.spec.id).lower()):
+    if ("videopinball" in str(env.spec.id).lower()) or ('tennis' in str(env.spec.id).lower()) or ('skiing' in str(env.spec.id).lower()):
         env = WarpFrame(env, width=160, height=210, grayscale=False)
     if episode_life:
         env = EpisodicLifeEnv(env)
