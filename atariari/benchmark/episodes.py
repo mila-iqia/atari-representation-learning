@@ -61,8 +61,9 @@ def get_random_agent_rollouts(env_name, steps, seed=42, num_processes=1, num_fra
     episodes = list(chain.from_iterable(episodes))
     # Convert to 2d list from 3d list
     episode_labels = list(chain.from_iterable(episode_labels))
+    tensor_episodes = [torch.stack(episodes[i]) for i in range(len(episodes))]
     envs.close()
-    return episodes, episode_labels
+    return tensor_episodes, episode_labels
 
 
 def get_ppo_rollouts(env_name, steps, seed=42, num_processes=1,
@@ -110,12 +111,13 @@ def get_ppo_rollouts(env_name, steps, seed=42, num_processes=1,
     episode_labels = list(chain.from_iterable(episode_labels))
     mean_entropy = torch.stack(entropies).mean()
     mean_episode_reward = np.mean(episode_rewards)
+    tensor_episodes = [torch.stack(episodes[i]) for i in range(len(episodes))]
     try:
         wandb.log({'action_entropy': mean_entropy, 'mean_reward': mean_episode_reward})
     except:
         pass
 
-    return episodes, episode_labels
+    return tensor_episodes, episode_labels
 
 
 def get_episodes(env_name,
@@ -155,6 +157,7 @@ def get_episodes(env_name,
 
     else:
         assert False, "Collect mode {} not recognized".format(collect_mode)
+
 
     ep_inds = [i for i in range(len(episodes)) if len(episodes[i]) > min_episode_length]
     episodes = [episodes[i] for i in ep_inds]
