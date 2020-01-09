@@ -76,6 +76,42 @@ class appendabledict(defaultdict):
         for k, v in other_dict.items():
             self.__getitem__(k).append(v)
 
+    def append_updates(self, list_of_dicts):
+        """appends current dict's values with values from other_dict
+
+        Parameters
+        ----------
+        other_dict : dict
+            A dictionary that you want to append to this dictionary
+
+
+        Returns
+        -------
+        Nothing. The side effect is this dict's values change
+
+         """
+        for other_dict in list_of_dicts:
+            self.append_update(other_dict)
+
+    def extend_update(self, other_dict):
+        """appends current dict's values with values from other_dict
+
+        Parameters
+        ----------
+        other_dict : dict
+            A dictionary that you want to append to this dictionary
+
+
+        Returns
+        -------
+        Nothing. The side effect is this dict's values change
+
+         """
+        for k, v in other_dict.items():
+            self.__getitem__(k).extend(v)
+
+
+
 
 # Thanks Bjarten! (https://github.com/Bjarten/early-stopping-pytorch)
 class EarlyStopping(object):
