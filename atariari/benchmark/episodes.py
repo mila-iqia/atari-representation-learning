@@ -125,7 +125,7 @@ def tensorify_labels(eps_labels):
         ad = appendabledict()
         ad.append_updates(ep_labels)
         for k in ad.keys():
-            ad[k] = np.asarray(ad[k])
+            ad[k] = torch.tensor(ad[k])
         tensor_ep_labels.append(ad)
 
     return tensor_ep_labels
