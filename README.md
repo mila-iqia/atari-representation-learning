@@ -162,6 +162,7 @@ my_encoder.load_state_dict(torch.load(open("path/to/my/weights.pt", "rb")))
 ```bash
 python -m scripts.run_probe --method infonce-stdim --env-name {env_name}
 ```
+where `env_name` is of the form `{game}NoFrameskip-v4`, such as `PongNoFrameskip-v4`
 
 ### Citation
 
