@@ -83,5 +83,5 @@ if __name__ == "__main__":
     parser = get_argparser()
     args = parser.parse_args()
     tags = ['probe']
-    wandb.init(project=args.wandb_proj, entity="curl-atari", tags=tags)
+    wandb.init(project=args.wandb_proj, entity=args.wandb_entity, tags=tags)
     run_probe(args)
