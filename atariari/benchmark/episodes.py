@@ -44,6 +44,7 @@ def get_random_agent_rollouts(env_name, steps, seed=42, num_processes=1, num_fra
             np.array([np.random.randint(1, envs.action_space.n) for _ in range(num_processes)])) \
             .unsqueeze(dim=1)
         obs, reward, done, infos = envs.step(action)
+        obs = obs.to(torch.uint8)
         for i, info in enumerate(infos):
             if 'episode' in info.keys():
                 episode_rewards.append(info['episode']['r'])
@@ -91,6 +92,7 @@ def get_ppo_rollouts(env_name, steps, seed=42, num_processes=1,
                                for i in range(num_processes)]).unsqueeze(dim=1)
         entropies.append(dist_entropy.clone())
         obs, reward, done, infos = envs.step(action)
+        obs = obs.to(torch.uint8)
         for i, info in enumerate(infos):
             if 'episode' in info.keys():
                 episode_rewards.append(info['episode']['r'])
