@@ -81,8 +81,8 @@ def make_vec_envs(env_name, seed,  num_processes, num_frame_stack=1, downsample=
 
 
 class GrayscaleWrapper(gym.ObservationWrapper):
+    """Convert observations to grayscale."""
     def __init__(self, env):
-        """Convert observations to grayscale."""
         gym.ObservationWrapper.__init__(self, env)
         self.observation_space = spaces.Box(low=0, high=255,
                                             shape=(self.observation_space.shape[0], self.observation_space.shape[1], 1),
