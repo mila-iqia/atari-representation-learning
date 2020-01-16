@@ -34,6 +34,8 @@ def train_encoder(args):
                                  checkpoint_index=args.checkpoint_index,
                                  min_episode_length=args.batch_size)
 
+    print("Got episodes!", flush=True)
+
     observation_shape = tr_eps[0][0].shape
     if args.encoder_type == "Nature":
         encoder = NatureCNN(observation_shape[0], args)

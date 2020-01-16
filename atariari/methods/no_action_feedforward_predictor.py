@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from a2c_ppo_acktr.utils import init
 import numpy as np
 import os
 import torch

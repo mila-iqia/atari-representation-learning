@@ -1,5 +1,4 @@
-from a2c_ppo_acktr import utils
-from a2c_ppo_acktr.envs import make_vec_envs as mve
+from atariari.benchmark.envs import get_vec_normalize
 from collections import deque
 from itertools import chain
 import numpy as np
@@ -26,10 +25,10 @@ def get_pretrained_rl_representations(args, steps):
 
 def evaluate(actor_critic, env_name, seed, num_processes, eval_log_dir,
              device, num_evals):
-    eval_envs = mve(env_name, seed + num_processes, num_processes,
+    eval_envs = make_vec_envs(env_name, seed + num_processes, num_processes,
                     None, eval_log_dir, device, True, num_frame_stack=1)
 
-    vec_norm = utils.get_vec_normalize(eval_envs)
+    vec_norm = get_vec_normalize(eval_envs)
 
     eval_episode_rewards = []
 

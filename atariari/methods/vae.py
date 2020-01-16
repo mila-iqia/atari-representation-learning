@@ -1,8 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from a2c_ppo_acktr.utils import init
 
+from .encoders import init
 import os
 import numpy as np
 from torch.utils.data import RandomSampler, BatchSampler
