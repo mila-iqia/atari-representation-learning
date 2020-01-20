@@ -3,8 +3,8 @@ import torch.nn as nn
 import torch.nn.functional as F
 from a2c_ppo_acktr.utils import init
 import time
-from ..benchmark.utils import download_run
-from ..benchmark.episodes import checkpointed_steps_full_sorted
+from atariari.benchmark.utils import download_run
+from atariari.benchmark.episodes import checkpointed_steps_full_sorted
 import os
 
 class Flatten(nn.Module):
