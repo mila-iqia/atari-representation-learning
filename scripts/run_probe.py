@@ -3,7 +3,7 @@ from atariari.benchmark.probe import ProbeTrainer
 
 import torch
 from atariari.methods.utils import get_argparser, train_encoder_methods, probe_only_methods
-from atariari.methods.encoders import NatureCNN, ImpalaCNN
+from atariari.methods.encoders import NatureCNN, ImpalaCNN, PPOEncoder
 import wandb
 import sys
 from atariari.methods.majority import majority_baseline
@@ -33,7 +33,10 @@ def run_probe(args):
         encoder.probing = True
         encoder.eval()
 
-    elif args.method in ["pretrained-rl-agent", "majority"]:
+    elif args.method == "pretrained-rl-agent":
+        encoder = PPOEncoder(args.env_name, args.checkpoint_index)
+
+    elif args.method == "majority":
         encoder = None
 
     else:

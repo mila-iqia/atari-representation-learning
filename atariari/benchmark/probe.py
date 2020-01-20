@@ -114,7 +114,7 @@ class ProbeTrainer():
         elif not self.encoder:
             # if encoder is None then inputs are vectors
             f = batch.detach()
-            assert len(f.squeeze().shape) == 2, "if input is a batch of vectors you must specify an encoder!"
+            assert len(f.squeeze().shape) == 2, "if input is not a batch of vectors you must specify an encoder!"
             preds = probe(f)
 
         else:

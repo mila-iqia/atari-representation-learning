@@ -2,7 +2,10 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from a2c_ppo_acktr.utils import init
-
+import time
+from atariari.benchmark.utils import download_run
+from atariari.benchmark.episodes import checkpointed_steps_full_sorted
+import os
 
 class Flatten(nn.Module):
     def forward(self, x):
@@ -156,3 +159,23 @@ class NatureCNN(nn.Module):
                 'out': out
             }
         return out
+
+
+
+class PPOEncoder(nn.Module):
+    def __init__(self, env_name, checkpoint_index):
+        super().__init__()
+        checkpoint_step = checkpointed_steps_full_sorted[checkpoint_index]
+        filepath = download_run(env_name, checkpoint_step)
+        while not os.path.exists(filepath):
+            time.sleep(5)
+
+        self.masks = torch.zeros(1, 1)
+        self.ppo_model, ob_rms = torch.load(filepath, map_location=lambda storage, loc: storage)
+
+    def forward(self, x):
+        _, _, _, _, feature_vectors, _ = self.ppo_model.act(x,
+                                                            None,
+                                                            self.masks,
+                                                            deterministic=False)
+        return feature_vectors
