@@ -1,5 +1,5 @@
 from scripts.run_contrastive import train_encoder
-from atariari.benchmark.probe import train_all_probes
+from atariari.benchmark.probe import train_all_probes, postprocess_raw_metrics
 
 import torch
 from atariari.methods.utils import get_argparser, train_encoder_methods, probe_only_methods
@@ -65,7 +65,16 @@ def run_probe(args):
         test_acc, test_f1score = majority_baseline(tr_labels, test_labels, wandb)
 
     else:
-        test_acc, test_f1score = train_all_probes(encoder, tr_eps, val_eps, tr_labels, val_labels, test_eps, test_labels, args, wandb)
+        test_acc, test_f1score = train_all_probes(encoder, tr_eps, val_eps,test_eps,  tr_labels, val_labels, test_labels, args, wandb.run.dir)
+
+    acc_dict, f1_dict = postprocess_raw_metrics(test_acc, test_f1score)
+
+    print("""In our paper, we report F1 scores and accuracies averaged across each category. 
+          That is, we take a mean across all state variables in a category to get the average score for that category.
+          Then we average all the category averages to get the final score that we report per game for each method. 
+          These scores are called \'across_categories_avg_acc\' and \'across_categories_avg_f1\' respectively
+          We do this to prevent categories with large number of state variables dominating the mean F1 score.
+          """)
 
 
     print(test_acc, test_f1score)

@@ -32,35 +32,23 @@ class FullySupervisedProbe(nn.Module):
         return self.probe(feature_vec)
 
 
-def train_all_probes(encoder, tr_eps, val_eps, tr_labels, val_labels, test_eps, test_labels, args, wandb):
+def train_all_probes(encoder, tr_eps, val_eps, test_eps, tr_labels, val_labels, test_labels, representation_len, args, save_dir):
     acc_dict, f1_dict = {}, {}
     for label_name in tr_labels.keys():
         trainer = ProbeTrainer(encoder=encoder,
                    epochs=args.epochs,
-                   method_name=args.method,
                    lr=args.probe_lr,
                    batch_size=args.batch_size,
                    patience=args.patience,
-                   wandb=wandb,
                    fully_supervised=(args.method == "supervised"),
-                   save_dir=wandb.run.dir)
+                   save_dir=save_dir,
+                   representation_len = representation_len)
 
         trainer.train(tr_eps, val_eps, tr_labels[label_name], val_labels[label_name])
         test_acc, test_f1score = trainer.test(test_eps, test_labels[label_name])
         acc_dict[label_name] = test_acc
         f1_dict[label_name] = test_f1score
 
-
-
-
-    acc_dict, f1_dict = postprocess_raw_metrics(acc_dict, f1_dict)
-
-    print("""In our paper, we report F1 scores and accuracies averaged across each category. 
-          That is, we take a mean across all state variables in a category to get the average score for that category.
-          Then we average all the category averages to get the final score that we report per game for each method. 
-          These scores are called \'across_categories_avg_acc\' and \'across_categories_avg_f1\' respectively
-          We do this to prevent categories with large number of state variables dominating the mean F1 score.
-          """)
     return acc_dict, f1_dict
 
 
@@ -69,7 +57,6 @@ class ProbeTrainer(object):
     def __init__(self,
                  encoder = None,
                  method_name = "my_method",
-                 wandb = None,
                  patience = 15,
                  num_classes = 256,
                  fully_supervised = False,
@@ -78,10 +65,9 @@ class ProbeTrainer(object):
                  lr = 5e-4,
                  epochs = 100,
                  batch_size = 64,
-                 representation_len = 256) -> object:
+                 representation_len = 256):
 
         self.encoder = encoder
-        self.wandb = wandb
         self.device = device
         self.fully_supervised = fully_supervised
         self.save_dir = save_dir
@@ -99,9 +85,9 @@ class ProbeTrainer(object):
             self.vector_input = False
 
         if self.fully_supervised:
-            self.probe = FullySupervisedProbe(self.encoder)
+            self.probe = FullySupervisedProbe(self.encoder).to(self.device)
         else:
-            self.probe = LinearProbe(input_dim=self.feature_size, num_classes=self.num_classes)
+            self.probe = LinearProbe(input_dim=self.feature_size, num_classes=self.num_classes).to(self.device)
 
         self.early_stopper = EarlyStopping(patience=self.patience, verbose=False, save_dir=self.save_dir)
         self.optimizer = torch.optim.Adam(list(self.probe.parameters()),
