@@ -11,6 +11,7 @@ try:
     import wandb
 except:
     pass
+from atariari.benchmark.utils import appendabledict
 
 
 
@@ -31,6 +32,16 @@ checkpointed_steps_full_sorted = [1536, 1076736, 2151936, 3227136, 4302336, 5377
                                   36558336, 37633536, 38708736, 39783936, 40859136, 41934336, 43009536, 44084736,
                                   45159936, 46235136, 47310336, 48385536, 49460736, 49999872]
 
+
+def flatten_episodes(eps):
+    return torch.cat([torch.stack(ep) for ep in eps])
+
+def flatten_labels(ep_labels):
+    labels = appendabledict()
+    for ep_dicts in ep_labels:
+        for ep_dict in ep_dicts:
+            labels.append_update(ep_dict)
+    return labels
 
 def get_random_agent_rollouts(env_name, steps, seed=42, num_processes=1, num_frame_stack=1, downsample=False, color=False):
     envs = make_vec_envs(env_name, seed,  num_processes, num_frame_stack, downsample, color)
@@ -180,6 +191,7 @@ def get_episodes(env_name,
         return tr_eps, val_eps
 
     if train_mode == "probe":
+
         val_split_ind, te_split_ind = int(0.7 * len(inds)), int(0.8 * len(inds))
         assert val_split_ind > 0 and te_split_ind > val_split_ind,\
             "Not enough episodes to split into train, val and test. You must specify more steps"
@@ -191,6 +203,9 @@ def get_episodes(env_name,
         test_ep_inds = [i for i in range(len(test_eps)) if len(test_eps[i]) > 1]
         test_eps = [test_eps[i] for i in test_ep_inds]
         test_labels = [test_labels[i] for i in test_ep_inds]
+
+        tr_eps, val_eps, test_eps = map(flatten_episodes, [tr_eps, val_eps, test_eps])
+        tr_labels, val_labels, test_labels = map(flatten_labels, [tr_labels, val_labels, test_labels])
         return tr_eps, val_eps, tr_labels, val_labels, test_eps, test_labels
 
     if train_mode == "dry_run":

@@ -1,5 +1,5 @@
 from scripts.run_contrastive import train_encoder
-from atariari.benchmark.probe import ProbeTrainer
+from atariari.benchmark.probe import train_all_probes
 
 import torch
 from atariari.methods.utils import get_argparser, train_encoder_methods, probe_only_methods
@@ -8,6 +8,9 @@ import wandb
 import sys
 from atariari.methods.majority import majority_baseline
 from atariari.benchmark.episodes import get_episodes
+
+
+
 
 
 def run_probe(args):
@@ -27,6 +30,10 @@ def run_probe(args):
 
     print("got episodes!")
 
+
+
+
+
     if args.train_encoder and args.method in train_encoder_methods:
         print("Training encoder from scratch")
         encoder = train_encoder(args)
@@ -37,11 +44,11 @@ def run_probe(args):
         encoder = None
 
     else:
-        observation_shape = tr_eps[0][0].shape
+        observation_shape = tr_eps.shape
         if args.encoder_type == "Nature":
-            encoder = NatureCNN(observation_shape[0], args)
+            encoder = NatureCNN(observation_shape[1], args)
         elif args.encoder_type == "Impala":
-            encoder = ImpalaCNN(observation_shape[0], args)
+            encoder = ImpalaCNN(observation_shape[1], args)
 
         if args.weights_path == "None":
             if args.method not in probe_only_methods:
@@ -58,21 +65,8 @@ def run_probe(args):
         test_acc, test_f1score = majority_baseline(tr_labels, test_labels, wandb)
 
     else:
-        trainer = ProbeTrainer(encoder=encoder,
-                               epochs=args.epochs,
-                               method_name=args.method,
-                               lr=args.probe_lr,
-                               batch_size=args.batch_size,
-                               patience=args.patience,
-                               wandb=wandb,
-                               fully_supervised=(args.method == "supervised"),
-                               save_dir=wandb.run.dir)
+        test_acc, test_f1score = train_all_probes(encoder, tr_eps, val_eps, tr_labels, val_labels, test_eps, test_labels, args, wandb)
 
-        trainer.train(tr_eps, val_eps, tr_labels, val_labels)
-        test_acc, test_f1score = trainer.test(test_eps, test_labels)
-        # trainer = SKLearnProbeTrainer(encoder=encoder)
-        # test_acc, test_f1score = trainer.train_test(tr_eps, val_eps, tr_labels, val_labels,
-        #                                             test_eps, test_labels)
 
     print(test_acc, test_f1score)
     wandb.log(test_acc)
