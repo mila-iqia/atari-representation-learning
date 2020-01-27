@@ -8,9 +8,8 @@ import torch.nn.functional as F
 import numpy as np
 from torch.utils.data import RandomSampler, BatchSampler
 from .utils import calculate_accuracy, Cutout
-from .trainer import Trainer
-from .utils import EarlyStopping
-from torchvision import transforms
+from atariari.methods.trainer import Trainer
+from atariari.methods.utils import EarlyStopping
 import torchvision.transforms.functional as TF
 
 
@@ -37,7 +36,6 @@ class InfoNCESpatioTemporalTrainer(Trainer):
                                           list(self.classifier2.parameters()),
                                           lr=config['lr'], eps=1e-5)
         self.early_stopper = EarlyStopping(patience=self.patience, verbose=False, wandb=self.wandb, name="encoder")
-        self.transform = transforms.Compose([Cutout(n_holes=1, length=80)])
 
     def generate_batch(self, episodes):
         total_steps = sum([len(e) for e in episodes])
