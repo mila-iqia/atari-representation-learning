@@ -32,12 +32,12 @@ class FullySupervisedProbe(nn.Module):
         return self.probe(feature_vec)
 
 
-def train_all_probes(encoder, tr_eps, val_eps, test_eps, tr_labels, val_labels, test_labels, representation_len, args, save_dir):
+def train_all_probes(encoder, tr_eps, val_eps, test_eps, tr_labels, val_labels, test_labels,lr, representation_len, args, save_dir):
     acc_dict, f1_dict = {}, {}
     for label_name in tr_labels.keys():
         trainer = ProbeTrainer(encoder=encoder,
                    epochs=args.epochs,
-                   lr=args.probe_lr,
+                   lr=lr,
                    batch_size=args.batch_size,
                    patience=args.patience,
                    fully_supervised=(args.method == "supervised"),
