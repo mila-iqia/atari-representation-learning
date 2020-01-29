@@ -114,7 +114,7 @@ class ProbeTrainer(object):
         preds = preds.reshape(batch_size, -1, self.num_state_variables, self.num_classes)
         preds = preds.transpose(1, 3)
 
-        return preds.squeeze()
+        return preds
 
 
     def do_one_epoch(self, episodes, labels_dict):
@@ -126,25 +126,26 @@ class ProbeTrainer(object):
 
         for x, labels in data_generator:
             preds = self.do_probe(x)
-            loss = nn.CrossEntropyLoss()(preds, labels)
+            lbls = labels[:, :, None].repeat(1, 1, preds.shape[3]).squeeze() # for if preds has another dimension for slot encoders for example
+            loss = nn.CrossEntropyLoss()(preds.squeeze(), lbls)
             if self.probe.training:
                 self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
 
-            preds = preds.cpu().detach().numpy()
-            preds = np.argmax(preds, axis=1)
+            preds = preds.cpu().detach().numpy().squeeze()
+            preds = np.argmax(preds, axis=1).reshape(preds.shape[0], -1)
             all_preds.append(preds)
-            labels = labels.cpu().detach().numpy()
-            all_labels.append(labels)
+            lbls = lbls.cpu().detach().numpy()
+            all_labels.append(lbls.reshape(lbls.shape[0], -1))
             losses.append(loss.detach().item())
 
         epoch_loss = np.mean(losses)
 
-        alab = np.concatenate(all_labels)
-        ap = np.concatenate(all_preds)
-        accuracies = calculate_multiple_accuracies(alab, ap)
-        f1_scores = calculate_multiple_f1_scores(alab, ap)
+        labels_tensor = np.concatenate(all_labels)
+        preds_tensor = np.concatenate(all_preds)
+        accuracies = calculate_multiple_accuracies(preds_tensor, labels_tensor)
+        f1_scores = calculate_multiple_f1_scores(preds_tensor, labels_tensor)
 
         return epoch_loss, accuracies, f1_scores
 
