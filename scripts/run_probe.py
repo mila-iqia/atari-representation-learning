@@ -65,9 +65,14 @@ def run_probe(args):
         test_acc, test_f1score = majority_baseline(tr_labels, test_labels, wandb)
 
     else:
-        test_acc, test_f1score = train_all_probes(encoder, tr_eps, val_eps,test_eps,  tr_labels, val_labels, test_labels, args, wandb.run.dir)
+        test_acc, test_f1score = train_all_probes(encoder, tr_eps, val_eps, test_eps, tr_labels, val_labels,
+                                                  test_labels,args.lr, encoder.feature_size, args, wandb.run.dir)
 
-    acc_dict, f1_dict = postprocess_raw_metrics(test_acc, test_f1score)
+        label_keys = tr_labels.keys()
+        acc_dict = dict(zip(label_keys,test_acc))
+        f1_dict = dict(zip(label_keys, test_f1score))
+
+    acc_dict, f1_dict = postprocess_raw_metrics(acc_dict, f1_dict)
 
     print("""In our paper, we report F1 scores and accuracies averaged across each category. 
           That is, we take a mean across all state variables in a category to get the average score for that category.
@@ -77,9 +82,9 @@ def run_probe(args):
           """)
 
 
-    print(test_acc, test_f1score)
-    wandb.log(test_acc)
-    wandb.log(test_f1score)
+    print(acc_dict, f1_dict)
+    wandb.log(acc_dict)
+    wandb.log(f1_dict)
 
 
 if __name__ == "__main__":

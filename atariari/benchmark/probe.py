@@ -2,13 +2,15 @@ import torch
 from torch import nn
 from .utils import EarlyStopping, appendabledict, \
     calculate_multiclass_accuracy, calculate_multiclass_f1_score,\
-    append_suffix, compute_dict_average
+    append_suffix, compute_dict_average, calculate_multiple_accuracies, calculate_multiple_f1_scores
 
 from copy import deepcopy
 import numpy as np
+import sys
 from torch.utils.data import RandomSampler, BatchSampler
 from .categorization import summary_key_dict
 from torch.utils.data import DataLoader, TensorDataset
+
 
 
 class LinearProbe(nn.Module):
@@ -33,23 +35,20 @@ class FullySupervisedProbe(nn.Module):
 
 
 def train_all_probes(encoder, tr_eps, val_eps, test_eps, tr_labels, val_labels, test_labels,lr, representation_len, args, save_dir):
-    acc_dict, f1_dict = {}, {}
-    for label_name in tr_labels.keys():
-        trainer = ProbeTrainer(encoder=encoder,
-                   epochs=args.epochs,
-                   lr=lr,
-                   batch_size=args.batch_size,
-                   patience=args.patience,
-                   fully_supervised=(args.method == "supervised"),
-                   save_dir=save_dir,
-                   representation_len = representation_len)
+    trainer = ProbeTrainer(encoder=encoder,
+                           epochs=args.epochs,
+                           lr=lr,
+                           batch_size=args.batch_size,
+                           num_state_variables=len(tr_labels.keys()),
+                           patience=args.patience,
+                           fully_supervised=(args.method == "supervised"),
+                           save_dir=save_dir,
+                           representation_len=representation_len)
 
-        trainer.train(tr_eps, val_eps, tr_labels[label_name], val_labels[label_name])
-        test_acc, test_f1score = trainer.test(test_eps, test_labels[label_name])
-        acc_dict[label_name] = test_acc
-        f1_dict[label_name] = test_f1score
+    trainer.train(tr_eps, val_eps, tr_labels, val_labels)
+    test_acc, test_f1score = trainer.test(test_eps, test_labels)
 
-    return acc_dict, f1_dict
+    return test_acc, test_f1score
 
 
 
@@ -59,6 +58,7 @@ class ProbeTrainer(object):
                  method_name = "my_method",
                  patience = 15,
                  num_classes = 256,
+                 num_state_variables=8,
                  fully_supervised = False,
                  save_dir = ".models",
                  device = torch.device("cuda" if torch.cuda.is_available() else "cpu"),
@@ -68,6 +68,7 @@ class ProbeTrainer(object):
                  representation_len = 256):
 
         self.encoder = encoder
+        self.num_state_variables = num_state_variables
         self.device = device
         self.fully_supervised = fully_supervised
         self.save_dir = save_dir
@@ -77,113 +78,109 @@ class ProbeTrainer(object):
         self.batch_size = batch_size
         self.patience = patience
         self.method = method_name
-        self.feature_size = representation_len
-        self.loss_fn = nn.CrossEntropyLoss()
+        self.representation_len = representation_len
         if self.encoder == None:
             self.vector_input = True
         else:
             self.vector_input = False
 
-        if self.fully_supervised:
-            self.probe = FullySupervisedProbe(self.encoder).to(self.device)
-        else:
-            self.probe = LinearProbe(input_dim=self.feature_size, num_classes=self.num_classes).to(self.device)
+        self.probe = nn.Linear(self.representation_len, self.num_classes * self.num_state_variables).to(self.device)
 
-        self.early_stopper = EarlyStopping(patience=self.patience, verbose=False, save_dir=self.save_dir)
+        # self.early_stopper = EarlyStopping(patience=self.patience, verbose=False, save_dir=self.save_dir)
         self.optimizer = torch.optim.Adam(list(self.probe.parameters()),
                                                eps=1e-5, lr=self.lr)
-        self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, patience=5, factor=0.2, verbose=True, mode='max', min_lr=1e-5)
+        # self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, patience=5, factor=0.2, verbose=True, mode='max', min_lr=1e-5)
 
 
 
-    def generate_batch(self, frames, labels, batch_size):
-        labels_tensor = torch.tensor(labels).long()
+    def generate_batch(self, frames, labels_dict, batch_size):
+        labels = torch.tensor(list(labels_dict.values())).long()
+        labels_tensor = labels.transpose(1, 0)
         ds = TensorDataset(frames, labels_tensor)
         dl = DataLoader(ds, batch_size=batch_size, shuffle=True)
         for x, y in dl:
             yield x.float().to(self.device) / 255., y.to(self.device)
 
-
     def do_probe(self, x):
-        if self.encoder is None:
-            # x is a set vectors
-            preds = self.probe(x)
+        if self.vector_input:
+            vectors = x
+        elif self.fully_supervised:
+            vectors = self.encoder(x)
         else:
-            preds = self.probe(self.encoder(x).detach())
-        return preds
+            vectors = self.encoder(x).detach()
+
+        batch_size, *rest = vectors.shape
+        preds = self.probe(vectors)
+        preds = preds.reshape(batch_size, -1, self.num_state_variables, self.num_classes)
+        preds = preds.transpose(1, 3)
+
+        return preds.squeeze()
 
 
-    def do_one_epoch(self, episodes, labels):
-        losses, accuracies = [], []
+    def do_one_epoch(self, episodes, labels_dict):
+        losses = []
+        all_preds = []
+        all_labels = []
 
-        data_generator = self.generate_batch(episodes, labels, batch_size=self.batch_size)
+        data_generator = self.generate_batch(episodes, labels_dict, batch_size=self.batch_size)
 
-        for step, (x, label) in enumerate(data_generator):
-            self.optimizer.zero_grad()
+        for x, labels in data_generator:
             preds = self.do_probe(x)
-            loss = self.loss_fn(preds, label)
-
-            losses.append(loss.detach().item())
-            preds = preds.cpu().detach().numpy()
-            preds = np.argmax(preds, axis=1)
-            label = label.cpu().detach().numpy()
-            accuracies.append(calculate_multiclass_accuracy(preds, label))
+            loss = nn.CrossEntropyLoss()(preds, labels)
             if self.probe.training:
+                self.optimizer.zero_grad()
                 loss.backward()
                 self.optimizer.step()
 
+            preds = preds.cpu().detach().numpy()
+            preds = np.argmax(preds, axis=1)
+            all_preds.append(preds)
+            labels = labels.cpu().detach().numpy()
+            all_labels.append(labels)
+            losses.append(loss.detach().item())
+
         epoch_loss = np.mean(losses)
-        accuracy = np.mean(accuracies)
+
+        alab = np.concatenate(all_labels)
+        ap = np.concatenate(all_preds)
+        accuracies = calculate_multiple_accuracies(alab, ap)
+        f1_scores = calculate_multiple_f1_scores(alab, ap)
+
+        return epoch_loss, accuracies, f1_scores
 
 
-
-        return epoch_loss, accuracy
-
-    def do_test_epoch(self, episodes, labels):
-
-        x, y = next(self.generate_batch(episodes, labels, batch_size=episodes.shape[0]))
-        preds = self.do_probe(x)
-        y = y.detach().cpu().numpy()
-        preds = preds.detach().cpu().numpy()
-        preds = np.argmax(preds, axis=1)
-        accuracy = calculate_multiclass_accuracy(preds, y)
-        f1score = calculate_multiclass_f1_score(preds, y)
-
-        return accuracy, f1score
-
-
-    def evaluate(self, val_episodes, val_label_dicts):
-        self.probe.eval()
-        epoch_loss, accuracy = self.do_one_epoch(val_episodes, val_label_dicts)
-        self.probe.train()
-        return epoch_loss, accuracy
 
     def train(self, tr_eps, val_eps, tr_labels, val_labels):
         epoch = 0
-        while (not self.early_stopper.early_stop) and epoch < self.epochs:
+        while epoch < self.epochs:
             self.probe.train()
-            epoch_loss, accuracy = self.do_one_epoch(tr_eps, tr_labels)
-            val_loss, val_accuracy = self.evaluate(val_eps, val_labels)
-            self.log_results(epoch, dict(tr_loss=epoch_loss, tr_accuracy=accuracy, val_loss=val_loss, val_accuracy=val_accuracy))
+            epoch_loss, accuracy, _ = self.do_one_epoch(tr_eps, tr_labels)
+            self.probe.eval()
+            val_loss, val_accuracy, _ = self.do_one_epoch(val_eps, val_labels)
+            #val_accuracy = val_accuracy
+            #tr_accuracy = accuracy,
+            self.log_results(epoch, tr_loss=epoch_loss, val_loss=val_loss)
 
-            # update all early stoppers
-            if not self.early_stopper.early_stop:
-                self.early_stopper(val_accuracy, self.probe)
-                self.scheduler.step(val_accuracy)
             epoch += 1
-        print("Probe early stopped!")
+        sys.stderr.write("Probe done!\n")
 
-    def test(self, test_episodes, test_label_dicts, epoch=None):
+    def test(self, test_episodes, test_label_dicts):
         self.probe.eval()
-        acc, f1 = self.do_test_epoch(test_episodes, test_label_dicts)
+        _, acc, f1 = self.do_one_epoch(test_episodes, test_label_dicts)
         return acc, f1
 
-    def log_results(self, epoch_idx, *dictionaries):
-        print("Epoch: {}".format(epoch_idx))
-        for dictionary in dictionaries:
-            for k, v in dictionary.items():
-                print("\t {}: {:8.4f}".format(k, v))
-            print("\t --")
+    def log_results(self, epoch_idx, **kwargs):
+        sys.stderr.write("Epoch: {}\n".format(epoch_idx))
+        for k, v in kwargs.items():
+            if isinstance(v, dict):
+                sys.stderr.write("\t {}:\n".format(k))
+                for kk, vv in v.items():
+                    sys.stderr.write("\t\t {}: {:8.4f}\n".format(kk, vv))
+                sys.stderr.write("\t ------\n")
+
+            else:
+                sys.stderr.write("\t {}: {:8.4f}\n".format(k, v))
+
 
 
 def postprocess_raw_metrics(acc_dict, f1_dict):

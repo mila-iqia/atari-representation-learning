@@ -3,7 +3,7 @@ import torch
 from sklearn.metrics import f1_score as compute_f1_score
 from pathlib import Path
 import numpy as np
-
+import sys
 
 def compute_dict_average(metric_dict):
     return np.mean(list(metric_dict.values()))
@@ -76,6 +76,11 @@ class appendabledict(defaultdict):
         for k, v in other_dict.items():
             self.__getitem__(k).append(v)
 
+    def extend_update(self, other_dict):
+
+        for k, v in other_dict.items():
+            self.__getitem__(k).extend(v)
+
 
 # Thanks Bjarten! (https://github.com/Bjarten/early-stopping-pytorch)
 class EarlyStopping(object):
@@ -110,10 +115,10 @@ class EarlyStopping(object):
             self.val_acc_max = val_acc
         elif score <= self.best_score:
             self.counter += 1
-            print(f'EarlyStopping for {self.name} counter: {self.counter} out of {self.patience}')
+            sys.stderr.write(f'EarlyStopping for {self.name} counter: {self.counter} out of {self.patience}')
             if self.counter >= self.patience:
                 self.early_stop = True
-                print(f'{self.name} has stopped')
+                sys.stderr.write(f'{self.name} has stopped')
 
         else:
             self.best_score = score
@@ -141,6 +146,19 @@ def calculate_accuracy(preds, y):
 def calculate_multiclass_f1_score(preds, labels):
     f1score = compute_f1_score(labels, preds, average="weighted")
     return f1score
+
+def calculate_multiple_f1_scores(preds, labels):
+    if len(labels.shape) == 1:
+        return calculate_multiclass_f1_score(preds, labels)
+    else:
+        return [compute_f1_score(preds[:,i], labels[:,i],average="weighted") for i in range(labels.shape[-1])]
+
+def calculate_multiple_accuracies(preds, labels):
+    if len(labels.shape) == 1:
+        return calculate_multiclass_accuracy(preds, labels)
+    else:
+        return [calculate_multiclass_accuracy(preds[:,i], labels[:,i]) for i in range(labels.shape[-1])]
+
 
 
 def calculate_multiclass_accuracy(preds, labels):
