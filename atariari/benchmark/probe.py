@@ -1,56 +1,11 @@
 import torch
 from torch import nn
-from .utils import EarlyStopping, appendabledict, \
-    calculate_multiclass_accuracy, calculate_multiclass_f1_score,\
-    append_suffix, compute_dict_average, calculate_multiple_accuracies, calculate_multiple_f1_scores
+from .utils import append_suffix, compute_dict_average, calculate_multiple_accuracies, calculate_multiple_f1_scores
 
 from copy import deepcopy
 import numpy as np
 import sys
-from torch.utils.data import RandomSampler, BatchSampler
 from .categorization import summary_key_dict
-from torch.utils.data import DataLoader, TensorDataset
-
-
-
-class LinearProbe(nn.Module):
-    def __init__(self, input_dim, num_classes=255):
-        super().__init__()
-        self.model = nn.Linear(in_features=input_dim, out_features=num_classes)
-
-    def forward(self, feature_vectors):
-        return self.model(feature_vectors)
-
-
-class FullySupervisedProbe(nn.Module):
-    def __init__(self, encoder, num_classes=255):
-        super().__init__()
-        self.encoder = deepcopy(encoder)
-        self.probe = LinearProbe(input_dim=self.encoder.hidden_size,
-                                 num_classes=num_classes)
-
-    def forward(self, x):
-        feature_vec = self.encoder(x)
-        return self.probe(feature_vec)
-
-
-def train_all_probes(encoder, tr_eps, val_eps, test_eps, tr_labels, val_labels, test_labels,lr, representation_len, args, save_dir):
-    trainer = ProbeTrainer(encoder=encoder,
-                           epochs=args.epochs,
-                           lr=lr,
-                           batch_size=args.batch_size,
-                           num_state_variables=len(tr_labels.keys()),
-                           patience=args.patience,
-                           fully_supervised=(args.method == "supervised"),
-                           save_dir=save_dir,
-                           representation_len=representation_len)
-
-    trainer.train(tr_eps, val_eps, tr_labels, val_labels)
-    test_acc, test_f1score = trainer.test(test_eps, test_labels)
-
-    return test_acc, test_f1score
-
-
 
 class ProbeTrainer(object):
     def __init__(self,
@@ -60,7 +15,6 @@ class ProbeTrainer(object):
                  num_classes = 256,
                  num_state_variables=8,
                  fully_supervised = False,
-                 save_dir = ".models",
                  device = torch.device("cuda" if torch.cuda.is_available() else "cpu"),
                  lr = 5e-4,
                  epochs = 100,
@@ -71,7 +25,6 @@ class ProbeTrainer(object):
         self.num_state_variables = num_state_variables
         self.device = device
         self.fully_supervised = fully_supervised
-        self.save_dir = save_dir
         self.num_classes = num_classes
         self.epochs = epochs
         self.lr = lr
@@ -92,15 +45,6 @@ class ProbeTrainer(object):
         # self.scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizer, patience=5, factor=0.2, verbose=True, mode='max', min_lr=1e-5)
 
 
-
-    def generate_batch(self, frames, labels_dict, batch_size):
-        labels = torch.tensor(list(labels_dict.values())).long()
-        labels_tensor = labels.transpose(1, 0)
-        ds = TensorDataset(frames, labels_tensor)
-        dl = DataLoader(ds, batch_size=batch_size, shuffle=True)
-        for x, y in dl:
-            yield x.float().to(self.device) / 255., y.to(self.device)
-
     def do_probe(self, x):
         if self.vector_input:
             vectors = x
@@ -117,15 +61,14 @@ class ProbeTrainer(object):
         return preds
 
 
-    def do_one_epoch(self, episodes, labels_dict):
+    def do_one_epoch(self, dataloader):
         losses = []
         all_preds = []
         all_labels = []
-
-        data_generator = self.generate_batch(episodes, labels_dict, batch_size=self.batch_size)
-
-        for x, labels in data_generator:
-            preds = self.do_probe(x)
+        for x,y in dataloader:
+            frames = x.float().to(self.device) / 255.
+            labels = y.long().to(self.device)
+            preds = self.do_probe(frames)
             lbls = labels[:, :, None].repeat(1, 1, preds.shape[3]).squeeze() # for if preds has another dimension for slot encoders for example
             loss = nn.CrossEntropyLoss()(preds.squeeze(), lbls)
             if self.probe.training:
@@ -151,23 +94,21 @@ class ProbeTrainer(object):
 
 
 
-    def train(self, tr_eps, val_eps, tr_labels, val_labels):
+    def train(self, tr_dl, val_dl):
         epoch = 0
         while epoch < self.epochs:
             self.probe.train()
-            epoch_loss, accuracy, _ = self.do_one_epoch(tr_eps, tr_labels)
+            epoch_loss, accuracy, _ = self.do_one_epoch(tr_dl)
             self.probe.eval()
-            val_loss, val_accuracy, _ = self.do_one_epoch(val_eps, val_labels)
-            #val_accuracy = val_accuracy
-            #tr_accuracy = accuracy,
+            val_loss, val_accuracy, _ = self.do_one_epoch(val_dl)
             self.log_results(epoch, tr_loss=epoch_loss, val_loss=val_loss)
 
             epoch += 1
         sys.stderr.write("Probe done!\n")
 
-    def test(self, test_episodes, test_label_dicts):
+    def test(self, test_dl):
         self.probe.eval()
-        _, acc, f1 = self.do_one_epoch(test_episodes, test_label_dicts)
+        _, acc, f1 = self.do_one_epoch(test_dl)
         return acc, f1
 
     def log_results(self, epoch_idx, **kwargs):

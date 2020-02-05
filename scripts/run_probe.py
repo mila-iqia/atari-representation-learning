@@ -1,5 +1,5 @@
 from scripts.run_contrastive import train_encoder
-from atariari.benchmark.probe import train_all_probes, postprocess_raw_metrics
+from atariari.benchmark.probe import  postprocess_raw_metrics
 
 import torch
 from atariari.methods.utils import get_argparser, train_encoder_methods, probe_only_methods
