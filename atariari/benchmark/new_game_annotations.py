@@ -1,3 +1,0 @@
-atari_dict = {
-
-}
