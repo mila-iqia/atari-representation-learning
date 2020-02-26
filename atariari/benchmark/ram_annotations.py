@@ -268,14 +268,14 @@ atari_dict = {
                          score_1=48,
                          score_2=50),
 
-    "yarsrevenge": dict(player_yar_x=32,
-                        player_yar_y=31,
-                        yar_missile_x=38,
-                        yar_missile_y=37,
-                        enemy_qotile_x=43,
-                        enemy_qotile_y=42,
-                        qotile_missile_x=47,
-                        qotile_missile_y=46)
+    "yarsrevenge": dict(player_x=32,
+                        player_y=31,
+                        player_missile_x=38,
+                        player_missile_y=37,
+                        enemy_x=43,
+                        enemy_y=42,
+                        enemy_missile_x=47,
+                        enemy_missile_y=46)
 }
 
 # break up any lists (e.g. dict(clock=[67, 69]) -> dict(clock_0=67, clock_1=69) )
