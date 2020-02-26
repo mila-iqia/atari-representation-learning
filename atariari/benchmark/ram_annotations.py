@@ -184,8 +184,8 @@ atari_dict = {
                  enemy_score=13,
                  player_score=14),
 
-    "privateeye": dict(agent_x=63,
-                       agent_y=86,
+    "privateeye": dict(player_x=63,
+                       player_y=86,
                        room_number=92,
                        clock=[67, 69],
                        player_direction=58,
