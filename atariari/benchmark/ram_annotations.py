@@ -199,12 +199,12 @@ atari_dict = {
                   red_enemy_column=69,
                   green_enemy_column=105,
                   score=[89, 90, 91], # binary coded decimal score
-                  tile_color=[1, 3, 5, 7, 9,          # row of 5
-                              21, 32, 34, 36, 38, 40, # row of 6
-                              42,                     # row of 1
-                              52, 54,                 # row of 2
-                              83, 85, 87,             # row of 3
-                              98, 100, 102, 104]),    # row of 4
+                  tile_color=[         21,                # row of 1
+                                     52,  54,             # row of 2
+                                   83,  85,  87,          # row of 3
+                                 98, 100, 102, 104,       # row of 4
+                                1,  3,   5,   7,  9,      # row of 5
+                              32, 34, 36,  38,  40, 42]), # row of 6
 
     "riverraid": dict(player_x=51,
                       missile_x=117,
