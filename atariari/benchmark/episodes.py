@@ -84,7 +84,7 @@ def get_ppo_rollouts(env_name, steps, seed=42, num_processes=1,
     obs = envs.reset()
     entropies = []
     for step in range(steps // num_processes):
-        # Take action using a random policy
+        # Take action using the PPO policy
         with torch.no_grad():
             _, action, _, _, actor_features, dist_entropy = actor_critic.act(obs, None, masks, deterministic=False)
         action = torch.tensor([envs.action_space.sample() if np.random.uniform(0, 1) < 0.2 else action[i]
