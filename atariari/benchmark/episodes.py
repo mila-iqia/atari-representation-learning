@@ -6,7 +6,7 @@ import torch
 import time
 import os
 from .envs import make_vec_envs
-from .utils import download_run
+from .utils import download_run,appendabledict
 try:
     import wandb
 except:
@@ -61,8 +61,9 @@ def get_random_agent_rollouts(env_name, steps, seed=42, num_processes=1, num_fra
     episodes = list(chain.from_iterable(episodes))
     # Convert to 2d list from 3d list
     episode_labels = list(chain.from_iterable(episode_labels))
+    tensor_episodes = [torch.stack(episodes[i]) for i in range(len(episodes))]
     envs.close()
-    return episodes, episode_labels
+    return tensor_episodes, episode_labels
 
 
 def get_ppo_rollouts(env_name, steps, seed=42, num_processes=1,
@@ -110,12 +111,25 @@ def get_ppo_rollouts(env_name, steps, seed=42, num_processes=1,
     episode_labels = list(chain.from_iterable(episode_labels))
     mean_entropy = torch.stack(entropies).mean()
     mean_episode_reward = np.mean(episode_rewards)
+    tensor_episodes = [torch.stack(episodes[i]) for i in range(len(episodes))]
     try:
         wandb.log({'action_entropy': mean_entropy, 'mean_reward': mean_episode_reward})
     except:
         pass
 
-    return episodes, episode_labels
+    return tensor_episodes, episode_labels
+
+def tensorify_labels(eps_labels):
+    tensor_ep_labels = []
+    for ep_labels in eps_labels:
+        ad = appendabledict()
+        ad.append_updates(ep_labels)
+        for k in ad.keys():
+            ad[k] = torch.tensor(ad[k])
+        tensor_ep_labels.append(ad)
+
+    return tensor_ep_labels
+
 
 
 def get_episodes(env_name,
@@ -133,7 +147,7 @@ def get_episodes(env_name,
 
     if collect_mode == "random_agent":
         # List of episodes. Each episode is a list of 160x210 observations
-        episodes, episode_labels = get_random_agent_rollouts(env_name=env_name,
+        episodes, episodes_labels = get_random_agent_rollouts(env_name=env_name,
                                                              steps=steps,
                                                              seed=seed,
                                                              num_processes=num_processes,
@@ -143,7 +157,7 @@ def get_episodes(env_name,
     elif collect_mode == "pretrained_ppo":
         import wandb
         # List of episodes. Each episode is a list of 160x210 observations
-        episodes, episode_labels = get_ppo_rollouts(env_name=env_name,
+        episodes, episodes_labels = get_ppo_rollouts(env_name=env_name,
                                                    steps=steps,
                                                    seed=seed,
                                                    num_processes=num_processes,
@@ -156,10 +170,12 @@ def get_episodes(env_name,
     else:
         assert False, "Collect mode {} not recognized".format(collect_mode)
 
+
     ep_inds = [i for i in range(len(episodes)) if len(episodes[i]) > min_episode_length]
     episodes = [episodes[i] for i in ep_inds]
-    episode_labels = [episode_labels[i] for i in ep_inds]
-    episode_labels, entropy_dict = remove_low_entropy_labels(episode_labels, entropy_threshold=entropy_threshold)
+    episodes_labels = [episodes_labels[i] for i in ep_inds]
+    episodes_labels, entropy_dict = remove_low_entropy_labels(episodes_labels, entropy_threshold=entropy_threshold)
+
 
     try:
         wandb.log(entropy_dict)
@@ -182,16 +198,18 @@ def get_episodes(env_name,
             "Not enough episodes to split into train, val and test. You must specify more steps"
         tr_eps, val_eps, test_eps = episodes[:val_split_ind], episodes[val_split_ind:te_split_ind], episodes[
                                                                                                     te_split_ind:]
-        tr_labels, val_labels, test_labels = episode_labels[:val_split_ind], \
-                                             episode_labels[val_split_ind:te_split_ind], episode_labels[te_split_ind:]
+        tr_labels, val_labels, test_labels = episodes_labels[:val_split_ind], \
+                                             episodes_labels[val_split_ind:te_split_ind], episodes_labels[te_split_ind:]
         test_eps, test_labels = remove_duplicates(tr_eps, val_eps, test_eps, test_labels)
         test_ep_inds = [i for i in range(len(test_eps)) if len(test_eps[i]) > 1]
         test_eps = [test_eps[i] for i in test_ep_inds]
         test_labels = [test_labels[i] for i in test_ep_inds]
+
+        tr_labels, val_labels, test_labels = tensorify_labels(tr_labels), tensorify_labels(val_labels), tensorify_labels(test_labels)
         return tr_eps, val_eps, tr_labels, val_labels, test_eps, test_labels
 
     if train_mode == "dry_run":
-        return episodes, episode_labels
+        return episodes, episodes_labels
 
 
 
