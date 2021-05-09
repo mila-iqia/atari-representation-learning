@@ -22,7 +22,7 @@ def remove_duplicates(tr_eps, val_eps, test_eps, test_labels):
     return test_eps, test_labels
 
 
-def remove_low_entropy_labels(episode_labels, entropy_threshold=0.3):
+def remove_low_entropy_labels(episode_labels, entropy_threshold=0.6):
     flat_label_list = list(chain.from_iterable(episode_labels))
     counts = {}
 
