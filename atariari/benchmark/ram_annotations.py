@@ -160,6 +160,7 @@ atari_dict = {
                      fruit_y=17,
                      ghosts_count=19,
                      player_direction=56,
+                     ghosts_blue=116,
                      dots_eaten_count=119,
                      player_score=120,
                      num_lives=123),
