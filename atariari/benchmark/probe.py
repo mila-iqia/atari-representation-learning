@@ -31,7 +31,7 @@ class FullySupervisedLinearProbe(nn.Module):
         return self.probe(feature_vec)
 
 
-class ProbeTrainer():
+class ProbeTrainer(object):
     def __init__(self,
                  encoder=None,
                  method_name="my_method",
@@ -61,27 +61,28 @@ class ProbeTrainer():
         self.loss_fn = nn.CrossEntropyLoss()
 
         # bad convention, but these get set in "create_probes"
-        self.probes = self.early_stoppers = self.optimizers = self.schedulers = None
+        self.probes = self.early_stoppers = self.optimizers = self.schedulers = self.label_keys = None
 
-    def create_probes(self, sample_label):
+    def create_probes(self, label_keys):
+        self.label_keys = label_keys
         if self.fully_supervised:
             assert self.encoder != None, "for fully supervised you must provide an encoder!"
             self.probes = {k: FullySupervisedLinearProbe(encoder=self.encoder,
                                                          num_classes=self.num_classes).to(self.device) for k in
-                           sample_label.keys()}
+                           self.label_keys}
         else:
             self.probes = {k: LinearProbe(input_dim=self.feature_size,
-                                          num_classes=self.num_classes).to(self.device) for k in sample_label.keys()}
+                                          num_classes=self.num_classes).to(self.device) for k in self.label_keys}
 
         self.early_stoppers = {
             k: EarlyStopping(patience=self.patience, verbose=False, name=k + "_probe", save_dir=self.save_dir)
-            for k in sample_label.keys()}
+            for k in self.label_keys}
 
         self.optimizers = {k: torch.optim.Adam(list(self.probes[k].parameters()),
-                                               eps=1e-5, lr=self.lr) for k in sample_label.keys()}
+                                               eps=1e-5, lr=self.lr) for k in self.label_keys}
         self.schedulers = {
             k: torch.optim.lr_scheduler.ReduceLROnPlateau(self.optimizers[k], patience=5, factor=0.2, verbose=True,
-                                                          mode='max', min_lr=1e-5) for k in sample_label.keys()}
+                                                          mode='max', min_lr=1e-5) for k in self.label_keys}
 
     def generate_batch(self, episodes, episode_labels):
         total_steps = sum([len(e) for e in episodes])
@@ -101,7 +102,9 @@ class ProbeTrainer():
                 # Get one sample from this episode
                 t = np.random.randint(len(episode))
                 xs.append(episode[t])
-                labels.append_update(episode_labels_batch[ep_ind][t])
+                label = episode_labels_batch[ep_ind].subslice(slice(t, t+1))
+                labels.extend_update(label)
+            labels = {k: torch.tensor(v).long() for k,v in labels.items()}
             yield torch.stack(xs).float().to(self.device) / 255., labels
 
     def probe(self, batch, k):
@@ -125,10 +128,9 @@ class ProbeTrainer():
         return preds
 
     def do_one_epoch(self, episodes, label_dicts):
-        sample_label = label_dicts[0][0]
-        epoch_loss, accuracy = {k + "_loss": [] for k in sample_label.keys() if
+        epoch_loss, accuracy = {k + "_loss": [] for k in self.label_keys if
                                 not self.early_stoppers[k].early_stop}, \
-                               {k + "_acc": [] for k in sample_label.keys() if
+                               {k + "_acc": [] for k in self.label_keys if
                                 not self.early_stoppers[k].early_stop}
 
         data_generator = self.generate_batch(episodes, label_dicts)
@@ -139,7 +141,7 @@ class ProbeTrainer():
                 optim = self.optimizers[k]
                 optim.zero_grad()
 
-                label = torch.tensor(label).long().to(self.device)
+                label = label.to(self.device)
                 preds = self.probe(x, k)
 
                 loss = self.loss_fn(preds, label)
@@ -160,10 +162,9 @@ class ProbeTrainer():
         return epoch_loss, accuracy
 
     def do_test_epoch(self, episodes, label_dicts):
-        sample_label = label_dicts[0][0]
         accuracy_dict, f1_score_dict = {}, {}
-        pred_dict, all_label_dict = {k: [] for k in sample_label.keys()}, \
-                                    {k: [] for k in sample_label.keys()}
+        pred_dict, all_label_dict = {k: [] for k in self.label_keys}, \
+                                    {k: [] for k in self.label_keys}
 
         # collect all predictions first
         data_generator = self.generate_batch(episodes, label_dicts)
@@ -189,8 +190,8 @@ class ProbeTrainer():
     def train(self, tr_eps, val_eps, tr_labels, val_labels):
         # if not self.encoder:
         #     assert len(tr_eps[0][0].squeeze().shape) == 2, "if input is a batch of vectors you must specify an encoder!"
-        sample_label = tr_labels[0][0]
-        self.create_probes(sample_label)
+        label_keys = tr_labels[0].keys()
+        self.create_probes(label_keys)
         e = 0
         all_probes_stopped = np.all([early_stopper.early_stop for early_stopper in self.early_stoppers.values()])
         while (not all_probes_stopped) and e < self.epochs:
@@ -199,7 +200,7 @@ class ProbeTrainer():
 
             val_loss, val_accuracy = self.evaluate(val_eps, val_labels, epoch=e)
             # update all early stoppers
-            for k in sample_label.keys():
+            for k in self.label_keys:
                 if not self.early_stoppers[k].early_stop:
                     self.early_stoppers[k](val_accuracy["val_" + k + "_acc"], self.probes[k])
 
